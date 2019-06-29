@@ -5,16 +5,16 @@
  SPATIAL_FILENAME = "./DOMAIN/soil_properties.nc"
  OUTDIR = "./"
 
- START_YEAR  = 2009 
- START_MONTH = 10 
- START_DAY   = 01 
- START_HOUR  = 00
+ START_YEAR  = YYYY 
+ START_MONTH = MM
+ START_DAY   = DD 
+ START_HOUR  = HH 
  START_MIN   = 00
 
 ! RESTART_FILENAME_REQUESTED = "./DOMAIN/RESTART.1998031900_DOMAIN2"
 
  ! Specification of simulation length in days OR hours
- KDAY = 364 
+ KDAY = NDAYS 
  ! KHOUR = 8
 
  ! Physics options (see the documentation for details)
