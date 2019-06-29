@@ -1,0 +1,334 @@
+#-------------------------------------------------------#
+# National Water Model Calibration Configuration
+# 
+# This configuration file is to be filled out by the
+# user only once before initiating the calibration
+# workflow for specified basins. This file will
+# be used one time to make approprate entries into the
+# database containing necessary information on the 
+# calibration job. 
+#
+# Logan Karsten
+# National Center for Atmospheric Research
+# Research Applications Laboratory
+# karsten@ucar.edu
+# 303-497-2693
+#-------------------------------------------------------#
+
+[logistics]
+# Top level directory where output from model runs, etc
+# will be placed. This is essentially your "job" directory
+# containing all the model output, analysis, etc. 
+outDir = /home/wrudisill/scratch/PyWrfHydroCalib 
+jobName = TEST_CALIB
+acctKey =
+optQueNameModel = defq 
+optQueNameAnalysis = 
+nCoresModel = 32
+nNodesModel = 2
+nCoresR     = 1
+nNodesR = 1
+# Flag to turn sensitivity analysis on: 0 - Off, 1 - On.
+runSens = 1 
+sensParmTbl = /home/wrudisill/scratch/PyWrfHydroCalib/setup_files/sens_params.tbl
+# Flag to turn calibration on: 0 - Off, 1 - On.
+runCalib = 1
+calibParmTbl = /home/wrudisill/scratch/PyWrfHydroCalib/setup_files/calib_params.tbl
+# By default, R code will run hourly analysis on model output. This flag will
+# direct the R code to run daily statistics instead. This means hourly output
+# will be aggregated to daily statistics. 
+# 0 - Run hourly stats, 1 - Run daily stats
+dailyStats = 0
+
+# This is a flag for the user to bypass the spinup and run calibrations/validations/sensitivity
+# analysis from cold starts. Note: This is highly discouraged as a spinup allows for
+# stable hydrologic states: 0 - Off, 1 - On.
+coldStart = 0
+# Optional spinup flag for substituting a both land and hydro restart files in place
+# of a spinup. 
+# NOTE: The user must provide BOTH a hydro and land spinup state in the basin domain
+#       directories for ALL basins being used in this experiment. Expected 
+#       file naming conventions for the expected restart files are as follows:
+#       Land:  LandRestartSubstitute.nc
+#       Hydro: HydroRestartSubstitute.nc
+# 0 = No substitute spinup files
+# 1 = Use optional spinup files
+optSpinFlag = 0
+
+# Here we have two additional new flags to allow the user to only
+# run the model with extremely minimal outputs:
+# - Monthly restart files, no streamflow output,
+#   and monthly land output files. 
+# This allows for the model to minimize I/O time during the initial
+# period of the calibration simulations where no evaluation is taking
+# place.
+# Flag to turn option on (1) or off (0)
+stripCalibOutputs = 0 
+# Specify the initial time period (hours) for each simulation
+# to contain minimal output. 
+stripCalibHours = 180
+
+# We need to identify the type of system we are working on.
+# The model, and R jobs can be launched and monitored a variety
+# of ways. Here are the following options for the launch 
+# method (jobRunType)
+# 1 - We will launch with bsub and monitor via bjobs command.
+# 2 - We will launch with qsub and monitor via qstat command.
+# 3 - We will launch with slurm with srun and monitor via squeue command.
+# 4 - Job execution using mpiexec
+# 5 - Job execution using mpirun
+# 6 - We will launch with slurm with mpirun and monitor via squeue command.
+# jobRunType is how you plan on executing the WRF-Hydro simulations
+jobRunType = 6
+# analysisRunType is how you plan on executing the analysis/calibration R/Python code.
+analysisRunType = 3
+# Specify number of model iterations to calibrate over
+numIter = 3
+
+# Specify calibration method (DDS, SCE, etc)
+calibMethod = DDS
+
+# Specify objective function for calibration
+# Current acceptable values are:
+# 1.) Rmse
+# 2.) Nse
+# 3.) NseLog
+# 4.) NseWt
+# 5.) Kge
+# 6.) Msof
+# 7.) hyperResMultiObj
+objectiveFunction = Nse
+
+# DDS specific parameters. Leave blank if not using DDS.
+ddsR = 0.2
+
+# Specify email to send updates/error messages to.
+email = williamrudisill@u.boisestate.edu 
+
+# Specify executable to run. This must be a WRF-Hydro executable. 
+wrfExe = /home/wrudisill/scratch/WRF_HYDRO-R2_WILLDEV/wy2010_SFPayette/wrf_hydro_NoahMP.exe
+
+# Specify parameter tables to use for Noah-MP
+
+
+genParmTbl = /home/wrudisill/scratch/PyWrfHydroCalib/setup_files/global_parm_tbl/GENPARM.TBL
+mpParmTbl = /home/wrudisill/scratch/PyWrfHydroCalib/setup_files/global_parm_tbl/MPTABLE.TBL
+urbParmTbl =/home/wrudisill/scratch/PyWrfHydroCalib/setup_files/global_parm_tbl/URBPARM.TBL
+vegParmTbl = /home/wrudisill/scratch/PyWrfHydroCalib/setup_files/global_parm_tbl/VEGPARM.TBL
+soilParmTbl = /home/wrudisill/scratch/PyWrfHydroCalib/setup_files/global_parm_tbl/SOILPARM.TBL
+
+# NOTE Date values should be specified in YYYY-MM-DD format.
+# Specify date range for spinup
+bSpinDate = 2009-10-08
+eSpinDate = 2009-11-01
+
+# Specify date range for calibration period
+bCalibDate = 2010-01-01
+eCalibDate = 2010-02-28
+bCalibEvalDate = 2010-02-01
+
+# Specify date range for validation period
+bValidDate = 2010-03-01
+eValidDate = 2010-07-01
+bValidEvalDate = 2010-05-01
+
+[Sensitivity]
+# Specify parameter sample size
+sensParmSample = 1
+
+# Sending out all model simulations at the same time 
+# may not be ideal for a given system. This option
+# will break out the sensitivity model runs by batch
+# number of simulations.
+sensBatchNum = 1
+
+# Specify the date range for the sensitivity period.
+bSensDate = 2010-01-01
+eSensDate = 2010-02-01
+bSensEvalDate = 2010-01-15
+
+[gageInfo]
+# Specify USGS GAGES II basins to calibrate on.
+# If SQL command desired, leave gageListFile blank.
+# If file listing gages desired, leave gageListSQL blank.
+gageListSQL = select * from "Domain_Meta";
+gageListFile =
+
+[lsmPhysics]
+# namelist.hrldas specific options/flags for NoahMP
+# Specify the DYNAMIC_VEG_OPTION
+dynVegOption = 4
+# Specify the CANOPY_STOMATAL_RESISTANCE_OPTION
+canStomResOption = 1
+# Specify the BTR_OPTION
+btrOption = 1
+# Specify the RUNOFF_OPTION
+runoffOption = 3
+# Specify the SURFACE_DRAG_OPTION
+sfcDragOption = 1
+# Specify the FROZEN_SOIL_OPTION
+frzSoilOption = 1
+# Specify the SUPERCOOLED_WATER_OPTION 
+supCoolOption = 1
+# Specify the RADIATIVE_TRANSFER_OPTION
+radTransferOption = 3
+# Specify the SNOW_ALBEDO_OPTION
+snAlbOption = 2
+# Specify the PCP_PARTITION_OPTION
+pcpPartOption = 1
+# Specify the TBOT_OPTION
+tbotOption = 2
+# Specify the TEMP_TIME_SCHEME_OPTION
+tempTimeSchOption = 3
+# Specify the SURFACE_RESISTENCE_OPTION
+sfcResOption = 4
+# Specify the GLACIER_OPTION
+glacierOption = 2
+
+# Specify thickness of NoahMP soil layers. MUST be four layers.
+soilThick = [0.10,0.30,0.60,1.00]
+
+# Specify level (meters) representative of U/V wind.
+zLvl = 10.0
+
+[forcing]
+# These options will dictate which forcings to use for the workflow.
+# Specify forcing type        
+# 1: HRLDAS hourly LDASIN files
+# 2: HRLDAS minute LDASIN files
+# 3: WRF output files
+# 4: Idealized
+# 5: Ideal with specified supplemental precipitation.
+# 6: HRLDAS hourly LDASIN files with supplemental precipitation.     
+forceType = 3
+
+[modelTime]
+# NoahMP Specific time optionss
+# Specify timestep in seconds
+# Input forcing timestep
+forceDt = 3600
+# NoahMP model timestep
+lsmDt = 3600
+# Output frequency of NoahMP LDASOUT files in seconds
+lsmOutDt = 8640000
+# Output frequency of NoahMP restart files in seconds.
+# For monthly restart files, please put -9999 here. 
+lsmRstFreq = 86400
+
+# Hydro specific time options
+# Specify timestep in seconds
+# Hydro restart output frequency
+# Place -99999 here for monthly restarts. 
+hydroRstFreq = 86400
+# Hydro output frequency
+hydroOutDt = 3600
+
+[hydroIO]
+# Flag for overwriting soil variables from routing restart file (0:Off,1:On)
+rstType = 1
+
+# Output-Specific output flags for outputs
+# Specify wrfHydro output config.    
+# 0: All (Default)
+# 1: Analysis-Assimilation
+# 2: Short Range
+# 3: Medium Range                               
+# 4: Long Range
+# 5: Retrospective
+ioConfigOutputs = 1
+
+# Flag to configure form of output files. 
+# 1: With scale_factor/add_offset + internal compression
+# 2: With scale_factor/add_offset + NO internal compression
+# 3: NO scale_factor/add_offset + internal compression
+# 4: NO scale_factor/add_offset + NO internal compression
+ioFormOutputs = 4
+
+# Hydro specific output options
+# Streamflow output  
+# 0: No output
+# 1: Output 
+chrtoutDomain = 1
+
+# Streamflow NetCDF at forecast points / gage points
+# 0: No output
+# 1: Output
+chanObsDomain = 0
+
+# Gridded channel flow    
+# 0: No output
+# 1: Output of grided channel streamflow values
+chrtoutGrid = 1
+
+# Gridded LSM output      
+# 0: No output
+# 1: Output gridded LSM states from hydro routines.
+lsmDomain = 0
+
+# Terrain grid output    
+# 0: No output
+# 1: Output terrain routing variables on routing grid
+rtoutDomain = 0
+
+# Groundwater ouptut     
+# 0: No output
+# 1: Output NetCDF file of groundwater buckets
+gwOut = 0
+
+# Lake output      
+# 0: No output
+# 1: NetCDF file of lake outputs
+lakeOut = 0
+
+# Text file of streamflow at forecast / gage points
+# 0: No output
+# 1: Output
+frxstOut = 0
+
+# Reset restart accumulation variables in hydro files? (0:Off,1:On)
+resetHydroAcc = 1
+
+# Specify order of streamflow to output (0-?)
+streamOrderOut = 1
+
+[hydroPhysics]
+# Channel routing timestep in seconds
+dtChSec = 300
+# Surface and subsurface routing timestep in seconds
+dtTerSec = 10
+# Switch for subsurface routing (0:Off,1:On)
+subRouting = 1
+# Switch for surface routing (0:Off,1:On)
+ovrRouting = 1
+# Switch for channel routing (0:Off,1:On)
+channelRouting = 1
+
+# Overland Routing   
+# 1: Steepest Descent (D8)
+# 2: CASC2D
+rtOpt = 1
+
+# Channel Routing    
+# 1: Muskingam-reach
+# 2: Muskingam-Cunge-reach
+# 3: Diffusive Wave-gridded
+chanRtOpt = 3
+
+# Specify user mapping option (1 = NWM)
+# NOTE: Workflow will expect a mapping file if not 0.
+# 0: No mapping
+# 1: User-defined mapping
+udmpOpt = 0
+
+# Groundwater Bucket  
+# 0: No groundwater bucket activation.
+# 1: Switch to activate exp. groundwater bucket option
+# 2: Switch to activate pass-through groundwater bucket option
+gwBaseSw = 0
+
+# Specify to how to initialize groundwater bucket model (0:cold start from table,1:restart file)
+gwRestart = 0
+
+# Specify whether to use compound channel. This is for NWM ONLY. Cannot use with gridded routing.
+# (0: Turn off, 1: Turn on)
+compoundChannel = 0

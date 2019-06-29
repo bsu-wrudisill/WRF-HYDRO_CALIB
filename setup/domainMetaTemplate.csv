@@ -1,0 +1,2 @@
+"site_no","link","hyd_w","hyd_e","hyd_s","hyd_n","geo_w","geo_e","geo_s","geo_n","dirname","agency_cd","site_name","lat","lon","area_sqmi","area_sqkm","county_cd","state","HUC2","HUC4","HUC6","HUC8","ecol3","ecol4","rfc"
+"04233300",21983449,10,10,10,10,10,10,10,10,"/home/cuahsi/wrfHydroCalibration/04233300/DOMAIN","USGS","Six Mile Creek at Bethel Grove, NY",40.0,40.0,5.0,5.0,10,"NY","11","1111","111102","11110207",36,"26d","MARFC"
