@@ -9,13 +9,13 @@ lib.SystemCmd('source ./env_nwm_r2.sh')
 
 # Do some checks here that things are reasonable... (maybe?..)
 setup = SetMeUp()
-setup.CreateRunDir()
-setup.GatherObs()
-setup.CreateNamelist()
-setup.CreateSubmitScript()
+#setup.CreateRunDir()
+#setup.GatherObs()
+#setup.CreateNamelist()
+#setup.CreateSubmitScript()
 
 # initiate the calibration object
-calib = CalibrationMaster()
+calib = CalibrationMaster(setup)
 
 NITERS = 1 
 for ITER in NITERS:
