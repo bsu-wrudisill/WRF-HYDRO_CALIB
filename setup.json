@@ -1,6 +1,3 @@
 [{"directory_location":"/scratch/wrudisill/WRF_HYDRO-R2_WILLDEV/wy2010_SFPayette",
-  "calib_location":"/scratch/wrudisill/WillCalibHydro/TEST",
-  "calibration_start":"2010-01-01",
-  "calibration_end":"2010-09-01",
-  "validation_start":"2010-05-01",
-  "validation_end":"2009-08-01"}]
+  "calib_location":"/scratch/wrudisill/WillCalibHydro/",
+  "usgs_code":"13235000"}]

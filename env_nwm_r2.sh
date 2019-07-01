@@ -24,7 +24,7 @@ module load intel/mkl/64/2018/3.222
 module load hdf5_18/intel/1.8.18-mpi
 module load netcdf/intel/64/4.4.1
 module load udunits/intel/64/2.2.24
-
+module load R/3.5.2
 # export netCDF env variable
 export NETCDF=/cm/shared/apps/netcdf/intel/64/4.4.1
 

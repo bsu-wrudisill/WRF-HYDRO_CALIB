@@ -1,18 +1,38 @@
 import pandas as pd 
 import json
-# check that the files and directories exist are reasonable  
 from setupRunDir import SetMeUp
+from adjustParameters import *  
+import lib
+import os 
 
-setMeUp()   # create run directories, submit scripts, etc. 
-            # it is up for the user to create the spinup files 
-	    # and link to them appropriately 
-            # download USGS data to evaluate against and place it in the correct place 
+lib.SystemCmd('source ./env_nwm_r2.sh')
 
-masterCalibrate()
-	calibrate()  # read in the calibration parameters 
-        	     # update namelist to reflect correct time period
-	     	     # update submit script 
-	     	     # submit the job
-	             # wait for the job to complete -- check the job status 
-	             # evaluate againt observations...
+# Do some checks here that things are reasonable... (maybe?..)
+setup = SetMeUp()
+setup.CreateRunDir()
+setup.GatherObs()
+setup.CreateNamelist()
+setup.CreateSubmitScript()
 
+# initiate the calibration object
+calib = CalibrationMaster()
+
+NITERS = 1 
+for ITER in NITERS:
+	# assign catchfile name 
+	setup.catch_id = "{}/catch_{}".format(setup.clbdirc, setup.usgs_code)
+
+	niters = 2 # read this from a json file or something ....
+	# execute the run 
+	#os.chdir("/scratch/wrudisill/WillCalibHydro/13235000/")
+	submitCmd = "sbatch {}/submit.sh >> {}".format(setup.clbdirc, setup.catch_id)
+	lib.SystemCmd(submitCmd)
+	lib.WaitForJob(setup.catch_id, 'wrudisill')
+	
+	# Now let's update the parameters...
+		
+
+
+# wait for the run to finish
+
+#

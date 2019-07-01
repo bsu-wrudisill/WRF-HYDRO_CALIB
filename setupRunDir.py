@@ -3,7 +3,7 @@ import shutil
 import os
 import glob 
 import lib 
-
+import subprocess
 #
 #
 class SetMeUp:
@@ -13,16 +13,23 @@ class SetMeUp:
 		with open("setup.json") as j:
 			jsonfile = json.load(j)
 			self.indirc = jsonfile[0]['directory_location']
-			self.clbdirc = jsonfile[0]['calib_location']
-
+			self.usgs_code = jsonfile[0]['usgs_code']
+			self.clbdirc = jsonfile[0]['calib_location'] + self.usgs_code
 		with open("calib.json") as cbj:
 			jsonfile = json.load(cbj)
 			self.queue = jsonfile[0]['QUEUE']
 			self.nodes = jsonfile[0]['NODES']
-			self.start_date = lib.formatDate(jsonfile[0]['START_DATE'])
-			self.end_date   = lib.formatDate(jsonfile[0]['END_DATE'])
-
+			self.start_date = jsonfile[0]['START_DATE']
+			self.end_date   = jsonfile[0]['END_DATE']
+		self.catchid = 'catch_{}'.format(self.usgs_code)
 	# END INIT 
+	def GatherObs(self, **kwargs):
+		# run the rscripts to download the USGS observations for the correct 
+		# time period and gauge 
+		obsFileName='obsStrData.Rdata'
+		cmdEmpty = 'Rscript ./lib/R/fetchUSGSobs.R {} {} {} {}/{}'
+		os.system(cmdEmpty.format(self.usgs_code, self.start_date, self.end_date, self.clbdirc, obsFileName))	
+			
 	def CreateRunDir(self, **kwargs):
 		"""
 		Create run directory for WRF-hdyro calibration runs.
@@ -53,11 +60,13 @@ class SetMeUp:
 
 	def CreateNamelist(self, **kwargs):
 		# modify the namelist templates that reside in the run dir
-		dateRange = self.end_date - self.start_date		
-		nlistDic = {"YYYY": self.start_date.year,
-			    "MM": self.start_date.month,
-			    "DD": self.start_date.day,
-			    "HH": self.start_date.hour,
+		startDate = lib.formatDate(self.start_date)	
+		endDate = lib.formatDate(self.end_date)	
+		dateRange = startDate - endDate		
+		nlistDic = {"YYYY": startDate.year,
+			    "MM": startDate.month,
+			    "DD": startDate.day,
+			    "HH": startDate.hour,
 			    "NDAYS": dateRange.days
 			    }
 
@@ -76,12 +85,10 @@ class SetMeUp:
 			    "NODES":self.nodes, 
 			    "TASKS":int(self.nodes)*taskX,
 			    "RUN_TIME":runTime,
+			    "CATCHID":"catch_{}".format(self.usgs_code)
 			    }
-
 		# create the submission script 	
 		lib.GenericWrite('./namelists/submit.TEMPLATE.sh', slurmDic, namelistHolder.format('submit.sh'))
-	
-		
 
 #
 #
@@ -89,11 +96,12 @@ class SetMeUp:
 # run if called 
 if __name__ == '__main__':
 	try:
-		os.rmdir("TEST")
+		os.rmdir("13235000")
 	except:
 		pass
 	setup = SetMeUp()
 	setup.CreateRunDir()
+	setup.GatherObs()
 	setup.CreateNamelist()
 	setup.CreateSubmitScript()
 
