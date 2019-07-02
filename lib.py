@@ -1,8 +1,39 @@
 import os,sys
 import datetime 
 from collections import OrderedDict
+import subprocess
+import time 
 #
 #   
+def SystemCmd(cmd):
+	# issue system commands 
+	proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
+	out,err = proc.communicate()
+	return out.split(),err
+
+def WaitForJob(catch,user):
+	# Gather the Job id from the catch file
+	# (the catchid gets updated with eath iteration of real/wrf)
+	gid = "grep \"\" {} | cut -d' ' -f4".format(catch)    
+	gidout,giderr = SystemCmd(gid)    
+
+	# IF STDERROR NULL (NO ERRORS) THEN CONTINUE
+	jobid = gidout[0]           # assign jobid
+	print("jobid found {}".format(jobid))
+
+	still_running = 1     # start with 1 for still running 
+	while still_running == 1: # as long as theres a job running, keep looping and checking
+		# command
+		chid = "squeue -u {} | sed \"s/^ *//\" | cut -d' ' -f1".format(user)   
+		# run command and parse output 
+		chidout, chiderr = SystemCmd(chid)    
+		# the length of the list. should be zero or one. one means the job ID is found 
+		still_running_list = list(filter(lambda x: x == jobid, chidout))
+		still_running = len(still_running_list)
+		time.sleep(5)
+		print('still running...')
+	pass 
+
 def formatDate(dstr):
 	return datetime.datetime.strptime(dstr, '%Y-%m-%d')
 	
