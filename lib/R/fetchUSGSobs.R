@@ -34,4 +34,4 @@ obsStrData <- obsDT
 obsStrData$POSIXct <- as.POSIXct(obsStrData$Date,tz='UTC')
 
 # save it to a file
-save(obsStrData, file = filePath)
+write.csv(obsStrData, file = filePath)
