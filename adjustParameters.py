@@ -161,9 +161,12 @@ class CalibrationMaster():
 		df.to_csv("calibrationDataFrame.csv")
 		# done.. 
 
-	def UpdateParamFiles(self, adjustment):
+	def UpdateParamFiles(self):
 		# update the NC files given the adjustment param
 		# Group parameters by the file type   -- tbl or nc
+		if self.iters == 0:
+			print("nothing to update-- 1st iteration")
+			return
 		grouped = self.df.groupby('type')
 		ncFiles = self.df.loc[grouped.groups['nc']]
 		tblFiles = self.df.loc[grouped.groups['TBL']]
@@ -172,17 +175,20 @@ class CalibrationMaster():
 		ncUnique =  list(ncFiles.groupby('file').groups.keys())
 		for ncSingle in ncUnique: 
 			UpdateMe = xr.open_dataset(self.fileDir+'/'+ncSingle)
-			print(UpdateMe)
+			# remove the file... we overwrite w/ the update 
+			os.remove(self.fileDir+'/'+ncSingle)
+			
+			# loop through the params and update. write files 
 			for param in list(ncFiles.groupby('file').groups[ncSingle]):
 				# PERFORM THE DDS PARAMETER UPDATE FOR EACH PARAM
-				UpdateMe[param][:,:,:] = UpdateMe[param][:,:,:]
-	
-				UpdateMe.to_netcdf(self.fileDir+'/'+ncSingle+'updated')
+				UpdateMe[param][:,:,:] = UpdateMe[param][:,:,:] + self.df.nextValue.loc[param]
+				UpdateMe.to_netcdf(self.fileDir+'/'+ncSingle, mode='w')
 				print('updated --- {}'.format(param))
 			UpdateMe.close()
 		# now process the .TBL files 
 
 	def ObFun(self):
+		# evaluate the model result... if the performance is better than the last performance, then update the 'best' parameter 
 		obfun=np.random.rand(1)
 		print('OBFUN: {}'.format(obfun))
 		return 
@@ -226,10 +232,11 @@ class CalibrationMaster():
 				x_new = xj_min + (xj_min - x_new)
 			if x_new > xj_max:
 				x_new = xj_max - (x_new - xj_max)
-			self.df.at[param,'nextValue'] = x_new 
+			self.df.at[param,'nextValue'] = np.float(x_new)
 		
 		for param in deselectedParams:
-			self.df.at[param,'nextValue'] = xj_best # no updating 
+			self.df.at[param,'nextValue'] = np.float(xj_best) # no updating 
+
 
 
 	def __call__(self):
@@ -244,4 +251,7 @@ class CalibrationMaster():
 if __name__ == '__main__':
 	setup = SetMeUp()
 	calib = CalibrationMaster(setup)
+	calib()
+	calib.DDS()
+	calib.UpdateParamFiles()
 	#CalibrateMe.UpdateParamFiles(1
