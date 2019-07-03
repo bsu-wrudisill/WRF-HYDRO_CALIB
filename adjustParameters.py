@@ -92,7 +92,7 @@ class SetMeUp:
 		# modify the namelist templates that reside in the run dir
 		startDate = lib.formatDate(self.start_date)	
 		endDate = lib.formatDate(self.end_date)	
-		dateRange = startDate - endDate		
+		dateRange = endDate - startDate		
 		nlistDic = {"YYYY": startDate.year,
 			    "MM": startDate.month,
 			    "DD": startDate.day,
