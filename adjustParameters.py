@@ -41,7 +41,7 @@ class SetMeUp:
 	def GatherObs(self, **kwargs):
 		# run the rscripts to download the USGS observations for the correct 
 		# time period and gauge 
-		obsFileName='obsStrData.Rdata'
+		obsFileName='obsStrData.csv'
 		cmdEmpty = 'Rscript ./lib/R/fetchUSGSobs.R {} {} {} {}/{}'
 		os.system(cmdEmpty.format(self.usgs_code, self.start_date, self.end_date, self.clbdirc, obsFileName))	
 			
@@ -130,7 +130,9 @@ class CalibrationMaster():
 		self.setup = setup  # pass the setup class into here...  
 		self.fileDir = '/scratch/wrudisill/WillCalibHydro/TestDOMAIN'    #TEMPORARY 
 		self.MaxIters = 1e3   # the maximum # of iterations allowed
-		
+		self.bestObj = 1e16
+		self.objList = [] 
+
 		# --- read in the parameter tables, and assign some extra stuff ---# 
 		soilF   = 'soil_properties.nc'
 		hydro2d = 'hydro2dtbl.nc'
@@ -188,10 +190,42 @@ class CalibrationMaster():
 		# now process the .TBL files 
 
 	def ObFun(self):
-		# evaluate the model result... if the performance is better than the last performance, then update the 'best' parameter 
-		obfun=np.random.rand(1)
-		print('OBFUN: {}'.format(obfun))
-		return 
+		# RMSE 
+		# the 'merged' dataframe gets created in the ReadQ step
+		return np.sqrt(np.mean((self.merged.qMod - self.merged.qObs)**2))
+	
+	
+	def CheckModelOutput(self):
+		pass 
+
+	def ReadQ(self):
+		# read model output variables 
+		# and usgs observations
+		# creates a df, and applies the ObFun
+		gauge_loc = 1
+		modQfiles = xr.open_mfdataset(glob.glob(self.setup.clbdirc+'/*CHRTOUT_DOMAIN2*'))
+		# do some slicing and dicing... 	
+		qDf = pd.DataFrame(
+				{'qMod':modQfiles['streamflow'][:,gauge_loc].values,
+				 'time':modQfiles['time'].values}
+				)
+		qDf.set_index('time', inplace=True)
+		modQdly = pd.DataFrame(qDf.resample('D').sum())
+		
+		# read usgs obs 
+		obsQ = pd.read_csv(self.setup.clbdirc+'/obsStrData.csv')
+		obsQ.drop(columns=['Unnamed: 0', 'POSIXct', "agency_cd"], inplace=True)
+		obsQ.rename(index=str, columns={"Date":"time", "obs":"qObs"}, inplace=True)
+		obsQ.set_index('time',inplace=True)
+		obsQ.index = pd.to_datetime(obsQ.index)
+		
+		# merge the dataframes...
+		merged = obsQ.copy()
+		merged['qMod'] = modQdly
+		merged.dropna(inplace=True)
+		
+		# pass off merged to itself 
+		self.merged = merged	
 
 	def LogLik(self,curiter, maxiter):
 		# logliklihood function
@@ -238,7 +272,26 @@ class CalibrationMaster():
 			self.df.at[param,'nextValue'] = np.float(xj_best) # no updating 
 
 
+	def EvaluateIteration(self):
+		# check the obfun. 
+		# if the performance of the last parameter set us better, then update the 
+		# calib data frame 
+		obj = obFun()
+		self.objList.append[obj]
+		if obj < self.bestObj:
+			# hold onto the best obj 
+			self.bestObj = obj
+			# the 'next value' is what we just tested; 
+			# if it resulted in a better objfun, assign 
+			# it to the 'best value' column
+			self.df['bestValue'] = self.df['nextValue']
+		else:
+			# the obfun was worse than the best value 
+			pass 
 
+
+			
+		
 	def __call__(self):
 		# This creatres a "call" -- when we do calib(), we 
 		# are applying this function that is inside of here
