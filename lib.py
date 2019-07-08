@@ -3,8 +3,32 @@ import datetime
 from collections import OrderedDict
 import subprocess
 import time 
+import glob 
 #
 #   
+def CleanUp(path):
+	cwd = os.getcwd()
+	os.chdir(path)
+	removeList = ["*LDASOUT*"
+		    ,"*CHRTOUT*"
+		    ,"*RTOUT*"
+		    ,"*LSMOUT*"
+		    ,"*diag_hydro*"
+		    ,"*HYDRO_RST*"
+	            ,"log_wrf_hydro*"
+		    , "catch_*"]
+
+	print('cleaning up...')
+	for removeMe in removeList:
+		for singleFile in glob.glob(removeMe):
+			try:
+				os.remove(singleFile)
+			except:
+				pass
+	# move back to o.g. dir
+	os.chdir(cwd)
+
+
 def SystemCmd(cmd):
 	# issue system commands 
 	proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
@@ -16,6 +40,7 @@ def WaitForJob(catch,user):
 	# (the catchid gets updated with eath iteration of real/wrf)
 	gid = "grep \"\" {} | cut -d' ' -f4".format(catch)    
 	gidout,giderr = SystemCmd(gid)    
+	print(gidout)
 
 	# IF STDERROR NULL (NO ERRORS) THEN CONTINUE
 	jobid = gidout[0]           # assign jobid

@@ -1,5 +1,5 @@
-[{"QUEUE":"defq",
+[{"QUEUE":"shortq",
   "NODES":"2",
-  "START_DATE": "2009-10-01",
-  "END_DATE": "2009-10-05"
+  "START_DATE": "2010-06-01",
+  "END_DATE": "2010-06-10"
 }] 

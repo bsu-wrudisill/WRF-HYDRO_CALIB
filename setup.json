@@ -1,3 +1,9 @@
 [{"directory_location":"/scratch/wrudisill/WRF_HYDRO-R2_WILLDEV/wy2010_SFPayette",
   "calib_location":"/scratch/wrudisill/WillCalibHydro/",
-  "usgs_code":"13235000"}]
+  "restart_file":"/scratch/wrudisill/WillCalibHydro/Restarts/HYDRO_RST.2010-05-01_00:00_DOMAIN2",
+  "usgs_code":"13235000",
+  "QUEUE":"shortq",
+  "NODES":"2",
+  "START_DATE": "2010-06-01",
+  "END_DATE": "2010-06-10"
+}] 

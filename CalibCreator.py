@@ -4,8 +4,10 @@ import json
 from adjustParameters import *  
 import lib
 import os 
+import time 
 
 lib.SystemCmd('source ./env_nwm_r2.sh')
+cwd = os.getcwd()
 
 # Do some checks here that things are reasonable... (maybe?..)
 setup = SetMeUp()
@@ -16,23 +18,31 @@ setup.CreateSubmitScript()
 
 # initiate the calibration object
 calib = CalibrationMaster(setup)
+calib() # do this... i think 
 
-#NITERS = 1 
-#for ITER in NITERS:
-#	# assign catchfile name 
-#	setup.catch_id = "{}/catch_{}".format(setup.clbdirc, setup.usgs_code)
-#
-#	niters = 2 # read this from a json file or something ....
-#	# execute the run 
-#	#os.chdir("/scratch/wrudisill/WillCalibHydro/13235000/")
-#	submitCmd = "sbatch {}/submit.sh >> {}".format(setup.clbdirc, setup.catch_id)
-#	lib.SystemCmd(submitCmd)
-#	lib.WaitForJob(setup.catch_id, 'wrudisill')
-#	
-#	# Now let's update the parameters...
+NITERS = 10
+for ITER in range(NITERS):
+	print('on iteration...{}'.format(ITER))
+	# execute the run 
+	os.chdir(setup.clbdirc)
+	submitCmd = "sbatch submit.sh >> {}".format(setup.catchid)
+	lib.SystemCmd(submitCmd)
+	
+	time.sleep(.5) # wait a second before checking for the job
+	lib.WaitForJob(setup.catchid, 'wrudisill')
+	os.chdir(cwd)
+
+	print('job finished-- perform analysis/update')	
+	calib.ReadQ() # read model/usgs OBS
+
+	print("evaluate... obj fun")
+	calib.EvaluateIteration()  # check if the model improved 
+
+	calib.DDS() # generate new parameters 
+	calib.UpdateParamFiles()  # write the new parameters 
+	lib.CleanUp(setup.clbdirc)
 		
+	# move the iternal iteration state one forward 
+	calib()
+	
 
-
-# wait for the run to finish
-
-#

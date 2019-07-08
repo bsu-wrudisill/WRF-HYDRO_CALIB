@@ -11,9 +11,9 @@ import netCDF4 as nc
 import numpy as np
 # read in the parameter adjustment table
 # read.json...
-
-
 # Helper functions 
+
+
 def returnItem(dic,x):
 	try:
 		return dic[x]
@@ -30,8 +30,7 @@ class SetMeUp:
 			self.indirc = jsonfile[0]['directory_location']
 			self.usgs_code = jsonfile[0]['usgs_code']
 			self.clbdirc = jsonfile[0]['calib_location'] + self.usgs_code
-		with open("calib.json") as cbj:
-			jsonfile = json.load(cbj)
+			self.restart = jsonfile[0]['restart_file']
 			self.queue = jsonfile[0]['QUEUE']
 			self.nodes = jsonfile[0]['NODES']
 			self.start_date = jsonfile[0]['START_DATE']
@@ -85,7 +84,7 @@ class SetMeUp:
 
 		# copy namelist (from THIS directory. we modify the namelists here, not in the far-away directory)
 		shutil.copy('./namelists/hydro.namelist.TEMPLATE', self.clbdirc+'/hydro.namelist') 
-		#shutil.copy('./namelists/namelist.hrldas.TEMPLATE', self.clbdirc) 
+		shutil.copy('./namelists/namelist.hrldas.TEMPLATE', self.clbdirc) 
 		shutil.copy('./env_nwm_r2.sh', self.clbdirc) 
 
 	def CreateNamelist(self, **kwargs):
@@ -99,10 +98,12 @@ class SetMeUp:
 			    "HH": startDate.hour,
 			    "NDAYS": dateRange.days
 			    }
-
 		# create the submission script 	
 		lib.GenericWrite('./namelists/namelist.hrldas.TEMPLATE', nlistDic, self.clbdirc+'/namelist.hrldas')	
-		
+		# modify the hydro.namelist
+		hydDic = {"<nameofrestart>":self.restart}
+		lib.GenericWrite('./namelists/hydro.namelist.TEMPLATE',hydDic,self.clbdirc+'/hydro.namelist')
+
 	def CreateSubmitScript(self,**kwargs):
 		"""
 		Read the  the submit script template and modify the correct lines
@@ -128,7 +129,8 @@ class CalibrationMaster():
 		# --- keep track of the number of iterations ---# 
 		self.iters = 0 # keep track of the iterations of calibration 
 		self.setup = setup  # pass the setup class into here...  
-		self.fileDir = '/scratch/wrudisill/WillCalibHydro/TestDOMAIN'    #TEMPORARY 
+		self.paramDir = "{}/DOMAIN".format(self.setup.clbdirc)
+		#self.paramDir = '/scratch/wrudisill/WillCalibHydro/TestDOMAIN'    #TEMPORARY 
 		self.MaxIters = 1e3   # the maximum # of iterations allowed
 		self.bestObj = 1e16
 		self.objList = [] 
@@ -139,6 +141,12 @@ class CalibrationMaster():
 		chanF   = 'MPTABLE.TBL'
 		fileParamDic = {'dksat': soilF, 
 				'bexp': soilF,
+				'dksat': soilF,
+				'hvt':soilF,
+				'refdkt':soilF,
+				'smcmax':soilF,
+				'mfsno':soilF,
+				'mp':soilF,
 				'OV_ROUGH2D':hydro2d,
 				'refkdt': soilF, 
 				'HLINK': chanF}
@@ -176,15 +184,15 @@ class CalibrationMaster():
 		
 		ncUnique =  list(ncFiles.groupby('file').groups.keys())
 		for ncSingle in ncUnique: 
-			UpdateMe = xr.open_dataset(self.fileDir+'/'+ncSingle)
+			UpdateMe = xr.open_dataset(self.paramDir+'/'+ncSingle)
 			# remove the file... we overwrite w/ the update 
-			os.remove(self.fileDir+'/'+ncSingle)
+			os.remove(self.paramDir+'/'+ncSingle)
 			
 			# loop through the params and update. write files 
 			for param in list(ncFiles.groupby('file').groups[ncSingle]):
 				# PERFORM THE DDS PARAMETER UPDATE FOR EACH PARAM
 				UpdateMe[param][:,:,:] = UpdateMe[param][:,:,:] + self.df.nextValue.loc[param]
-				UpdateMe.to_netcdf(self.fileDir+'/'+ncSingle, mode='w')
+				UpdateMe.to_netcdf(self.paramDir+'/'+ncSingle, mode='w')
 				print('updated --- {}'.format(param))
 			UpdateMe.close()
 		# now process the .TBL files 
@@ -192,7 +200,9 @@ class CalibrationMaster():
 	def ObFun(self):
 		# RMSE 
 		# the 'merged' dataframe gets created in the ReadQ step
-		return np.sqrt(np.mean((self.merged.qMod - self.merged.qObs)**2))
+		rmse = np.sqrt(np.mean((self.merged.qMod - self.merged.qObs)**2))
+		print(rmse)
+		return rmse
 	
 	
 	def CheckModelOutput(self):
@@ -236,7 +246,7 @@ class CalibrationMaster():
 		self.ALG = 'DDS'
 		# read the parameter tables 
 	   	# this seems like a dumb algorithm.... 
-		activeParams = list(calib.df.groupby('calib_flag').groups[1])
+		activeParams = list(self.df.groupby('calib_flag').groups[1])
 
 		# Part 1: Randomly select parameters to update 
 		prob = self.LogLik(self.iters, self.MaxIters)
@@ -251,8 +261,8 @@ class CalibrationMaster():
 		# the parameter at all 
 		
 		# loop thgouh 
-		selectedParams = list(calib.df.groupby('onOff').groups[1])
-		deselectedParams = list(calib.df.groupby('onOff').groups[0])
+		selectedParams = list(self.df.groupby('onOff').groups[1])
+		deselectedParams = list(self.df.groupby('onOff').groups[0])
 		
 		# 'active params' just contains those to update now
 		for param in selectedParams: 
@@ -269,28 +279,56 @@ class CalibrationMaster():
 			self.df.at[param,'nextValue'] = np.float(x_new)
 		
 		for param in deselectedParams:
+			J = self.df.loc[param]
+			xj_best = J.bestValue
 			self.df.at[param,'nextValue'] = np.float(xj_best) # no updating 
+			
 
 
 	def EvaluateIteration(self):
 		# check the obfun. 
 		# if the performance of the last parameter set us better, then update the 
 		# calib data frame 
-		obj = obFun()
-		self.objList.append[obj]
-		if obj < self.bestObj:
+		obj = self.ObFun()
+		
+		# nothing special here -- we just have to pull out hte 
+		# list, append to it, then reassign it to 'self' (we can't append to self)
+		objList = self.objList
+		objList.append(obj)
+		self.objList = objList 
+		
+		# check if the new parameters improved the objective function 
+		if self.iters == 1:
+			# this is the first iteration; we have just tested 
+			# the 'stock' parameters 
+			self.bestObj = obj 
+			
+			# update the active params 
+			for param in self.df.groupby('calib_flag').groups[1]:
+				self.df.at[param, 'bestValue'] = self.df.loc[param,'ini']
+			
+			# keep the inactive params at 0 
+			for param in self.df.groupby('calib_flag').groups[0]:
+				self.df.at[param, 'bestValue'] = 0.0 
+
+			print('we are on the first iter')
+		elif obj < self.bestObj:
 			# hold onto the best obj 
 			self.bestObj = obj
 			# the 'next value' is what we just tested; 
 			# if it resulted in a better objfun, assign 
 			# it to the 'best value' column
 			self.df['bestValue'] = self.df['nextValue']
+
 		else:
 			# the obfun was worse than the best value 
+			print('the new params were worse than the best value')
 			pass 
 
-
-			
+		# lastly, let's clean the nextvalue and onOff switches 
+		# these get updated by the DDS ( or whatever alg. we chose...)
+		self.df['nextValue'] = np.float(0)
+		self.df['onOff'] = 0
 		
 	def __call__(self):
 		# This creatres a "call" -- when we do calib(), we 
@@ -301,10 +339,12 @@ class CalibrationMaster():
 		niter = self.iters
 #		self.UpdateCalibDF(n)
 
+
 if __name__ == '__main__':
 	setup = SetMeUp()
 	calib = CalibrationMaster(setup)
 	calib()
+	calib.ReadQ()
+	calib.EvaluateIteration()
 	calib.DDS()
 	calib.UpdateParamFiles()
-	#CalibrateMe.UpdateParamFiles(1
