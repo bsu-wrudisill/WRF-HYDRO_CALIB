@@ -20,7 +20,7 @@ setup.CreateSubmitScript()
 calib = CalibrationMaster(setup)
 calib() # do this... i think 
 
-NITERS = 10
+NITERS = 20
 for ITER in range(NITERS):
 	print('on iteration...{}'.format(ITER))
 	# execute the run 
