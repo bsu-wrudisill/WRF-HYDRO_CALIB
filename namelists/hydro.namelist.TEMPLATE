@@ -20,7 +20,7 @@ HYDROTBL_F = "./DOMAIN/hydro2dtbl.nc"
 LAND_SPATIAL_META_FLNM = "./DOMAIN/GEOGRID_LDASOUT_Spatial_Metadata.nc"
 
 ! Specify the name of the restart file if starting from restart...comment out with '!' if not...
-! RESTART_FILE = <nameofrestart>
+RESTART_FILE = "/scratch/wrudisill/test/WRF-HYDRO_CALIB/RESTARTS/HYDRO_RST.2009-05-01_00:00_DOMAIN2"
 
 !!!! --------------------- MODEL SETUP OPTIONS -------------------- !!!!
 
@@ -29,7 +29,7 @@ IGRID = 2
 
 ! Specify the restart file write frequency...(minutes)
 ! A value of -99999 will output restarts on the first day of the month only.
-rst_dt = 120
+rst_dt = -99999
 
 ! Reset the LSM soil states from the high-res routing restart file (1=overwrite, 0=no overwrite)
 ! NOTE: Only turn this option on if overland or subsurface rotuing is active!

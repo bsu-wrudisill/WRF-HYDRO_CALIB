@@ -11,7 +11,7 @@
  START_HOUR  = HH 
  START_MIN   = 00
 
-! RESTART_FILENAME_REQUESTED = "./DOMAIN/RESTART.1998031900_DOMAIN2"
+ RESTART_FILENAME_REQUESTED = "/scratch/wrudisill/test/WRF-HYDRO_CALIB/RESTARTS/RESTART.2009050100_DOMAIN1"
 
  ! Specification of simulation length in days OR hours
  KDAY = NDAYS 
@@ -40,7 +40,7 @@
 
  ! Land surface model restart file write frequency
  ! A value of -99999 will output restarts on the first day of the month only.
- RESTART_FREQUENCY_HOURS = 192
+ RESTART_FREQUENCY_HOURS = -99999
 
  ! Split output after split_output_count output times.
  SPLIT_OUTPUT_COUNT = 1
