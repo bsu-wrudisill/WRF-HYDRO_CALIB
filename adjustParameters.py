@@ -312,18 +312,23 @@ class CalibrationMaster():
 				self.df.at[param, 'bestValue'] = 0.0 
 
 			print('we are on the first iter')
-		elif obj < self.bestObj:
-			# hold onto the best obj 
-			self.bestObj = obj
-			# the 'next value' is what we just tested; 
-			# if it resulted in a better objfun, assign 
-			# it to the 'best value' column
-			self.df['bestValue'] = self.df['nextValue']
 
 		else:
-			# the obfun was worse than the best value 
-			print('the new params were worse than the best value')
-			pass 
+			# we ar beyond the first iteration
+			# test of the onbjective fx hax improved 
+			if obj < self.bestObj:
+				# hold onto the best obj 
+				self.bestObj = obj
+				# the 'next value' is what we just tested; 
+				# if it resulted in a better objfun, assign 
+				# it to the 'best value' column
+				self.df['bestValue'] = self.df['nextValue']
+				print('obj. improvement')
+
+			if obj>= self.bestObj:
+				# the self.bestObj remains the same
+				print('no obj. improvement')
+				pass 
 
 		# lastly, let's clean the nextvalue and onOff switches 
 		# these get updated by the DDS ( or whatever alg. we chose...)
