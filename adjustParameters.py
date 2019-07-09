@@ -59,7 +59,8 @@ class SetMeUp:
 		os.mkdir(startingParamDir)
 
 		# make copies of the domain parameters that we will later calibrate
-		calibList = ['hydro2dtbl.nc', 
+		calibList = ['hydro2dtbl.nc',
+			     'Route_Link.nc',
 			     'soil_properties.nc', 
 			     'Fulldom_hires.nc']
 
@@ -139,6 +140,9 @@ class CalibrationMaster():
 		soilF   = 'soil_properties.nc'
 		hydro2d = 'hydro2dtbl.nc'
 		chanF   = 'MPTABLE.TBL'
+		rlink = "Route_Link.nc"
+		
+		# file params ... 
 		fileParamDic = {'dksat': soilF, 
 				'bexp': soilF,
 				'dksat': soilF,
@@ -147,9 +151,13 @@ class CalibrationMaster():
 				'smcmax':soilF,
 				'mfsno':soilF,
 				'mp':soilF,
-				'OV_ROUGH2D':hydro2d,
 				'refkdt': soilF, 
-				'HLINK': chanF}
+				'HLINK': chanF,
+				'OV_ROUGH2D':hydro2d,
+				'LKSAT':hydro2d,
+				'Kchan':rlink
+				}
+		
 		# create a dataframe w/ the parameter values and links to the right files
 		df = pd.read_csv('calib_params.tbl')
 		df.set_index('parameter', inplace=True)
@@ -167,8 +175,8 @@ class CalibrationMaster():
 	
 	def UpdateCalibDF(self):
 		# update the calibration dataframe for each iteration 
-		df["CALIB_{}".format(self.niter)] = None
-		df.to_csv("calibrationDataFrame.csv")
+		self.df["CALIB_{}".format(self.iters)] = None
+		self.df.to_csv("calibrationDataFrame.csv")
 		# done.. 
 
 	def UpdateParamFiles(self):
@@ -184,16 +192,25 @@ class CalibrationMaster():
 		
 		ncUnique =  list(ncFiles.groupby('file').groups.keys())
 		for ncSingle in ncUnique: 
-			UpdateMe = xr.open_dataset(self.paramDir+'/'+ncSingle)
+			UpdateMe = xr.open_dataset(self.setup.clbdirc+'/ORIG_PARM/'+ncSingle)
 			# remove the file... we overwrite w/ the update 
 			os.remove(self.paramDir+'/'+ncSingle)
 			
 			# loop through the params and update. write files 
 			for param in list(ncFiles.groupby('file').groups[ncSingle]):
 				# PERFORM THE DDS PARAMETER UPDATE FOR EACH PARAM
-				UpdateMe[param][:,:,:] = UpdateMe[param][:,:,:] + self.df.nextValue.loc[param]
-				UpdateMe.to_netcdf(self.paramDir+'/'+ncSingle, mode='w')
-				print('updated --- {}'.format(param))
+				# the different files have differend dimensions 
+				if ncSingle == 'Route_Link.nc':
+					UpdateMe[param][:] = UpdateMe[param][:] + self.df.nextValue.loc[param]
+				if ncSingle == 'hydro2dtbl.nc':
+					UpdateMe[param][:,:] = UpdateMe[param][:,:] + self.df.nextValue.loc[param]
+				if ncSingle == 'soil_properties.nc':
+					UpdateMe[param][:,:,:] = UpdateMe[param][:,:,:] + self.df.nextValue.loc[param]
+				print('updated --- {} in file {}'.format(param,ncSingle))
+			# done looping thru params 
+			# save the file now and close  
+			UpdateMe.to_netcdf(self.paramDir+'/'+ncSingle, mode='w')
+
 			UpdateMe.close()
 		# now process the .TBL files 
 
@@ -203,7 +220,6 @@ class CalibrationMaster():
 		rmse = np.sqrt(np.mean((self.merged.qMod - self.merged.qObs)**2))
 		print(rmse)
 		return rmse
-	
 	
 	def CheckModelOutput(self):
 		pass 
@@ -277,13 +293,13 @@ class CalibrationMaster():
 			if x_new > xj_max:
 				x_new = xj_max - (x_new - xj_max)
 			self.df.at[param,'nextValue'] = np.float(x_new)
-		
+			#self.df.at[param,"CALIB_{}".format(self.iters)] = np.float(x_new)
+
 		for param in deselectedParams:
 			J = self.df.loc[param]
 			xj_best = J.bestValue
 			self.df.at[param,'nextValue'] = np.float(xj_best) # no updating 
-			
-
+			#self.df.at[param,"CALIB_{}".format(self.iters)] = np.float(xj_best)
 
 	def EvaluateIteration(self):
 		# check the obfun. 
@@ -310,7 +326,6 @@ class CalibrationMaster():
 			# keep the inactive params at 0 
 			for param in self.df.groupby('calib_flag').groups[0]:
 				self.df.at[param, 'bestValue'] = 0.0 
-
 			print('we are on the first iter')
 
 		else:
