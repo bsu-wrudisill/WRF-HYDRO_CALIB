@@ -4,9 +4,11 @@ from collections import OrderedDict
 import subprocess
 import time 
 import glob 
+import xarray as xr
 #
 #   
 def CleanUp(path):
+	# remove files from the run directory 
 	cwd = os.getcwd()
 	os.chdir(path)
 	removeList = ["*LDASOUT*"
@@ -28,6 +30,17 @@ def CleanUp(path):
 	# move back to o.g. dir
 	os.chdir(cwd)
 
+def ConcatLDAS(path,ID):
+	# path to output files
+	# ID to assign to the output name 
+	print('reading LDAS files')	
+	ldas = glob.glob(path+'/*LDASOUT_DOMAIN1')
+	var_list = ['x', 'y', 'SNLIQ', 'SOIL_T', 'SNOWH', 'ISNOW']
+	ds = xr.open_mfdataset(ldas, drop_variables=var_list)
+	print('concatenating LDAS files...')
+	ds.to_netcdf("{}_LDASFILES.nc".format(ID))
+	print('wrote {}_LDASFILES.nc'.format(ID))
+	del ds
 
 def SystemCmd(cmd):
 	# issue system commands 

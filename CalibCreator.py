@@ -20,7 +20,10 @@ setup.CreateSubmitScript()
 calib = CalibrationMaster(setup)
 calib() # do this... i think 
 
-NITERS = 20
+
+objlist = []
+
+NITERS = 100
 for ITER in range(NITERS):
 	print('on iteration...{}'.format(ITER))
 	# execute the run 
@@ -36,13 +39,19 @@ for ITER in range(NITERS):
 	calib.ReadQ() # read model/usgs OBS
 
 	print("evaluate... obj fun")
-	calib.EvaluateIteration()  # check if the model improved 
-
+	obj = calib.EvaluateIteration()  # check if the model improved 
+	objlist.append(obj)
 	calib.DDS() # generate new parameters 
 	calib.UpdateParamFiles()  # write the new parameters 
+	calib.UpdateCalibDF()
+	
+	# concat files 
+	lib.ConcatLDAS(setup.clbdirc, ITER)
+	
+	# clean up the directory 
 	lib.CleanUp(setup.clbdirc)
 		
 	# move the iternal iteration state one forward 
 	calib()
 	
-
+print(objlist)
