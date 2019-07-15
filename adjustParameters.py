@@ -228,7 +228,7 @@ class CalibrationMaster():
 		# read model output variables 
 		# and usgs observations
 		# creates a df, and applies the ObFun
-		gauge_loc = 1
+		gauge_loc = 230
 		modQfiles = xr.open_mfdataset(glob.glob(self.setup.clbdirc+'/*CHRTOUT_DOMAIN2*'))
 		# do some slicing and dicing... 	
 		qDf = pd.DataFrame(
@@ -349,7 +349,8 @@ class CalibrationMaster():
 		# these get updated by the DDS ( or whatever alg. we chose...)
 		self.df['nextValue'] = np.float(0)
 		self.df['onOff'] = 0
-		
+		return obj	
+
 	def __call__(self):
 		# This creatres a "call" -- when we do calib(), we 
 		# are applying this function that is inside of here

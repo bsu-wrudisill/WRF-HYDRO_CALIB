@@ -19,9 +19,9 @@ args = commandArgs(trailingOnly=TRUE)
 if (length(args) ==0) {
 	print("usage: Rscript evalQcustom.R <dataPath> <startDate> <endDate> <USGS GageID>")
         print('No input arguments provided. using defaults')
-	dataPath <- '/home/wrudisill/scratch/test/WRF-HYDRO_CALIB/13235000/'
-	startDate <- "2010-01-01"
-	endDate <- "2010-04-10"
+	dataPath <- '/home/wrudisill/scratch/test/WRF-HYDRO_CALIB/SPINUP/'
+	startDate <- "2009-10-01"
+	endDate <- "2009-11-01"
 	gageID        <- "13235000"
 	modelOutputCSV <- "discharge.csv"        # this will either be read in (if it exists) or created. Perhaps create a better name for this file 
 } else {
@@ -72,6 +72,7 @@ if(file.exists(modelOutputCSV)){
 	SampleFile <- GetNcdfFile(paste0(dataPath,yr,mo,day,'0000.CHRTOUT_DOMAIN2'), quiet=TRUE)  #
 	distance <- sqrt((SampleFile$lat - requestedLat)^2 + (SampleFile$lon - requestedLon)^2)
 	GaugeGridCell <- which(distance==min(distance))
+	print(GaugeGridCell)
 	# create lists to pass into the multinc function
 	chFiles <- list.files(path=dataPath, pattern='CHRTOUT_DOMAIN2', full.names=TRUE)
 	hydroVars <- list(Q='streamflow') # lat='latitude',lon='longitude')
