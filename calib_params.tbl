@@ -1,22 +1,21 @@
-parameter,calib_flag,minValue,maxValue,ini
-bexp,        1,      0.40,      1.90,      1.0       
-smcmax,      1,      0.80,      1.20,      1.0
-dksat,       1,      0.20,      10.0,      1.0
-refkdt,      1,      0.10,      4.00,      0.6
-slope,       1,      0.00,      1.00,      0.1
-retdeprtfac, 1,      0.10,      10.0,      1.0
-LKSAT,       1,      10.0,      10000.0,   1000.0
-zmax,        1,      10.0,      250.0,     25.0
-expon,       1,      1.00,      8.0,       1.75
-cwpvt,       1,      0.50,      2.0,       1.0
-vcmx25,      1,      0.60,      1.4,       1.0
-mp,          1,      0.60,      1.4,       1.0
-hvt,         1,      0.25,      1.5,       1.0
-mfsno,       1,      0.50,      2.0,       1.0
-rsurfexp,    0,      1.0,       6.0,       5.0
-Bw,          0,      0.1,       10.0,      1.0
-HLINK,       0,      0.1,       10.0,      1.0
-ChSSlp,      0,      0.1,       10.0,      1.0
-MannN,       0,      0.1,       10.0,      1.0
-OV_ROUGH2D,  1,      0.1,        10.0,      1.0
-Kchan,       1,      0.1,        10.0,      1.0
+parameter,calib_flag,minValue,maxValue,ini,file,dims
+bexp,        1,      0.40,      1.90,      0.0,soil_properties.nc,3 
+smcmax,      1,      0.80,      1.20,      0.0,soil_properties.nc,3
+dksat,       1,      0.20,      10.0,      0.0,soil_properties.nc,3
+dwsat,       1,      0.20,      100.0,     0.0,soil_properties.nc,3
+refkdt,      1,      0.10,      4.00,      0.0,soil_properties.nc,3
+cwpvt,       1,      0.50,      2.0,       0.0,soil_properties.nc,3
+vcmx25,      1,      0.60,      1.4,       0.0,soil_properties.nc,3 
+mp,          1,      0.60,      1.4,       0.0,soil_properties.nc,3 
+hvt,         1,      0.25,      1.5,       0.0,soil_properties.nc,3 
+mfsno,       1,      0.50,      2.0,       0.0,soil_properties.nc,3
+Expon,       1,      1.00,      8.0,       0.0,GWBUCKPARM.nc,1
+Zmax,        1,      10.0,      250.0,     0.0,GWBUCKPARM.nc,1
+Zinit,       1,      10.0,      250.0,     0.0,GWBUCKPARM.nc,1 
+Coeff,       1,      1.0,       2.0,       0.0,GWBUCKPARM.nc,1 
+OV_ROUGH2D,  0,      0.1,       10.0,      0.0,hydro2dtbl.nc,2
+LKSAT,       0,      10.0,      10000.0,   0.0,hydro2dtbl.nc,2
+Kchan,       0,      0.1,       10.0,      0.0,Route_Link.nc,1
+ChSlp,       0,      0.1,       10.0,      0.0,Route_Link.nc,1
+
+

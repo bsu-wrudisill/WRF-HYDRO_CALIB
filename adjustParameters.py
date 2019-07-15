@@ -136,33 +136,9 @@ class CalibrationMaster():
 		self.bestObj = 1e16
 		self.objList = [] 
 
-		# --- read in the parameter tables, and assign some extra stuff ---# 
-		soilF   = 'soil_properties.nc'
-		hydro2d = 'hydro2dtbl.nc'
-		chanF   = 'MPTABLE.TBL'
-		rlink = "Route_Link.nc"
-		
-		# file params ... 
-		fileParamDic = {'dksat': soilF, 
-				'bexp': soilF,
-				'dksat': soilF,
-				'hvt':soilF,
-				'refdkt':soilF,
-				'smcmax':soilF,
-				'mfsno':soilF,
-				'mp':soilF,
-				'refkdt': soilF, 
-				'HLINK': chanF,
-				'OV_ROUGH2D':hydro2d,
-				'LKSAT':hydro2d,
-				'Kchan':rlink
-				}
-		
 		# create a dataframe w/ the parameter values and links to the right files
 		df = pd.read_csv('calib_params.tbl')
 		df.set_index('parameter', inplace=True)
-		df['file'] = [ft.partial(returnItem, fileParamDic)(param) for param in df.index]
-		df['type'] = [param.split('.')[1] if param is not None else None for param in df['file']] 
 		
 		# initialize the best value parameter  
 		df["bestValue"] = df["ini"] 
@@ -185,34 +161,30 @@ class CalibrationMaster():
 		if self.iters == 0:
 			print("nothing to update-- 1st iteration")
 			return
-		grouped = self.df.groupby('type')
-		ncFiles = self.df.loc[grouped.groups['nc']]
-		tblFiles = self.df.loc[grouped.groups['TBL']]
+		grouped = self.df.groupby('file')
 		# process the netcdf files first 
-		
-		ncUnique =  list(ncFiles.groupby('file').groups.keys())
-		for ncSingle in ncUnique: 
+		ncList = grouped.groups.keys()
+		for ncSingle in ncList:
 			UpdateMe = xr.open_dataset(self.setup.clbdirc+'/ORIG_PARM/'+ncSingle)
 			# remove the file... we overwrite w/ the update 
 			os.remove(self.paramDir+'/'+ncSingle)
 			
 			# loop through the params and update. write files 
-			for param in list(ncFiles.groupby('file').groups[ncSingle]):
+			for param in grouped.groups[ncSingle]: 
 				# PERFORM THE DDS PARAMETER UPDATE FOR EACH PARAM
 				# the different files have differend dimensions 
-				if ncSingle == 'Route_Link.nc':
+				dims = self.df.loc[param].dims 
+				if dims == 1:
 					UpdateMe[param][:] = UpdateMe[param][:] + self.df.nextValue.loc[param]
-				if ncSingle == 'hydro2dtbl.nc':
+				if dims == 2:
 					UpdateMe[param][:,:] = UpdateMe[param][:,:] + self.df.nextValue.loc[param]
-				if ncSingle == 'soil_properties.nc':
+				if dims == 3:
 					UpdateMe[param][:,:,:] = UpdateMe[param][:,:,:] + self.df.nextValue.loc[param]
 				print('updated --- {} in file {}'.format(param,ncSingle))
 			# done looping thru params 
 			# save the file now and close  
 			UpdateMe.to_netcdf(self.paramDir+'/'+ncSingle, mode='w')
-
 			UpdateMe.close()
-		# now process the .TBL files 
 
 	def ObFun(self):
 		# RMSE 
