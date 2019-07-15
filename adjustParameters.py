@@ -62,7 +62,7 @@ class SetMeUp:
 		calibList = ['hydro2dtbl.nc',
 			     'Route_Link.nc',
 			     'soil_properties.nc', 
-			     'Fulldom_hires.nc']
+			     'GWBUCKPARM.nc']			     
 
 		# make copies of these 
 		[shutil.copy("{}/DOMAIN/{}".format(self.indirc,i), startingParamDir+i) for i in calibList]
@@ -208,7 +208,7 @@ class CalibrationMaster():
 				 'time':modQfiles['time'].values}
 				)
 		qDf.set_index('time', inplace=True)
-		modQdly = pd.DataFrame(qDf.resample('D').sum())
+		modQdly = pd.DataFrame(qDf.resample('D').sum())*35.3147
 		
 		# read usgs obs 
 		obsQ = pd.read_csv(self.setup.clbdirc+'/obsStrData.csv')
@@ -294,7 +294,6 @@ class CalibrationMaster():
 			# update the active params 
 			for param in self.df.groupby('calib_flag').groups[1]:
 				self.df.at[param, 'bestValue'] = self.df.loc[param,'ini']
-			
 			# keep the inactive params at 0 
 			for param in self.df.groupby('calib_flag').groups[0]:
 				self.df.at[param, 'bestValue'] = 0.0 
