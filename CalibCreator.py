@@ -5,8 +5,9 @@ from adjustParameters import *
 import lib
 import os 
 import time 
+from dbLogger import logToDB 
 
-lib.SystemCmd('source ./env_nwm_r2.sh')
+# lib.SystemCmd('source ./env_nwm_r2.sh') ## this doesn't work 
 cwd = os.getcwd()
 
 # Do some checks here that things are reasonable... (maybe?..)
@@ -39,16 +40,20 @@ for ITER in range(NITERS):
 	calib.ReadQ() # read model/usgs OBS
 
 	print("evaluate... obj fun")
-	obj = calib.EvaluateIteration()  # check if the model improved 
-	objlist.append(obj)
+	obj,improvement = calib.EvaluateIteration()  # check if the model improved 
+	
+	# log things to the objective fx
+	logToDB(str(ITER), './', obj, improvement)
+
 	calib.DDS() # generate new parameters 
 	calib.UpdateParamFiles()  # write the new parameters 
 	calib.UpdateCalibDF()
 	# concat files 
 	#lib.ConcatLDAS(setup.clbdirc, ITER)
 	# clean up the directory 
+	
 	lib.CleanUp(setup.clbdirc)
-		
+	
 	# move the iternal iteration state one forward 
 	calib()
 	

@@ -146,13 +146,17 @@ class CalibrationMaster():
 		df["onOff"] = df["calib_flag"]  # used for the DDS alg... 
 		# assign the df to itself, so we can hold onto it in later fx  
 		self.df = df 
-		df.to_csv('calibrationDataFrame.csv')
+		
+		# maybe write to a csv... or not-- ADD ME TO A DATABASE INSTEAD!!! 
+		#df.to_csv('calibrationDataFrame.csv')
 		
 	
 	def UpdateCalibDF(self):
 		# update the calibration dataframe for each iteration 
 		self.df["CALIB_{}".format(self.iters)] = None
-		self.df.to_csv("calibrationDataFrame.csv")
+		
+		# ADD ME TO DATABASE INSTEAD
+		#self.df.to_csv("calibrationDataFrame.csv")
 		# done.. 
 
 	def UpdateParamFiles(self):
@@ -278,19 +282,21 @@ class CalibrationMaster():
 		# if the performance of the last parameter set us better, then update the 
 		# calib data frame 
 		obj = self.ObFun()
-		
+		improvement = 0  # were the parameters improved upon?
+
 		# nothing special here -- we just have to pull out hte 
 		# list, append to it, then reassign it to 'self' (we can't append to self)
 		objList = self.objList
 		objList.append(obj)
 		self.objList = objList 
+	
 		
 		# check if the new parameters improved the objective function 
 		if self.iters == 1:
 			# this is the first iteration; we have just tested 
 			# the 'stock' parameters 
 			self.bestObj = obj 
-			
+			improvement = 1 	
 			# update the active params 
 			for param in self.df.groupby('calib_flag').groups[1]:
 				self.df.at[param, 'bestValue'] = self.df.loc[param,'ini']
@@ -312,10 +318,12 @@ class CalibrationMaster():
 				# if it resulted in a better objfun, assign 
 				# it to the 'best value' column
 				self.df['bestValue'] = self.df['nextValue']
+				improvement = 1
 				print('obj. improvement')
-
+					
 			if obj >= self.bestObj:
 				# the self.bestObj remains the same
+				improvement = 0
 				print('no obj. improvement')
 				pass 
 
@@ -323,7 +331,7 @@ class CalibrationMaster():
 		# these get updated by the DDS ( or whatever alg. we chose...)
 		self.df['nextValue'] = np.float(0)
 		self.df['onOff'] = 0
-		return obj	
+		return obj,improvement
 
 	def __call__(self):
 		# This creatres a "call" -- when we do calib(), we 

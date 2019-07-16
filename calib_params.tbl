@@ -15,7 +15,7 @@ Zinit,       1,      10.0,      250.0,     0.0,GWBUCKPARM.nc,1
 Coeff,       1,      1.0,       2.0,       0.0,GWBUCKPARM.nc,1 
 OV_ROUGH2D,  1,      0.1,       10.0,      0.0,hydro2dtbl.nc,2
 LKSAT,       1,      10.0,      10000.0,   0.0,hydro2dtbl.nc,2
-Kchan,       1,      0.1,       10.0,      0.0,Route_Link.nc,1
-ChSlp,       1,      0.1,       10.0,      0.0,Route_Link.nc,1
+Kchan,       0,      0.1,       10.0,      0.0,Route_Link.nc,1
+ChSlp,       0,      0.1,       10.0,      0.0,Route_Link.nc,1
 
 
