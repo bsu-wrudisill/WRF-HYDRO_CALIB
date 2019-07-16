@@ -44,10 +44,8 @@ for ITER in range(NITERS):
 	calib.DDS() # generate new parameters 
 	calib.UpdateParamFiles()  # write the new parameters 
 	calib.UpdateCalibDF()
-	
 	# concat files 
-	lib.ConcatLDAS(setup.clbdirc, ITER)
-	
+	#lib.ConcatLDAS(setup.clbdirc, ITER)
 	# clean up the directory 
 	lib.CleanUp(setup.clbdirc)
 		

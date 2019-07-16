@@ -132,7 +132,7 @@ class CalibrationMaster():
 		self.setup = setup  # pass the setup class into here...  
 		self.paramDir = "{}/DOMAIN".format(self.setup.clbdirc)
 		#self.paramDir = '/scratch/wrudisill/WillCalibHydro/TestDOMAIN'    #TEMPORARY 
-		self.MaxIters = 1e3   # the maximum # of iterations allowed
+		self.MaxIters = 1e5   # the maximum # of iterations allowed
 		self.bestObj = 1e16
 		self.objList = [] 
 
@@ -180,7 +180,7 @@ class CalibrationMaster():
 					UpdateMe[param][:,:] = UpdateMe[param][:,:] + self.df.nextValue.loc[param]
 				if dims == 3:
 					UpdateMe[param][:,:,:] = UpdateMe[param][:,:,:] + self.df.nextValue.loc[param]
-				print('updated --- {} in file {}'.format(param,ncSingle))
+				print('updated--{} in file {}--with value {}'.format(param,ncSingle,self.df.nextValue.loc[param]))
 			# done looping thru params 
 			# save the file now and close  
 			UpdateMe.to_netcdf(self.paramDir+'/'+ncSingle, mode='w')
@@ -294,11 +294,14 @@ class CalibrationMaster():
 			# update the active params 
 			for param in self.df.groupby('calib_flag').groups[1]:
 				self.df.at[param, 'bestValue'] = self.df.loc[param,'ini']
+			
 			# keep the inactive params at 0 
-			for param in self.df.groupby('calib_flag').groups[0]:
-				self.df.at[param, 'bestValue'] = 0.0 
-			print('we are on the first iter')
-
+			try:
+				for param in self.df.groupby('calib_flag').groups[0]:
+					self.df.at[param, 'bestValue'] = 0.0 
+				print('we are on the first iter')
+			except KeyError:
+				print('all parameters are active')
 		else:
 			# we ar beyond the first iteration
 			# test of the onbjective fx hax improved 
@@ -311,7 +314,7 @@ class CalibrationMaster():
 				self.df['bestValue'] = self.df['nextValue']
 				print('obj. improvement')
 
-			if obj>= self.bestObj:
+			if obj >= self.bestObj:
 				# the self.bestObj remains the same
 				print('no obj. improvement')
 				pass 

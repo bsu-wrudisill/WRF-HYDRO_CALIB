@@ -4,6 +4,6 @@
   "usgs_code":"13235000",
   "QUEUE":"shortq",
   "NODES":"2",
-  "START_DATE": "2010-06-01",
-  "END_DATE": "2010-06-10"
+  "START_DATE": "2010-08-01",
+  "END_DATE": "2010-09-30"
 }] 
