@@ -9,6 +9,7 @@ import pandas as pd
 import functools as ft
 import netCDF4 as nc
 import numpy as np
+from dbLogger import LogResultsToDB
 # read in the parameter adjustment table
 # read.json...
 # Helper functions 
@@ -179,11 +180,11 @@ class CalibrationMaster():
 				# the different files have differend dimensions 
 				dims = self.df.loc[param].dims 
 				if dims == 1:
-					UpdateMe[param][:] = UpdateMe[param][:] + self.df.nextValue.loc[param]
+					UpdateMe[param][:] = UpdateMe[param][:]+self.df.nextValue.loc[param]
 				if dims == 2:
-					UpdateMe[param][:,:] = UpdateMe[param][:,:] + self.df.nextValue.loc[param]
+					UpdateMe[param][:,:] = UpdateMe[param][:,:]+self.df.nextValue.loc[param]
 				if dims == 3:
-					UpdateMe[param][:,:,:] = UpdateMe[param][:,:,:] + self.df.nextValue.loc[param]
+					UpdateMe[param][:,:,:] = UpdateMe[param][:,:,:]+self.df.nextValue.loc[param]
 				print('updated--{} in file {}--with value {}'.format(param,ncSingle,self.df.nextValue.loc[param]))
 			# done looping thru params 
 			# save the file now and close  
@@ -199,6 +200,9 @@ class CalibrationMaster():
 	
 	def CheckModelOutput(self):
 		pass 
+	
+	def FilterNegative(self,array):
+		return array[np.where(array<0)] = 0
 
 	def ReadQ(self):
 		# read model output variables 
@@ -212,15 +216,15 @@ class CalibrationMaster():
 				 'time':modQfiles['time'].values}
 				)
 		qDf.set_index('time', inplace=True)
-		modQdly = pd.DataFrame(qDf.resample('D').sum())*35.3147
-		
+		modQdly = pd.DataFrame(qDf.resample('D').sum())
+
 		# read usgs obs 
 		obsQ = pd.read_csv(self.setup.clbdirc+'/obsStrData.csv')
 		obsQ.drop(columns=['Unnamed: 0', 'POSIXct', "agency_cd"], inplace=True)
 		obsQ.rename(index=str, columns={"Date":"time", "obs":"qObs"}, inplace=True)
 		obsQ.set_index('time',inplace=True)
 		obsQ.index = pd.to_datetime(obsQ.index)
-		
+			
 		# merge the dataframes...
 		merged = obsQ.copy()
 		merged['qMod'] = modQdly
@@ -228,6 +232,11 @@ class CalibrationMaster():
 		
 		# pass off merged to itself 
 		self.merged = merged	
+		
+		# log the output to a database for keeping 
+		LogResultsToDB(modQdly, 'Iteration_{}'.format(self.iters))
+		if self.iters == 1:
+			LogResultsToDB(obsQ, 'Observations')
 
 	def LogLik(self,curiter, maxiter):
 		# logliklihood function
