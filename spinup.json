@@ -1,0 +1,11 @@
+[{"parameter_location":"/scratch/leaf/share/WRF_hydro_subsets_201810/{}",
+  "executable_location":"/home/wrudisill/scratch/NewHydroBuilt/WRF_HYDRO-R2/wrf_hydro_nwm_public/trunk/NDHMS/Run",
+  "forcing_location":"/scratch/wrudisill/ForcingsWH/SFPAYETTE/wy2008/",
+  "calib_location":"/scratch/wrudisill/test/WRF-HYDRO_CALIB/",
+  "restart_file":"None",
+  "usgs_code":"13235000",
+  "QUEUE":"shortq",
+  "NODES":"2",
+  "START_DATE": "2007-10-01",
+  "END_DATE": "2008-09-30"
+}] 
