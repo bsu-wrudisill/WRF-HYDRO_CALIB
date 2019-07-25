@@ -20,7 +20,7 @@ HYDROTBL_F = "./DOMAIN/hydro2dtbl.nc"
 LAND_SPATIAL_META_FLNM = "./DOMAIN/GEOGRID_LDASOUT_Spatial_Metadata.nc"
 
 ! Specify the name of the restart file if starting from restart...comment out with '!' if not...
-RESTART_FILE = "/scratch/wrudisill/test/WRF-HYDRO_CALIB/RESTARTS/HYDRO_RST.2009-07-01_00:00_DOMAIN2"
+RESTART_FILE = "/scratch/wrudisill/test/WRF-HYDRO_CALIB/RESTARTS/HYDRO_RST.2009-04-01_00:00_DOMAIN2"
 
 !!!! --------------------- MODEL SETUP OPTIONS -------------------- !!!!
 
@@ -155,16 +155,16 @@ GWBASESWCRT = 0
 
 ! Groundwater/baseflow 2d mask specified on land surface model grid (e.g.: "GWBASINS.nc")
 !Note: Only required if baseflow  model is active (1 or 2) and UDMP_OPT=0.
-gwbasmskfil = "./DOMAIN/GWBASINS.nc"
+!gwbasmskfil = "./DOMAIN/GWBASINS.nc"
 
 ! Groundwater bucket parameter file (e.g.: "GWBUCKPARM.nc")
-GWBUCKPARM_file = "./DOMAIN/GWBUCKPARM.nc"
+!GWBUCKPARM_file = "./DOMAIN/GWBUCKPARM.nc"
 
 ! User defined mapping, such NHDPlus: 0=no (default), 1=yes
 UDMP_OPT = 0
 
 ! If on, specify the user-defined mapping file (e.g.: "spatialweights.nc")
-!udmap_file = "./DOMAIN/spatialweights.nc"
+udmap_file = "./DOMAIN/spatialweights.nc"
 
 /
 
