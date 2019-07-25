@@ -1,9 +1,16 @@
 import sys
 import os
 import sqlite3
+from sqlalchemy import create_engine
 
-# create a db connection
-def logToDB(iterations, directory, objectivefx, improvement):
+
+def LogResultsToDB(df,table_name):
+	# 
+	engine = create_engine('sqlite:///CALIBRATION.db', echo=False)
+	df.to_sql(table_name, con = engine)
+
+
+def LogParamsToDB(iterations, directory, objectivefx, improvement):
 	#
 	#
 	dbConn = sqlite3.connect("./CALIBRATION.db", timeout=10)
