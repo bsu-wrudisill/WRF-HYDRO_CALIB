@@ -1,9 +1,11 @@
-[{"directory_location":"/scratch/wrudisill/WRF_HYDRO-R2_WILLDEV/wy2010_SFPayette",
+[{"parameter_location":"/scratch/leaf/share/WRF_hydro_subsets_201810/{}",
+  "executable_location":"/home/wrudisill/scratch/NewHydroBuilt/WRF_HYDRO-R2/wrf_hydro_nwm_public/trunk/NDHMS/Run",
+  "forcing_location":"/home/wrudisill/scratch/WRF_HYDRO-R2_WILLDEV/wy2010_SFPayette/FORCING",
   "calib_location":"/scratch/wrudisill/test/WRF-HYDRO_CALIB/",
   "restart_file":"None",
   "usgs_code":"13235000",
   "QUEUE":"shortq",
   "NODES":"2",
-  "START_DATE": "2010-08-01",
-  "END_DATE": "2010-08-06"
+  "START_DATE": "2010-07-01",
+  "END_DATE": "2010-07-30"
 }] 

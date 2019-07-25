@@ -28,14 +28,17 @@ class SetMeUp:
 		# onto them.
 		with open("setup.json") as j:
 			jsonfile = json.load(j)
-			self.indirc = jsonfile[0]['directory_location']
 			self.usgs_code = jsonfile[0]['usgs_code']
 			self.clbdirc = jsonfile[0]['calib_location'] + self.usgs_code
-			self.restart = jsonfile[0]['restart_file']
+			self.restart = jsonfile[0]['restart_file']  # NOT CURRENTLY ACTIVE --- CHANGE ME
 			self.queue = jsonfile[0]['QUEUE']
 			self.nodes = jsonfile[0]['NODES']
 			self.start_date = jsonfile[0]['START_DATE']
 			self.end_date   = jsonfile[0]['END_DATE']
+			self.parmdirc = jsonfile[0]['parameter_location'].format(self.usgs_code)
+			self.exedirc = jsonfile[0]['executable_location']
+			self.forcdirc = jsonfile[0]['forcing_location']
+		# create catch id file name 	
 		self.catchid = 'catch_{}'.format(self.usgs_code)
 	
 	def GatherObs(self, **kwargs):
@@ -53,7 +56,7 @@ class SetMeUp:
 		"""
 		
 		# now, lets create the directory to perform the calibration in
-		shutil.copytree(self.indirc+'/DOMAIN/', self.clbdirc+'/DOMAIN')  # this is an annoying command ....
+		shutil.copytree(self.parmdirc, self.clbdirc+'/DOMAIN')  # this is an annoying command ....
 		
 		# create a directory to store the original domain files in. this is just a convenience
 		startingParamDir = "{}/ORIG_PARM/".format(self.clbdirc)
@@ -66,7 +69,7 @@ class SetMeUp:
 			     'GWBUCKPARM.nc']			     
 
 		# make copies of these 
-		[shutil.copy("{}/DOMAIN/{}".format(self.indirc,i), startingParamDir+i) for i in calibList]
+		[shutil.copy("{}/{}".format(self.parmdirc,i), startingParamDir+i) for i in calibList]
 	
 		# 
 		# get these files. ..
@@ -79,10 +82,10 @@ class SetMeUp:
 			  "SOILPARM.TBL"]
 
 		# copy files in the 'grab me list' to the run directory 
-		[shutil.copy(self.indirc+'/'+item, self.clbdirc) for item in grabMe]
+		[shutil.copy(self.exedirc+'/'+item, self.clbdirc) for item in grabMe]
 
 		# link forcings
-		os.symlink(self.indirc+'/FORCING', self.clbdirc+'/FORCING')
+		os.symlink(self.forcdirc, self.clbdirc+'/FORCING')
 
 		# copy namelist (from THIS directory. we modify the namelists here, not in the far-away directory)
 		shutil.copy('./namelists/hydro.namelist.TEMPLATE', self.clbdirc+'/hydro.namelist') 
@@ -202,7 +205,8 @@ class CalibrationMaster():
 		pass 
 	
 	def FilterNegative(self,array):
-		return array[np.where(array<0)] = 0
+		array[np.where(array<0)] = 0
+		return array 
 
 	def ReadQ(self):
 		# read model output variables 
@@ -354,9 +358,10 @@ class CalibrationMaster():
 
 if __name__ == '__main__':
 	setup = SetMeUp()
+	setup.CreateRunDir()
 	calib = CalibrationMaster(setup)
-	calib()
-	calib.ReadQ()
-	calib.EvaluateIteration()
-	calib.DDS()
-	calib.UpdateParamFiles()
+	#calib()
+	#calib.ReadQ()
+	#calib.EvaluateIteration()
+	#calib.DDS()
+	#calib.UpdateParamFiles()
