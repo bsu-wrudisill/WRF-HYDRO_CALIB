@@ -5,13 +5,13 @@ from adjustParameters import *
 import lib
 import os 
 import time 
-from dbLogger import logToDB 
+from dbLogger import LogParamsToDB 
 
 # lib.SystemCmd('source ./env_nwm_r2.sh') ## this doesn't work 
 cwd = os.getcwd()
 
 # Do some checks here that things are reasonable... (maybe?..)
-setup = SetMeUp()
+setup = SetMeUp("setup.json")
 setup.CreateRunDir()
 setup.GatherObs()
 setup.CreateNamelist()
@@ -43,7 +43,7 @@ for ITER in range(NITERS):
 	obj,improvement = calib.EvaluateIteration()  # check if the model improved 
 	
 	# log things to the objective fx
-	logToDB(str(ITER), './', obj, improvement)
+	LogParamsToDB(str(ITER), './', obj, improvement)
 
 	calib.DDS() # generate new parameters 
 	calib.UpdateParamFiles()  # write the new parameters 

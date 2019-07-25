@@ -23,10 +23,10 @@ def returnItem(dic,x):
 		return None
 
 class SetMeUp:
-	def __init__(self):
+	def __init__(self,setup):
 		# Read in all of the parameter files and hanf 
 		# onto them.
-		with open("setup.json") as j:
+		with open(setup) as j:
 			jsonfile = json.load(j)
 			self.usgs_code = jsonfile[0]['usgs_code']
 			self.clbdirc = jsonfile[0]['calib_location'] + self.usgs_code
