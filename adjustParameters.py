@@ -30,7 +30,8 @@ class SetMeUp:
 			jsonfile = json.load(j)
 			self.usgs_code = jsonfile[0]['usgs_code']
 			self.clbdirc = jsonfile[0]['calib_location'] + self.usgs_code
-			self.restart = jsonfile[0]['restart_file']  # NOT CURRENTLY ACTIVE --- CHANGE ME
+			self.hydrorestart = jsonfile[0]['hydro_restart_file']  # NOT CURRENTLY ACTIVE --- CHANGE ME
+			self.hrldasrestart = jsonfile[0]['hrldas_restart_file']  # NOT CURRENTLY ACTIVE --- CHANGE ME
 			self.queue = jsonfile[0]['QUEUE']
 			self.nodes = jsonfile[0]['NODES']
 			self.start_date = jsonfile[0]['START_DATE']
@@ -101,12 +102,13 @@ class SetMeUp:
 			    "MM": startDate.month,
 			    "DD": startDate.day,
 			    "HH": startDate.hour,
-			    "NDAYS": dateRange.days
+			    "NDAYS": dateRange.days,
+			    "RESTARTFILENAME": self.hrldasrestart
 			    }
 		# create the submission script 	
 		lib.GenericWrite('./namelists/namelist.hrldas.TEMPLATE', nlistDic, self.clbdirc+'/namelist.hrldas')	
 		# modify the hydro.namelist
-		hydDic = {"<nameofrestart>":self.restart}
+		hydDic = {"HYDRO_RSTFILENAME":self.hydrorestart}
 		lib.GenericWrite('./namelists/hydro.namelist.TEMPLATE',hydDic,self.clbdirc+'/hydro.namelist')
 
 	def CreateSubmitScript(self,**kwargs):
@@ -255,6 +257,7 @@ class CalibrationMaster():
 
 		# Part 1: Randomly select parameters to update 
 		prob = self.LogLik(self.iters, self.MaxIters)
+		
 		for param in activeParams:
 			sel = np.random.choice(2, p=[1-prob,prob])
 			if sel == 1: 
@@ -264,11 +267,15 @@ class CalibrationMaster():
 		# the 'onOff' flag is updated for each iteration... the 
 		# calib_flag is not (this flag decides if we want to consider
 		# the parameter at all 
-		
 		# loop thgouh 
-		selectedParams = list(self.df.groupby('onOff').groups[1])
-		deselectedParams = list(self.df.groupby('onOff').groups[0])
-		
+		try:
+			selectedParams = list(self.df.groupby('onOff').groups[1])
+			deselectedParams = list(self.df.groupby('onOff').groups[0])
+
+		except KeyError:
+			print('no parameters were selected during DDS search algorithm')
+			return
+
 		# 'active params' just contains those to update now
 		for param in selectedParams: 
 			J = self.df.loc[param]

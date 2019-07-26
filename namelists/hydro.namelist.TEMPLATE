@@ -20,7 +20,7 @@ HYDROTBL_F = "./DOMAIN/hydro2dtbl.nc"
 LAND_SPATIAL_META_FLNM = "./DOMAIN/GEOGRID_LDASOUT_Spatial_Metadata.nc"
 
 ! Specify the name of the restart file if starting from restart...comment out with '!' if not...
-RESTART_FILE = "/scratch/wrudisill/test/WRF-HYDRO_CALIB/RESTARTS/HYDRO_RST.2009-04-01_00:00_DOMAIN2"
+RESTART_FILE = "HYDRO_RSTFILENAME"
 
 !!!! --------------------- MODEL SETUP OPTIONS -------------------- !!!!
 
