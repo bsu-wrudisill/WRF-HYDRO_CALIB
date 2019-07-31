@@ -23,13 +23,14 @@ def returnItem(dic,x):
 		return None
 
 class SetMeUp:
-	def __init__(self,setup):
+	def __init__(self,setup,**kwargs):
 		# Read in all of the parameter files and hanf 
 		# onto them.
+		name_ext = kwargs.get('name_ext', '')
 		with open(setup) as j:
 			jsonfile = json.load(j)
 			self.usgs_code = jsonfile[0]['usgs_code']
-			self.clbdirc = jsonfile[0]['calib_location'] + self.usgs_code
+			self.clbdirc = jsonfile[0]['calib_location'] + self.usgs_code + name_ext
 			self.hydrorestart = jsonfile[0]['hydro_restart_file']  # NOT CURRENTLY ACTIVE --- CHANGE ME
 			self.hrldasrestart = jsonfile[0]['hrldas_restart_file']  # NOT CURRENTLY ACTIVE --- CHANGE ME
 			self.queue = jsonfile[0]['QUEUE']

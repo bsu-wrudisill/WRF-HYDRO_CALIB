@@ -32,8 +32,12 @@ for ITER in range(NITERS):
 	submitCmd = "sbatch submit.sh >> {}".format(setup.catchid)
 	lib.SystemCmd(submitCmd)
 	
-	time.sleep(.5) # wait a second before checking for the job
-	lib.WaitForJob(setup.catchid, 'wrudisill')
+	time.sleep(1) # wait a second before checking for the job
+	try:
+		lib.WaitForJob(setup.catchid, 'wrudisill')
+	except: 
+		print('error in wait for job')
+	# change directories	
 	os.chdir(cwd)
 
 	print('job finished-- perform analysis/update')	
