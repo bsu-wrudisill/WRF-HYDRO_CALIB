@@ -2,6 +2,7 @@ import pandas as pd
 import json
 import os 
 import time 
+import sys 
 
 libPath = './lib/Python'
 sys.path.insert(0,libPath)
@@ -31,14 +32,12 @@ for ITER in range(NITERS):
 	print('on iteration...{}'.format(ITER))
 	# execute the run 
 	os.chdir(setup.clbdirc)
-	submitCmd = "sbatch submit.sh >> {}".format(setup.catchid)
-	lib.SystemCmd(submitCmd)
-	
+	#submitCmd = "sbatch submit.sh >> {}".format(setup.catchid)
+	jobid, err = ancil.Submit('submit.sh', setup.catchid)
+	print(jobid, err)		
 	time.sleep(1) # wait a second before checking for the job
-	try:
-		lib.WaitForJob(setup.catchid, 'wrudisill')
-	except: 
-		print('error in wait for job')
+	ancil.WaitForJob(jobid, 'wrudisill')
+	
 	# change directories	
 	os.chdir(cwd)
 
@@ -58,7 +57,7 @@ for ITER in range(NITERS):
 	#lib.ConcatLDAS(setup.clbdirc, ITER)
 	# clean up the directory 
 	
-	lib.CleanUp(setup.clbdirc)
+	ancil.CleanUp(setup.clbdirc)
 	
 	# move the iternal iteration state one forward 
 	calib()

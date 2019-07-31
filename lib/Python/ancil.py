@@ -48,17 +48,26 @@ def SystemCmd(cmd):
 	out,err = proc.communicate()
 	return out.split(),err
 
-def WaitForJob(catch,user):
+def Submit(subname,catchid):
+	cmd = 'sbatch --parsable {}'.format(subname)
+	proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)	
+	jobid,err = proc.communicate()
+	return jobid.decode("utf-8"),err
+
+def WaitForJob(jobid,user):
+	#---- PREVIOUS METHOD; PROBLEMATIC ------# 
 	# Gather the Job id from the catch file
 	# (the catchid gets updated with eath iteration of real/wrf)
-	gid = "grep \"\" {} | cut -d' ' -f4".format(catch)    
-	gidout,giderr = SystemCmd(gid)    
-	print(gidout)
-
+	#gid = "grep \"\" {} | cut -d' ' -f4".format(catch)    
+	#gidout,giderr = SystemCmd(gid)    
+	#print(gidout)
+	
 	# IF STDERROR NULL (NO ERRORS) THEN CONTINUE
-	jobid = gidout[0]           # assign jobid
-	print("jobid found {}".format(jobid))
+	#jobid = gidout[0]           # assign jobid
+	#print("jobid found {}".format(jobid))
 
+
+	# ----NEW METHOD--- PASS IN JOBID 
 	still_running = 1     # start with 1 for still running 
 	while still_running == 1: # as long as theres a job running, keep looping and checking
 		# command

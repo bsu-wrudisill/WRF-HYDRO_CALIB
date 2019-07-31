@@ -149,13 +149,13 @@ class CalibrationMaster():
 		self.objList = [] 
 
 		# create a dataframe w/ the parameter values and links to the right files
-		df = pd.read_csv('calib.params.tbl')
+		df = pd.read_csv('calib_params.tbl')
 		df.set_index('parameter', inplace=True)
 		
 		# initialize the best value parameter  
 		df["bestValue"] = df["ini"] 
 		df["nextValue"] = None 
-		df["onOff"] = df["calib.flag"]  # used for the DDS alg... 
+		df["onOff"] = df["calib_flag"]  # used for the DDS alg... 
 		# assign the df to itself, so we can hold onto it in later fx  
 		self.df = df 
 		
@@ -259,7 +259,7 @@ class CalibrationMaster():
 		self.ALG = 'DDS'
 		# read the parameter tables 
 	   	# this seems like a dumb algorithm.... 
-		activeParams = list(self.df.groupby('calib.flag').groups[1])
+		activeParams = list(self.df.groupby('calib_flag').groups[1])
 
 		# Part 1: Randomly select parameters to update 
 		prob = self.LogLik(self.iters, self.MaxIters)
@@ -271,7 +271,7 @@ class CalibrationMaster():
 			else:
 				self.df.at[param, 'onOff'] = 0 
 		# the 'onOff' flag is updated for each iteration... the 
-		# calib.flag is not (this flag decides if we want to consider
+		# calib_flag is not (this flag decides if we want to consider
 		# the parameter at all 
 		# loop thgouh 
 		try:
@@ -324,12 +324,12 @@ class CalibrationMaster():
 			self.bestObj = obj 
 			improvement = 1 	
 			# update the active params 
-			for param in self.df.groupby('calib.flag').groups[1]:
+			for param in self.df.groupby('calib_flag').groups[1]:
 				self.df.at[param, 'bestValue'] = self.df.loc[param,'ini']
 			
 			# keep the inactive params at 0 
 			try:
-				for param in self.df.groupby('calib.flag').groups[0]:
+				for param in self.df.groupby('calib_flag').groups[0]:
 					self.df.at[param, 'bestValue'] = 0.0 
 				print('we are on the first iter')
 			except KeyError:
