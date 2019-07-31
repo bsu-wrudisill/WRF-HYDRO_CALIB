@@ -1,11 +1,13 @@
 import pandas as pd 
 import json
-#from setupRunDir import SetMeUp
-from adjustParameters import *  
-import lib
 import os 
 import time 
+
+libPath = './lib/Python'
+sys.path.insert(0,libPath)
+from adjustParameters import *  
 from dbLogger import LogParamsToDB 
+import ancil
 
 # lib.SystemCmd('source ./env_nwm_r2.sh') ## this doesn't work 
 cwd = os.getcwd()
@@ -24,7 +26,7 @@ calib() # do this... i think
 
 objlist = []
 
-NITERS = 100
+NITERS = 1000
 for ITER in range(NITERS):
 	print('on iteration...{}'.format(ITER))
 	# execute the run 

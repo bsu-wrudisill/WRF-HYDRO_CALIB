@@ -2,7 +2,7 @@ import json
 import shutil
 import os 
 import glob 
-import lib
+import ancil 
 import subprocess
 import xarray as xr
 import pandas as pd
@@ -14,32 +14,37 @@ from dbLogger import LogResultsToDB
 # read.json...
 # Helper functions 
 
-
 def returnItem(dic,x):
 	try:
 		return dic[x]
 		#return 1
 	except KeyError:
 		return None
-
 class SetMeUp:
 	def __init__(self,setup,**kwargs):
 		# Read in all of the parameter files and hanf 
 		# onto them.
 		name_ext = kwargs.get('name_ext', '')
-		with open(setup) as j:
-			jsonfile = json.load(j)
-			self.usgs_code = jsonfile[0]['usgs_code']
-			self.clbdirc = jsonfile[0]['calib_location'] + self.usgs_code + name_ext
-			self.hydrorestart = jsonfile[0]['hydro_restart_file']  # NOT CURRENTLY ACTIVE --- CHANGE ME
-			self.hrldasrestart = jsonfile[0]['hrldas_restart_file']  # NOT CURRENTLY ACTIVE --- CHANGE ME
-			self.queue = jsonfile[0]['QUEUE']
-			self.nodes = jsonfile[0]['NODES']
-			self.start_date = jsonfile[0]['START_DATE']
-			self.end_date   = jsonfile[0]['END_DATE']
-			self.parmdirc = jsonfile[0]['parameter_location'].format(self.usgs_code)
-			self.exedirc = jsonfile[0]['executable_location']
-			self.forcdirc = jsonfile[0]['forcing_location']
+		# 
+		#!!!! ----- THIS IS WAY TOO VERBOSE ---- DO SOMETHING TO CHANGE -----!!!!
+		# 
+		if type(setup) == str:
+			with open(setup) as j:
+				jsonfile = json.load(j)[0]
+		if type(setup) == dict:
+			jsonfile=setup
+
+		self.usgs_code = jsonfile['usgs_code']
+		self.clbdirc = jsonfile['calib_location'] + self.usgs_code + name_ext
+		self.hydrorestart = jsonfile['hydro_restart_file']  # NOT CURRENTLY ACTIVE --- CHANGE ME
+		self.hrldasrestart = jsonfile['hrldas_restart_file']  # NOT CURRENTLY ACTIVE --- CHANGE ME
+		self.queue = jsonfile['QUEUE']
+		self.nodes = jsonfile['NODES']
+		self.start_date = jsonfile['START_DATE']
+		self.end_date   = jsonfile['END_DATE']
+		self.parmdirc = jsonfile['parameter_location'].format(self.usgs_code)
+		self.exedirc = jsonfile['executable_location']
+		self.forcdirc = jsonfile['forcing_location']
 		# create catch id file name 	
 		self.catchid = 'catch_{}'.format(self.usgs_code)
 	
@@ -52,26 +57,26 @@ class SetMeUp:
 			
 	def CreateRunDir(self, **kwargs):
 		"""
-		Create run directory for WRF-hdyro calibration runs.
+		Create run directory for WRF-hdyro calib.ation runs.
 		Copies files from the "directory_location" to the 
-		"calib_location" defined in the setup.json file
+		"calib.location" defined in the setup.json file
 		"""
 		
-		# now, lets create the directory to perform the calibration in
+		# now, lets create the directory to perform the calib.ation in
 		shutil.copytree(self.parmdirc, self.clbdirc+'/DOMAIN')  # this is an annoying command ....
 		
 		# create a directory to store the original domain files in. this is just a convenience
 		startingParamDir = "{}/ORIG_PARM/".format(self.clbdirc)
 		os.mkdir(startingParamDir)
 
-		# make copies of the domain parameters that we will later calibrate
-		calibList = ['hydro2dtbl.nc',
+		# make copies of the domain parameters that we will later calib.ate
+		caliblist = ['hydro2dtbl.nc',
 			     'Route_Link.nc',
 			     'soil_properties.nc', 
 			     'GWBUCKPARM.nc']			     
 
 		# make copies of these 
-		[shutil.copy("{}/{}".format(self.parmdirc,i), startingParamDir+i) for i in calibList]
+		[shutil.copy("{}/{}".format(self.parmdirc,i), startingParamDir+i) for i in caliblist]
 	
 		# 
 		# get these files. ..
@@ -96,8 +101,8 @@ class SetMeUp:
 
 	def CreateNamelist(self, **kwargs):
 		# modify the namelist templates that reside in the run dir
-		startDate = lib.formatDate(self.start_date)	
-		endDate = lib.formatDate(self.end_date)	
+		startDate = ancil.formatDate(self.start_date)	
+		endDate = ancil.formatDate(self.end_date)	
 		dateRange = endDate - startDate		
 		nlistDic = {"YYYY": startDate.year,
 			    "MM": startDate.month,
@@ -107,10 +112,10 @@ class SetMeUp:
 			    "RESTARTFILENAME": self.hrldasrestart
 			    }
 		# create the submission script 	
-		lib.GenericWrite('./namelists/namelist.hrldas.TEMPLATE', nlistDic, self.clbdirc+'/namelist.hrldas')	
+		ancil.GenericWrite('./namelists/namelist.hrldas.TEMPLATE', nlistDic, self.clbdirc+'/namelist.hrldas')	
 		# modify the hydro.namelist
 		hydDic = {"HYDRO_RSTFILENAME":self.hydrorestart}
-		lib.GenericWrite('./namelists/hydro.namelist.TEMPLATE',hydDic,self.clbdirc+'/hydro.namelist')
+		ancil.GenericWrite('./namelists/hydro.namelist.TEMPLATE',hydDic,self.clbdirc+'/hydro.namelist')
 
 	def CreateSubmitScript(self,**kwargs):
 		"""
@@ -127,43 +132,43 @@ class SetMeUp:
 			    "CATCHID":"catch_{}".format(self.usgs_code)
 			    }
 		# create the submission script 	
-		lib.GenericWrite('./namelists/submit.TEMPLATE.sh', slurmDic, namelistHolder.format('submit.sh'))
+		ancil.GenericWrite('./namelists/submit.TEMPLATE.sh', slurmDic, namelistHolder.format('submit.sh'))
 
 class CalibrationMaster():
 	# class to start and do the entire
-	# calibrarion update from start to finish
+	# calib.arion update from start to finish
 	# 
 	def __init__(self,setup):
 		# --- keep track of the number of iterations ---# 
-		self.iters = 0 # keep track of the iterations of calibration 
+		self.iters = 0 # keep track of the iterations of calib.ation 
 		self.setup = setup  # pass the setup class into here...  
 		self.paramDir = "{}/DOMAIN".format(self.setup.clbdirc)
-		#self.paramDir = '/scratch/wrudisill/WillCalibHydro/TestDOMAIN'    #TEMPORARY 
+		#self.paramDir = '/scratch/wrudisill/WillCaancil.ydro/TestDOMAIN'    #TEMPORARY 
 		self.MaxIters = 1e5   # the maximum # of iterations allowed
 		self.bestObj = 1e16
 		self.objList = [] 
 
 		# create a dataframe w/ the parameter values and links to the right files
-		df = pd.read_csv('calib_params.tbl')
+		df = pd.read_csv('calib.params.tbl')
 		df.set_index('parameter', inplace=True)
 		
 		# initialize the best value parameter  
 		df["bestValue"] = df["ini"] 
 		df["nextValue"] = None 
-		df["onOff"] = df["calib_flag"]  # used for the DDS alg... 
+		df["onOff"] = df["calib.flag"]  # used for the DDS alg... 
 		# assign the df to itself, so we can hold onto it in later fx  
 		self.df = df 
 		
 		# maybe write to a csv... or not-- ADD ME TO A DATABASE INSTEAD!!! 
-		#df.to_csv('calibrationDataFrame.csv')
+		#df.to_csv('calib.ationDataFrame.csv')
 		
 	
 	def UpdateCalibDF(self):
-		# update the calibration dataframe for each iteration 
+		# update the calib.ation dataframe for each iteration 
 		self.df["CALIB_{}".format(self.iters)] = None
 		
 		# ADD ME TO DATABASE INSTEAD
-		#self.df.to_csv("calibrationDataFrame.csv")
+		#self.df.to_csv("calib.ationDataFrame.csv")
 		# done.. 
 
 	def UpdateParamFiles(self):
@@ -254,7 +259,7 @@ class CalibrationMaster():
 		self.ALG = 'DDS'
 		# read the parameter tables 
 	   	# this seems like a dumb algorithm.... 
-		activeParams = list(self.df.groupby('calib_flag').groups[1])
+		activeParams = list(self.df.groupby('calib.flag').groups[1])
 
 		# Part 1: Randomly select parameters to update 
 		prob = self.LogLik(self.iters, self.MaxIters)
@@ -266,7 +271,7 @@ class CalibrationMaster():
 			else:
 				self.df.at[param, 'onOff'] = 0 
 		# the 'onOff' flag is updated for each iteration... the 
-		# calib_flag is not (this flag decides if we want to consider
+		# calib.flag is not (this flag decides if we want to consider
 		# the parameter at all 
 		# loop thgouh 
 		try:
@@ -301,7 +306,7 @@ class CalibrationMaster():
 	def EvaluateIteration(self):
 		# check the obfun. 
 		# if the performance of the last parameter set us better, then update the 
-		# calib data frame 
+		# calib.data frame 
 		obj = self.ObFun()
 		improvement = 0  # were the parameters improved upon?
 
@@ -319,12 +324,12 @@ class CalibrationMaster():
 			self.bestObj = obj 
 			improvement = 1 	
 			# update the active params 
-			for param in self.df.groupby('calib_flag').groups[1]:
+			for param in self.df.groupby('calib.flag').groups[1]:
 				self.df.at[param, 'bestValue'] = self.df.loc[param,'ini']
 			
 			# keep the inactive params at 0 
 			try:
-				for param in self.df.groupby('calib_flag').groups[0]:
+				for param in self.df.groupby('calib.flag').groups[0]:
 					self.df.at[param, 'bestValue'] = 0.0 
 				print('we are on the first iter')
 			except KeyError:
@@ -355,20 +360,19 @@ class CalibrationMaster():
 		return obj,improvement
 
 	def __call__(self):
-		# This creatres a "call" -- when we do calib(), we 
+		# This creatres a "call" -- when we do calib.), we 
 		# are applying this function that is inside of here
-		# this way ... we can call the calibration routine N 
-		# times and update the calib method w/ each step 
+		# this way ... we can call the calib.ation routine N 
+		# times and update the calib.method w/ each step 
 		self.iters = self.iters + 1 	
 		niter = self.iters
-#		self.UpdateCalibDF(n)
+#		self.UpdateCaancil.F(n)
 
 
 if __name__ == '__main__':
 	setup = SetMeUp()
 	setup.CreateRunDir()
-	calib = CalibrationMaster(setup)
-	#calib()
+#	calib= calib.ationMaster(setup)
 	#calib.ReadQ()
 	#calib.EvaluateIteration()
 	#calib.DDS()
