@@ -351,7 +351,7 @@ class CalibrationMaster():
 				# the self.bestObj remains the same
 				improvement = 0
 				print('no obj. improvement')
-				pass 
+				print('is this me too?')
 
 		# lastly, let's clean the nextvalue and onOff switches 
 		# these get updated by the DDS ( or whatever alg. we chose...)

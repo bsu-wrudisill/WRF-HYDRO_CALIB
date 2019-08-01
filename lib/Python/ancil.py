@@ -52,7 +52,7 @@ def Submit(subname,catchid):
 	cmd = 'sbatch --parsable {}'.format(subname)
 	proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)	
 	jobid,err = proc.communicate()
-	return jobid.decode("utf-8"),err
+	return jobid.decode("utf-8").rstrip(),err
 
 def WaitForJob(jobid,user):
 	#---- PREVIOUS METHOD; PROBLEMATIC ------# 
@@ -72,12 +72,19 @@ def WaitForJob(jobid,user):
 	while still_running == 1: # as long as theres a job running, keep looping and checking
 		# command
 		chid = "squeue -u {} | sed \"s/^ *//\" | cut -d' ' -f1".format(user)   
+		
 		# run command and parse output 
 		chidout, chiderr = SystemCmd(chid)    
+		chidout = [i.decode("utf-8") for i in chidout]
+		#assert len(chidout) > 0, 'cryptic error'
+		# convert the id to an integer
+
 		# the length of the list. should be zero or one. one means the job ID is found 
 		still_running_list = list(filter(lambda x: x == jobid, chidout))
+		print(still_running_list)
 		still_running = len(still_running_list)
-		time.sleep(5)
+		
+		time.sleep(10)
 		print('still running...')
 	pass 
 

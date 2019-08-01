@@ -34,7 +34,6 @@ for ITER in range(NITERS):
 	os.chdir(setup.clbdirc)
 	#submitCmd = "sbatch submit.sh >> {}".format(setup.catchid)
 	jobid, err = ancil.Submit('submit.sh', setup.catchid)
-	print(jobid, err)		
 	time.sleep(1) # wait a second before checking for the job
 	ancil.WaitForJob(jobid, 'wrudisill')
 	
