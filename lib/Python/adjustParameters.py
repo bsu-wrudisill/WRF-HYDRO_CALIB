@@ -262,7 +262,7 @@ class CalibrationMaster():
 		activeParams = list(self.df.groupby('calib_flag').groups[1])
 
 		# Part 1: Randomly select parameters to update 
-		prob = self.LogLik(self.iters, self.MaxIters)
+		prob = self.LogLik(self.iters+1, self.MaxIters)
 		
 		for param in activeParams:
 			sel = np.random.choice(2, p=[1-prob,prob])
@@ -288,6 +288,7 @@ class CalibrationMaster():
 			xj_min = J.minValue
 			xj_max = J.maxValue
 			xj_best = J.bestValue
+			print(xj_best)
 			sigj = r * (xj_max - xj_min)
 			x_new = xj_best + sigj*np.random.randn(1)
 			if x_new < xj_min: # if it is less than min, reflect to middle
@@ -318,11 +319,12 @@ class CalibrationMaster():
 	
 		
 		# check if the new parameters improved the objective function 
-		if self.iters == 1:
+		if self.iters == 0:
+			print('ON ITER O')
 			# this is the first iteration; we have just tested 
 			# the 'stock' parameters 
 			self.bestObj = obj 
-			improvement = 1 	
+			improvement = 0 	
 			# update the active params 
 			for param in self.df.groupby('calib_flag').groups[1]:
 				self.df.at[param, 'bestValue'] = self.df.loc[param,'ini']
@@ -347,11 +349,10 @@ class CalibrationMaster():
 				improvement = 1
 				print('obj. improvement')
 					
-			if obj >= self.bestObj:
+			elif obj >= self.bestObj:
 				# the self.bestObj remains the same
 				improvement = 0
 				print('no obj. improvement')
-				print('is this me too?')
 
 		# lastly, let's clean the nextvalue and onOff switches 
 		# these get updated by the DDS ( or whatever alg. we chose...)

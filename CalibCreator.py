@@ -10,6 +10,17 @@ from adjustParameters import *
 from dbLogger import LogParamsToDB 
 import ancil
 
+
+# ---- TEMP ---- 
+try:
+	os.system('rm -rf 13235000/')
+	os.system('rm CALIBRATION.db')
+except:
+	pass
+
+# ------ # ----- # --- 
+
+
 # lib.SystemCmd('source ./env_nwm_r2.sh') ## this doesn't work 
 cwd = os.getcwd()
 
@@ -22,7 +33,7 @@ setup.CreateSubmitScript()
 
 # initiate the calibration object
 calib = CalibrationMaster(setup)
-calib() # do this... i think 
+#calib() # do this... i think 
 
 
 objlist = []
