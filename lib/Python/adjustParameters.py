@@ -9,7 +9,7 @@ import pandas as pd
 import functools as ft
 import netCDF4 as nc
 import numpy as np
-from dbLogger import LogResultsToDB
+import dbLogger as dbL
 # read in the parameter adjustment table
 # read.json...
 # Helper functions 
@@ -154,29 +154,15 @@ class CalibrationMaster():
 		
 		# initialize the best value parameter  
 		df["bestValue"] = df["ini"] 
+		df["currentValue"] = df["ini"]
 		df["nextValue"] = None 
 		df["onOff"] = df["calib_flag"]  # used for the DDS alg... 
 		# assign the df to itself, so we can hold onto it in later fx  
 		self.df = df 
 		
-		# maybe write to a csv... or not-- ADD ME TO A DATABASE INSTEAD!!! 
-		#df.to_csv('calib.ationDataFrame.csv')
-		
-	
-	def UpdateCalibDF(self):
-		# update the calib.ation dataframe for each iteration 
-		self.df["CALIB_{}".format(self.iters)] = None
-		
-		# ADD ME TO DATABASE INSTEAD
-		#self.df.to_csv("calib.ationDataFrame.csv")
-		# done.. 
-
 	def UpdateParamFiles(self):
 		# update the NC files given the adjustment param
 		# Group parameters by the file type   -- tbl or nc
-		if self.iters == 0:
-			print("nothing to update-- 1st iteration")
-			return
 		grouped = self.df.groupby('file')
 		# process the netcdf files first 
 		ncList = grouped.groups.keys()
@@ -184,7 +170,6 @@ class CalibrationMaster():
 			UpdateMe = xr.open_dataset(self.setup.clbdirc+'/ORIG_PARM/'+ncSingle)
 			# remove the file... we overwrite w/ the update 
 			os.remove(self.paramDir+'/'+ncSingle)
-			
 			# loop through the params and update. write files 
 			for param in grouped.groups[ncSingle]: 
 				# PERFORM THE DDS PARAMETER UPDATE FOR EACH PARAM
@@ -201,6 +186,8 @@ class CalibrationMaster():
 			# save the file now and close  
 			UpdateMe.to_netcdf(self.paramDir+'/'+ncSingle, mode='w')
 			UpdateMe.close()
+		# update the dataframe to reflect that the 'next param' values have been inserted into the current params 
+		self.df['currentValue'] = self.df['nextValue']
 
 	def ObFun(self):
 		# RMSE 
@@ -209,13 +196,6 @@ class CalibrationMaster():
 		print(rmse)
 		return rmse
 	
-	def CheckModelOutput(self):
-		pass 
-	
-	def FilterNegative(self,array):
-		array[np.where(array<0)] = 0
-		return array 
-
 	def ReadQ(self):
 		# read model output variables 
 		# and usgs observations
@@ -241,20 +221,33 @@ class CalibrationMaster():
 		merged = obsQ.copy()
 		merged['qMod'] = modQdly
 		merged.dropna(inplace=True)
-		
+
 		# pass off merged to itself 
 		self.merged = merged	
 		
 		# log the output to a database for keeping 
-		LogResultsToDB(modQdly, 'Iteration_{}'.format(self.iters))
-		if self.iters == 1:
-			LogResultsToDB(obsQ, 'Observations')
+		# add iteration count to the df.
+		modQdly['Iterations'] = str(self.iters)
+		dbL.LogResultsToDB(modQdly, 'MODOUT')
+		if self.iters == 0:
+			dbL.LogResultsToDB(obsQ, 'Observations')
 
 	def LogLik(self,curiter, maxiter):
 		# logliklihood function
 		return 1 - np.log(curiter)/np.log(maxiter)
 
+	def LogParams(self):
+		# Log Params  
+		sql_params = self.df.copy()
+		sql_params['Iteration'] = str(self.iters)
+		sql_params.drop(columns=['file', 'dims','nextValue'], inplace=True)
+		dbL.LogResultsToDB(sql_params, 'PARAMETERS')
+	
+	def LogObj(self):
+		dbL.LogObjToDB(str(self.iters), './', self.obj, self.improvement)
+
 	def DDS(self):
+		# Begin algorithm
 		r= .2
 		self.ALG = 'DDS'
 		# read the parameter tables 
@@ -288,7 +281,6 @@ class CalibrationMaster():
 			xj_min = J.minValue
 			xj_max = J.maxValue
 			xj_best = J.bestValue
-			print(xj_best)
 			sigj = r * (xj_max - xj_min)
 			x_new = xj_best + sigj*np.random.randn(1)
 			if x_new < xj_min: # if it is less than min, reflect to middle
@@ -297,12 +289,13 @@ class CalibrationMaster():
 				x_new = xj_max - (x_new - xj_max)
 			self.df.at[param,'nextValue'] = np.float(x_new)
 			#self.df.at[param,"CALIB_{}".format(self.iters)] = np.float(x_new)
-
+		
 		for param in deselectedParams:
 			J = self.df.loc[param]
 			xj_best = J.bestValue
 			self.df.at[param,'nextValue'] = np.float(xj_best) # no updating 
 			#self.df.at[param,"CALIB_{}".format(self.iters)] = np.float(xj_best)
+			
 
 	def EvaluateIteration(self):
 		# check the obfun. 
@@ -310,14 +303,8 @@ class CalibrationMaster():
 		# calib.data frame 
 		obj = self.ObFun()
 		improvement = 0  # were the parameters improved upon?
+		self.obj = obj	
 
-		# nothing special here -- we just have to pull out hte 
-		# list, append to it, then reassign it to 'self' (we can't append to self)
-		objList = self.objList
-		objList.append(obj)
-		self.objList = objList 
-	
-		
 		# check if the new parameters improved the objective function 
 		if self.iters == 0:
 			print('ON ITER O')
@@ -328,7 +315,6 @@ class CalibrationMaster():
 			# update the active params 
 			for param in self.df.groupby('calib_flag').groups[1]:
 				self.df.at[param, 'bestValue'] = self.df.loc[param,'ini']
-			
 			# keep the inactive params at 0 
 			try:
 				for param in self.df.groupby('calib_flag').groups[0]:
@@ -356,6 +342,7 @@ class CalibrationMaster():
 
 		# lastly, let's clean the nextvalue and onOff switches 
 		# these get updated by the DDS ( or whatever alg. we chose...)
+		self.improvement = improvement
 		self.df['nextValue'] = np.float(0)
 		self.df['onOff'] = 0
 		return obj,improvement

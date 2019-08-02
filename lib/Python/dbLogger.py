@@ -8,10 +8,9 @@ def LogResultsToDB(df,table_name,**kwargs):
 	db_connection = kwargs.get('dbcon', 'CALIBRATION.db')
 	#
 	engine = create_engine('sqlite:///{}'.format(db_connection), echo=False)
-	df.to_sql(table_name, con = engine)
+	df.to_sql(table_name, con = engine, if_exists='append')
 
-
-def LogParamsToDB(iterations, directory, objectivefx, improvement, **kwargs):
+def LogObjToDB(iterations, directory, objectivefx, improvement, **kwargs):
 	db_connection = kwargs.get('dbcon', 'CALIBRATION.db')
 	#
 	#

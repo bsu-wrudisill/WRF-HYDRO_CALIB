@@ -7,7 +7,6 @@ import sys
 libPath = './lib/Python'
 sys.path.insert(0,libPath)
 from adjustParameters import *  
-from dbLogger import LogParamsToDB 
 import ancil
 
 
@@ -41,8 +40,10 @@ objlist = []
 NITERS = 1000
 for ITER in range(NITERS):
 	print('on iteration...{}'.format(ITER))
+	# log parameters
 	# execute the run 
 	os.chdir(setup.clbdirc)
+	
 	#submitCmd = "sbatch submit.sh >> {}".format(setup.catchid)
 	jobid, err = ancil.Submit('submit.sh', setup.catchid)
 	time.sleep(1) # wait a second before checking for the job
@@ -50,23 +51,23 @@ for ITER in range(NITERS):
 	
 	# change directories	
 	os.chdir(cwd)
-
 	print('job finished-- perform analysis/update')	
 	calib.ReadQ() # read model/usgs OBS
-
 	print("evaluate... obj fun")
 	obj,improvement = calib.EvaluateIteration()  # check if the model improved 
 	
-	# log things to the objective fx
-	LogParamsToDB(str(ITER), './', obj, improvement)
-
-	calib.DDS() # generate new parameters 
-	calib.UpdateParamFiles()  # write the new parameters 
-	calib.UpdateCalibDF()
-	# concat files 
-	#lib.ConcatLDAS(setup.clbdirc, ITER)
-	# clean up the directory 
+	calib.LogParams()     # log the parameter set 
+	calib.LogObj() 
 	
+	# log the parameters 
+	calib.DDS()           # generate new parameters 
+
+	# update the parameters 
+	calib.UpdateParamFiles()  # write the new parameters to files 
+	
+	# concat files 
+	# lib.ConcatLDAS(setup.clbdirc, ITER)
+	# clean up the directory 
 	ancil.CleanUp(setup.clbdirc)
 	
 	# move the iternal iteration state one forward 
