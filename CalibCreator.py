@@ -35,42 +35,58 @@ calib = CalibrationMaster(setup)
 #calib() # do this... i think 
 
 
-objlist = []
-
-NITERS = 1000
-for ITER in range(NITERS):
-	print('on iteration...{}'.format(ITER))
-	# log parameters
-	# execute the run 
+def SingleIteration(setup, calib):
+	#----- MODEL SETUP/SUBMIT ----# 
+	# switch to the calibdirectory 
 	os.chdir(setup.clbdirc)
 	
-	#submitCmd = "sbatch submit.sh >> {}".format(setup.catchid)
+	# submit the job 
 	jobid, err = ancil.Submit('submit.sh', setup.catchid)
+	
+	# sleep 
 	time.sleep(1) # wait a second before checking for the job
+	
+	# wait for the job to complete 
 	ancil.WaitForJob(jobid, 'wrudisill')
 	
-	# change directories	
+	# change back to the parent directory 
 	os.chdir(cwd)
 	print('job finished-- perform analysis/update')	
+	
+	# --- MODEL EVALUATION ---- # 
 	calib.ReadQ() # read model/usgs OBS
 	print("evaluate... obj fun")
 	obj,improvement = calib.EvaluateIteration()  # check if the model improved 
 	
-	calib.LogParams()     # log the parameter set 
+	# log the parameters and obfun to the database
+	calib.LogParams()     
 	calib.LogObj() 
 	
-	# log the parameters 
-	calib.DDS()           # generate new parameters 
+	# generate new parameters 
+	calib.DDS()          
 
 	# update the parameters 
 	calib.UpdateParamFiles()  # write the new parameters to files 
 	
-	# concat files 
-	# lib.ConcatLDAS(setup.clbdirc, ITER)
 	# clean up the directory 
 	ancil.CleanUp(setup.clbdirc)
-	
+
 	# move the iternal iteration state one forward 
-	calib()
+	calib.MoveForward()
 	
-print(objlist)
+
+niters= 1000
+failures = 0  
+
+for iters in range(niters):
+	# allow the model to break no more than three times in a row 
+	while failures < 3:
+		try:
+			SingleIteration(setup,calib)
+			failures = 0 
+		except:
+			# Clean up and try again
+			ancil.CleanUp(setup.clbdirc)
+			failures += 1 
+# done 
+print(failures)

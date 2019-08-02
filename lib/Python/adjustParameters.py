@@ -346,16 +346,18 @@ class CalibrationMaster():
 		self.df['nextValue'] = np.float(0)
 		self.df['onOff'] = 0
 		return obj,improvement
+	
+	def MoveForward(self):
+		# move the model forward one iteration
+		self.iters +=1
 
 	def __call__(self):
 		# This creatres a "call" -- when we do calib.), we 
 		# are applying this function that is inside of here
 		# this way ... we can call the calib.ation routine N 
 		# times and update the calib.method w/ each step 
-		self.iters = self.iters + 1 	
-		niter = self.iters
-#		self.UpdateCaancil.F(n)
-
+		pass 	
+	
 
 if __name__ == '__main__':
 	setup = SetMeUp()
