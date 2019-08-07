@@ -56,6 +56,7 @@ def EnsemblePlot(ax):
 		sub = df_cd.loc[df_cd['Iteration'] == iteration][['time', 'qMod']]
 		ax.plot(sub['time'], sub['qMod'])
 	ax.plot(obs['time'], obs['qObs'])
+	plt.savefig('ensemble_plot', dpi=500)
 #
 #
 #
@@ -85,7 +86,8 @@ def ParameterPlot():
 
 if __name__ == '__main__':
 	fig,ax = plt.subplots()
-	mean = returnObs().mean()
-	PlotObj(ax, mean=mean)
+	#mean = returnObs().mean()
+	#PlotObj(ax, mean=mean)
+	EnsemblePlot(ax)
 	pass 
 
