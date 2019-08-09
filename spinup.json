@@ -1,0 +1,12 @@
+[{"parameter_location":"/scratch/leaf/share/WRF_hydro_subsets_201810/{}",
+  "executable_location":"/home/wrudisill/scratch/NewHydroBuilt/WRF_HYDRO-R2/wrf_hydro_nwm_public/trunk/NDHMS/Run",
+  "forcing_location":"/home/wrudisill/scratch/ForcingsWH/SFPAYETTE/wy2010/d02/",
+  "calib_location":"/scratch/wrudisill/WRF-HYDRO_CALIB/",
+  "hydro_restart_file": "/scratch/wrudisill/WRF-HYDRO_CALIB/RESTARTS/HYDRO_RST.2010-07-01_00:00_DOMAIN2",
+  "hrldas_restart_file": "/scratch/wrudisill/WRF-HYDRO_CALIB/RESTARTS/RESTART.2010070100_DOMAIN1", 
+  "usgs_code":"13235000",
+  "QUEUE":"shortq",
+  "NODES":"2",
+  "START_DATE": "2010-07-01",
+  "END_DATE": "2010-07-30"
+}] 
