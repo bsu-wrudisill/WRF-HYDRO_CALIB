@@ -45,7 +45,7 @@ rst_bi_out = 0      !0: use netcdf output restart file (default)
 RSTRT_SWC = 0
 
 ! Specify baseflow/bucket model initialization...(0=cold start from table, 1=restart file)
-GW_RESTART = 0
+GW_RESTART = 1 
 
 !!!! -------------------- MODEL OUTPUT CONTROL -------------------- !!!!
 
@@ -119,7 +119,7 @@ DXRT = 250.0
 AGGFACTRT = 4 
 
 ! Specify the channel routing model timestep...(seconds)
-DTRT_CH = 10
+DTRT_CH = 300
 
 ! Specify the terrain routing model timestep...(seconds)
 DTRT_TER = 10
@@ -138,10 +138,10 @@ rt_option = 1
 CHANRTSWCRT = 1
 
 ! Specify channel routing option: 1=Muskingam-reach, 2=Musk.-Cunge-reach, 3=Diff.Wave-gridded
-channel_option = 3
+channel_option = 2
 
 ! Specify the reach file for reach-based routing options (e.g.: "Route_Link.nc")
-!route_link_f = "./DOMAIN/Route_Link.nc"
+route_link_f = "./DOMAIN/Route_Link.nc"
 
 ! If using channel_option=2, activate the compound channel formulation? (Default=.FALSE.)
 compound_channel = .FALSE.
@@ -151,17 +151,17 @@ compound_channel = .FALSE.
 ! route_lake_f = "./DOMAIN/LAKEPARM.nc"
 
 ! Switch to activate baseflow bucket model...(0=none, 1=exp. bucket, 2=pass-through)
-GWBASESWCRT = 0
+GWBASESWCRT = 1
 
 ! Groundwater/baseflow 2d mask specified on land surface model grid (e.g.: "GWBASINS.nc")
 !Note: Only required if baseflow  model is active (1 or 2) and UDMP_OPT=0.
 !gwbasmskfil = "./DOMAIN/GWBASINS.nc"
 
 ! Groundwater bucket parameter file (e.g.: "GWBUCKPARM.nc")
-!GWBUCKPARM_file = "./DOMAIN/GWBUCKPARM.nc"
+GWBUCKPARM_file = "./DOMAIN/GWBUCKPARM.nc"
 
 ! User defined mapping, such NHDPlus: 0=no (default), 1=yes
-UDMP_OPT = 0
+UDMP_OPT = 1
 
 ! If on, specify the user-defined mapping file (e.g.: "spatialweights.nc")
 udmap_file = "./DOMAIN/spatialweights.nc"
