@@ -15,11 +15,20 @@ import dbLogger as dbL
 # Helper functions 
 
 def returnItem(dic,x):
+	# not sure what i'm supposed to do!
 	try:
 		return dic[x]
 		#return 1
 	except KeyError:
 		return None
+
+
+def minDistance(latgrid, longrid, lat,lon):
+	# finds the lat/lon that corresponds 
+	# to a given gauge point. 
+	# returns an integer
+	return np.sqrt((latgrid-lat)**2 + (longrid-lon)**2).argmin()
+
 class SetMeUp:
 	def __init__(self,setup,**kwargs):
 		# Read in all of the parameter files and hanf 
@@ -200,7 +209,7 @@ class CalibrationMaster():
 		# read model output variables 
 		# and usgs observations
 		# creates a df, and applies the ObFun
-		gauge_loc = 230
+		gauge_loc = 29
 		modQfiles = xr.open_mfdataset(glob.glob(self.setup.clbdirc+'/*CHRTOUT_DOMAIN2*'))
 		# do some slicing and dicing... 	
 		qDf = pd.DataFrame(
