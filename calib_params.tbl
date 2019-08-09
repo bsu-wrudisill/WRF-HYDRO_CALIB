@@ -1,7 +1,7 @@
 parameter,calib_flag,minValue,maxValue,ini,file,dims
 bexp,        0,      0.40,      1.90,      0.0,soil_properties.nc,3 
 smcmax,      0,      0.80,      1.20,      0.0,soil_properties.nc,3
-dksat,       1,      0.0,       .01,      0.0,soil_properties.nc,3
+dksat,       1,      0.0,       .01,       0.0,soil_properties.nc,3
 dwsat,       0,      0.20,      100.0,     0.0,soil_properties.nc,3
 refkdt,      1,      -.15,      3.00,      0.0,soil_properties.nc,3
 cwpvt,       0,      0.50,      2.0,       0.0,soil_properties.nc,3
