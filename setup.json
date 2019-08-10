@@ -7,6 +7,6 @@
   "usgs_code":"13235000",
   "QUEUE":"leaf",
   "NODES":"2",
-  "START_DATE": "2010-07-01",
-  "END_DATE": "2010-07-30"
+  "calib_date":{"start_date":"2010-07-01","end_date": "2010-07-30"},
+  "eval_date":{"start_date":"2010-07-01","end_date": "2010-07-30"}
 }] 

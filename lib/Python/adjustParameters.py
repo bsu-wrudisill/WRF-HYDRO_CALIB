@@ -29,6 +29,16 @@ def minDistance(latgrid, longrid, lat,lon):
 	# returns an integer
 	return np.sqrt((latgrid-lat)**2 + (longrid-lon)**2).argmin()
 
+def AddOrMult(factor):
+	# create and addition or mult function 
+	# based on a string input 
+	if factor == 'mult':
+		return lambda a,b: a*b
+	if factor == 'add':
+		return lambda a,b: a+b
+	else:
+		return None
+
 class SetMeUp:
 	def __init__(self,setup,**kwargs):
 		# Read in all of the parameter files and hanf 
@@ -42,21 +52,24 @@ class SetMeUp:
 				jsonfile = json.load(j)[0]
 		if type(setup) == dict:
 			jsonfile=setup
-
 		self.usgs_code = jsonfile['usgs_code']
 		self.clbdirc = jsonfile['calib_location'] + self.usgs_code + name_ext
 		self.hydrorestart = jsonfile['hydro_restart_file']  # NOT CURRENTLY ACTIVE --- CHANGE ME
 		self.hrldasrestart = jsonfile['hrldas_restart_file']  # NOT CURRENTLY ACTIVE --- CHANGE ME
 		self.queue = jsonfile['QUEUE']
 		self.nodes = jsonfile['NODES']
-		self.start_date = jsonfile['START_DATE']
-		self.end_date   = jsonfile['END_DATE']
 		self.parmdirc = jsonfile['parameter_location'].format(self.usgs_code)
 		self.exedirc = jsonfile['executable_location']
 		self.forcdirc = jsonfile['forcing_location']
 		# create catch id file name 	
 		self.catchid = 'catch_{}'.format(self.usgs_code)
-	
+		
+		# get dates for start, end of spinup,eval period
+		self.calib_date = jsonfile['calib_date']
+		self.start_date = self.calib_date['start_date']
+		self.end_date = self.calib_date['end_date']
+		self.eval_date = jsonfile['eval_date']	
+
 	def GatherObs(self, **kwargs):
 		# run the rscripts to download the USGS observations for the correct 
 		# time period and gauge 
@@ -158,7 +171,7 @@ class CalibrationMaster():
 		self.objList = [] 
 
 		# create a dataframe w/ the parameter values and links to the right files
-		df = pd.read_csv('calib_params.tbl')
+		df = pd.read_csv('calib_params.tbl', delimiter=' *, *', engine='python')  # this strips away the whitesapce
 		df.set_index('parameter', inplace=True)
 		
 		# initialize the best value parameter  
@@ -168,7 +181,7 @@ class CalibrationMaster():
 		df["onOff"] = df["calib_flag"]  # used for the DDS alg... 
 		# assign the df to itself, so we can hold onto it in later fx  
 		self.df = df 
-		
+
 	def UpdateParamFiles(self):
 		# update the NC files given the adjustment param
 		# Group parameters by the file type   -- tbl or nc
@@ -183,13 +196,16 @@ class CalibrationMaster():
 			for param in grouped.groups[ncSingle]: 
 				# PERFORM THE DDS PARAMETER UPDATE FOR EACH PARAM
 				# the different files have differend dimensions 
+				print(self.df.loc[param].factor)
+				print(param)
+				updateFun = AddOrMult(self.df.loc[param].factor)
 				dims = self.df.loc[param].dims 
 				if dims == 1:
-					UpdateMe[param][:] = UpdateMe[param][:]+self.df.nextValue.loc[param]
+					UpdateMe[param][:] = updateFun(UpdateMe[param][:],self.df.nextValue.loc[param])
 				if dims == 2:
-					UpdateMe[param][:,:] = UpdateMe[param][:,:]+self.df.nextValue.loc[param]
+					UpdateMe[param][:,:] = updateFun(UpdateMe[param][:,:],self.df.nextValue.loc[param])
 				if dims == 3:
-					UpdateMe[param][:,:,:] = UpdateMe[param][:,:,:]+self.df.nextValue.loc[param]
+					UpdateMe[param][:,:,:] = updateFun(UpdateMe[param][:,:,:],self.df.nextValue.loc[param])
 				print('updated--{} in file {}--with value {}'.format(param,ncSingle,self.df.nextValue.loc[param]))
 			# done looping thru params 
 			# save the file now and close  
@@ -240,6 +256,8 @@ class CalibrationMaster():
 		dbL.LogResultsToDB(modQdly, 'MODOUT')
 		if self.iters == 0:
 			dbL.LogResultsToDB(obsQ, 'Observations')
+		# 
+		modQfiles.close()
 
 	def LogLik(self,curiter, maxiter):
 		# logliklihood function

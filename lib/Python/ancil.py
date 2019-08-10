@@ -17,8 +17,7 @@ def CleanUp(path):
 		    ,"*LSMOUT*"
 		    ,"*diag_hydro*"
 		    ,"*HYDRO_RST*"
-	            ,"log_wrf_hydro*"
-		    , "catch_*"]
+	            "log_wrf_hydro*"]
 
 	print('cleaning up...')
 	for removeMe in removeList:
