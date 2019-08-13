@@ -85,9 +85,11 @@ def ParameterPlot():
 
 
 if __name__ == '__main__':
-	fig,ax = plt.subplots()
-	#mean = returnObs().mean()
-	#PlotObj(ax, mean=mean)
-	EnsemblePlot(ax)
-	pass 
+	# plot one 
+	fig,ax1,ax2 = plt.subplots(2)
+	PlotObj(ax1, mean=mean)
+	EnsemblePlot(ax2)
+	
+	# plot 2 
+	ParameterPlot(ax)
 

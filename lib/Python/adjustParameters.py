@@ -10,10 +10,13 @@ import functools as ft
 import netCDF4 as nc
 import numpy as np
 import dbLogger as dbL
-# read in the parameter adjustment table
-# read.json...
-# Helper functions 
 
+
+# User options 
+#xr.set_options(file_cache_maxsize=1)
+
+
+# Helper functions   !!! MOVE ME TO THE ANCIL SCRIPT !!! 
 def returnItem(dic,x):
 	# not sure what i'm supposed to do!
 	try:
@@ -21,7 +24,6 @@ def returnItem(dic,x):
 		#return 1
 	except KeyError:
 		return None
-
 
 def minDistance(latgrid, longrid, lat,lon):
 	# finds the lat/lon that corresponds 
@@ -38,6 +40,28 @@ def AddOrMult(factor):
 		return lambda a,b: a+b
 	else:
 		return None
+
+
+# !!! THIS IS HERE FOR NOW..... MAKE ME A STATIC METHOD LATER !!!
+def GrepSQLstate(iteration,**kwargs):
+	# read 	
+	dbdir = kwargs.get('dbdir','CALIBRATION.db')
+	
+	# select data from the table 
+	mod_cmd = "SELECT * FROM MODOUT WHERE ITERATIONS = {}".format(iteration)
+	mod = pd.read_sql(sql = mod_cmd, con="sqlite:///{}/CALIBRATION.db".format(dbdir))
+	mod['time'] = pd.to_datetime(mod['time']) 
+	
+	# read obs 	
+	obs = pd.read_sql(sql="SELECT * FROM OBSERVATIONS", con="sqlite:///{}/CALIBRATION.db".format(dbdir))
+	obs['time'] = pd.to_datetime(obs['time'])
+	obs.drop(columns=['site_no'], inplace=True)
+	
+	# merge things  
+	merged = obs.copy()
+	merged['qMod'] = mod['qMod']
+	merged.dropna(inplace=True)
+	return merged	
 
 class SetMeUp:
 	def __init__(self,setup,**kwargs):
@@ -120,6 +144,7 @@ class SetMeUp:
 		shutil.copy('./namelists/hydro.namelist.TEMPLATE', self.clbdirc+'/hydro.namelist') 
 		shutil.copy('./namelists/namelist.hrldas.TEMPLATE', self.clbdirc) 
 		shutil.copy('./env_nwm_r2.sh', self.clbdirc) 
+		shutil.copy('./lib/Python/modelEval.py', self.clbdirc) 
 
 	def CreateNamelist(self, **kwargs):
 		# modify the namelist templates that reside in the run dir
@@ -156,6 +181,9 @@ class SetMeUp:
 		# create the submission script 	
 		ancil.GenericWrite('./namelists/submit.TEMPLATE.sh', slurmDic, namelistHolder.format('submit.sh'))
 
+
+
+
 class CalibrationMaster():
 	# class to start and do the entire
 	# calib.arion update from start to finish
@@ -169,7 +197,7 @@ class CalibrationMaster():
 		self.MaxIters = 1e5   # the maximum # of iterations allowed
 		self.bestObj = 1e16
 		self.objList = [] 
-
+		self.dbcon = self.setup.clbdirc+'/CALIBRATION.db'
 		# create a dataframe w/ the parameter values and links to the right files
 		df = pd.read_csv('calib_params.tbl', delimiter=' *, *', engine='python')  # this strips away the whitesapce
 		df.set_index('parameter', inplace=True)
@@ -181,7 +209,20 @@ class CalibrationMaster():
 		df["onOff"] = df["calib_flag"]  # used for the DDS alg... 
 		# assign the df to itself, so we can hold onto it in later fx  
 		self.df = df 
+	
 
+	def CreateAnalScript(self, **kwargs):
+		# remove previous analysis submit script 
+		try:
+			os.system('rm {}/submit_analysis.sh'.format(self.setup.clbdirc))
+		except:
+			pass
+		namelistHolder = self.setup.clbdirc+'/{}'	
+		insert = {"CLBDIRC":self.setup.clbdirc, 
+		          "ITERATION":self.iters}
+
+		ancil.GenericWrite('./namelists/submit_analysis.TEMPLATE.sh', insert, namelistHolder.format('submit_analysis.sh'))
+	
 	def UpdateParamFiles(self):
 		# update the NC files given the adjustment param
 		# Group parameters by the file type   -- tbl or nc
@@ -215,49 +256,14 @@ class CalibrationMaster():
 		self.df['currentValue'] = self.df['nextValue']
 
 	def ObFun(self):
+		dbdir = self.setup.clbdirc+'/'
+		print(dbdir)
+		merged = GrepSQLstate(self.iters, dbdir=dbdir)
 		# RMSE 
 		# the 'merged' dataframe gets created in the ReadQ step
-		rmse = np.sqrt(np.mean((self.merged.qMod - self.merged.qObs)**2))
+		rmse = np.sqrt(np.mean((merged.qMod - merged.qObs)**2))
 		print(rmse)
 		return rmse
-	
-	def ReadQ(self):
-		# read model output variables 
-		# and usgs observations
-		# creates a df, and applies the ObFun
-		gauge_loc = 29
-		modQfiles = xr.open_mfdataset(glob.glob(self.setup.clbdirc+'/*CHRTOUT_DOMAIN2*'))
-		# do some slicing and dicing... 	
-		qDf = pd.DataFrame(
-				{'qMod':modQfiles['streamflow'][:,gauge_loc].values,
-				 'time':modQfiles['time'].values}
-				)
-		qDf.set_index('time', inplace=True)
-		modQdly = pd.DataFrame(qDf.resample('D').sum())
-
-		# read usgs obs 
-		obsQ = pd.read_csv(self.setup.clbdirc+'/obsStrData.csv')
-		obsQ.drop(columns=['Unnamed: 0', 'POSIXct', "agency_cd"], inplace=True)
-		obsQ.rename(index=str, columns={"Date":"time", "obs":"qObs"}, inplace=True)
-		obsQ.set_index('time',inplace=True)
-		obsQ.index = pd.to_datetime(obsQ.index)
-			
-		# merge the dataframes...
-		merged = obsQ.copy()
-		merged['qMod'] = modQdly
-		merged.dropna(inplace=True)
-
-		# pass off merged to itself 
-		self.merged = merged	
-		
-		# log the output to a database for keeping 
-		# add iteration count to the df.
-		modQdly['Iterations'] = str(self.iters)
-		dbL.LogResultsToDB(modQdly, 'MODOUT')
-		if self.iters == 0:
-			dbL.LogResultsToDB(obsQ, 'Observations')
-		# 
-		modQfiles.close()
 
 	def LogLik(self,curiter, maxiter):
 		# logliklihood function
@@ -268,10 +274,10 @@ class CalibrationMaster():
 		sql_params = self.df.copy()
 		sql_params['Iteration'] = str(self.iters)
 		sql_params.drop(columns=['file', 'dims','nextValue'], inplace=True)
-		dbL.LogResultsToDB(sql_params, 'PARAMETERS')
+		dbL.LogResultsToDB(sql_params, 'PARAMETERS', dbcon=self.dbcon)
 	
 	def LogObj(self):
-		dbL.LogObjToDB(str(self.iters), './', self.obj, self.improvement)
+		dbL.LogObjToDB(str(self.iters), self.obj, self.improvement, dbcon=self.dbcon)
 
 	def DDS(self):
 		# Begin algorithm
@@ -387,10 +393,4 @@ class CalibrationMaster():
 	
 
 if __name__ == '__main__':
-	setup = SetMeUp()
-	setup.CreateRunDir()
-#	calib= calib.ationMaster(setup)
-	#calib.ReadQ()
-	#calib.EvaluateIteration()
-	#calib.DDS()
-	#calib.UpdateParamFiles()
+	pass

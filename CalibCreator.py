@@ -32,47 +32,51 @@ setup.CreateSubmitScript()
 
 # initiate the calibration object
 calib = CalibrationMaster(setup)
-#calib() # do this... i think 
 
-for i in range(200):
-#def SingleIteration(setup, calib):
+# prepare a job submite script for the analysis step
+# we have to create a new one each time... the iteration 
+# count is hardcoded into the script (yuck...)
+calib.CreateAnalScript()
+
 #----- MODEL SETUP/SUBMIT ----# 
 # switch to the calibdirectory 
-	os.chdir(setup.clbdirc)
+os.chdir(setup.clbdirc)
 
-	# submit the job 
-	jobid, err = ancil.Submit('submit.sh', setup.catchid)
+# submit the job 
+jobid, err = ancil.Submit('submit.sh', setup.catchid)
 
-	# sleep 
-	time.sleep(1) # wait a second before checking for the job
+# sleep 
+time.sleep(1) # wait a second before checking for the job
 
-	# wait for the job to complete 
-	ancil.WaitForJob(jobid, 'wrudisill')
+# wait for the job to complete 
+ancil.WaitForJob(jobid, 'wrudisill')
 
-	# change back to the parent directory 
-	os.chdir(cwd)
-	print('job finished-- perform analysis/update')	
+# --- MODEL EVALUATION ---- # 
+print('submitting analysis job')
+jobid, err = ancil.Submit('submit_analysis.sh', setup.catchid)   # THIS STEP LOGS THE MODEL FILES TO THE DB
 
-	# --- MODEL EVALUATION ---- # 
-	calib.ReadQ() # read model/usgs OBS
-	print("evaluate... obj fun")
-	obj,improvement = calib.EvaluateIteration()  # check if the model improved 
+# wait for the job to complete 
+ancil.WaitForJob(jobid, 'wrudisill')
 
-	# log the parameters and obfun to the database
-	calib.LogParams()     
-	calib.LogObj() 
+print("evaluate... obj fun")
+obj,improvement = calib.EvaluateIteration()  # check if the model improved 
 
-	# generate new parameters 
-	calib.DDS()          
+os.chdir(cwd)
+# log the parameters and obfun to the database
+calib.LogParams()     
+calib.LogObj() 
 
-	# update the parameters 
-	calib.UpdateParamFiles()  # write the new parameters to files 
+# generate new parameters 
+calib.DDS()          
 
-	# clean up the directory 
-	ancil.CleanUp(setup.clbdirc)
+# update the parameters 
+calib.UpdateParamFiles()  # write the new parameters to files 
 
-	# move the iternal iteration state one forward 
-	calib.MoveForward()
+# clean up the directory 
+ancil.CleanUp(setup.clbdirc)
+
+# move the iternal iteration state one forward 
+calib.MoveForward()
 		
 
 #niters= 1000
@@ -89,5 +93,5 @@ for i in range(200):
 #			ancil.CleanUp(setup.clbdirc)
 #			failures += 1 
 #			time.sleep(5)
-# done 
+## done 
 #print(failures)
