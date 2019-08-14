@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns 
 
 
 # read stuff from the database and create a plot 
@@ -61,6 +60,7 @@ def EnsemblePlot(ax):
 #
 #
 def ParameterPlot():
+	# CHANGE ME LATER 
 	fig,ax =  plt.subplots(2,3)
 	#def ParameterPlot(ax):
 	param_cmd = "SELECT * FROM PARAMETERS WHERE calib_flag = 1"
@@ -86,10 +86,14 @@ def ParameterPlot():
 
 if __name__ == '__main__':
 	# plot one 
-	fig,ax1,ax2 = plt.subplots(2)
-	PlotObj(ax1, mean=mean)
-	EnsemblePlot(ax2)
+	fig,ax = plt.subplots(1)
+	PlotObj(ax)
+	del fig,ax
+	
+	fig,ax = plt.subplots(1)
+	EnsemblePlot(ax)
+	del fig,ax
 	
 	# plot 2 
-	ParameterPlot(ax)
+	ParameterPlot()
 

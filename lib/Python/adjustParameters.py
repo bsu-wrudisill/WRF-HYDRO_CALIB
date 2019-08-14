@@ -10,7 +10,7 @@ import functools as ft
 import netCDF4 as nc
 import numpy as np
 import dbLogger as dbL
-
+from ObjectiveFunctions import KGE, RMSE 
 
 # User options 
 #xr.set_options(file_cache_maxsize=1)
@@ -41,7 +41,6 @@ def AddOrMult(factor):
 	else:
 		return None
 
-
 # !!! THIS IS HERE FOR NOW..... MAKE ME A STATIC METHOD LATER !!!
 def GrepSQLstate(iteration,**kwargs):
 	# read 	
@@ -62,6 +61,8 @@ def GrepSQLstate(iteration,**kwargs):
 	merged['qMod'] = mod['qMod']
 	merged.dropna(inplace=True)
 	return merged	
+
+#!!!!!!!!!!!!!!! Classes Below !!!!!!!!!!!!!# 
 
 class SetMeUp:
 	def __init__(self,setup,**kwargs):
@@ -85,9 +86,10 @@ class SetMeUp:
 		self.parmdirc = jsonfile['parameter_location'].format(self.usgs_code)
 		self.exedirc = jsonfile['executable_location']
 		self.forcdirc = jsonfile['forcing_location']
+		self.cwd = os.getcwd()
 		# create catch id file name 	
 		self.catchid = 'catch_{}'.format(self.usgs_code)
-		
+	        	
 		# get dates for start, end of spinup,eval period
 		self.calib_date = jsonfile['calib_date']
 		self.start_date = self.calib_date['start_date']
@@ -145,6 +147,7 @@ class SetMeUp:
 		shutil.copy('./namelists/namelist.hrldas.TEMPLATE', self.clbdirc) 
 		shutil.copy('./env_nwm_r2.sh', self.clbdirc) 
 		shutil.copy('./lib/Python/modelEval.py', self.clbdirc) 
+		shutil.copy('./lib/Python/viz/PlotQ.py', self.clbdirc) 
 
 	def CreateNamelist(self, **kwargs):
 		# modify the namelist templates that reside in the run dir
@@ -179,15 +182,18 @@ class SetMeUp:
 			    "CATCHID":"catch_{}".format(self.usgs_code)
 			    }
 		# create the submission script 	
-		ancil.GenericWrite('./namelists/submit.TEMPLATE.sh', slurmDic, namelistHolder.format('submit.sh'))
-
+		ancil.GenericWrite('{}/namelists/submit.TEMPLATE.sh'.format(self.cwd), slurmDic, namelistHolder.format('submit.sh'))
 
 
 
 class CalibrationMaster():
-	# class to start and do the entire
-	# calib.arion update from start to finish
-	# 
+	"""
+	The "Calibration" class. This requires a "setup" object (created above) to be passed in. 
+	This object will 1) submit batch jobs to run WRF-Hydro, 2) submit (and create) the analysis
+	job, 3) evaluate objective functions, 4) implement the DDS selection algorithm, and 5) update 
+	model parameter files according to the DDS rule, and 5) log items to a SQL database 
+	"""
+	
 	def __init__(self,setup):
 		# --- keep track of the number of iterations ---# 
 		self.iters = 0 # keep track of the iterations of calib.ation 
@@ -196,7 +202,7 @@ class CalibrationMaster():
 		#self.paramDir = '/scratch/wrudisill/WillCaancil.ydro/TestDOMAIN'    #TEMPORARY 
 		self.MaxIters = 1e5   # the maximum # of iterations allowed
 		self.bestObj = 1e16
-		self.objList = [] 
+		self.objFun = KGE   # !!!!!  make this dynamic later  !!!! 
 		self.dbcon = self.setup.clbdirc+'/CALIBRATION.db'
 		# create a dataframe w/ the parameter values and links to the right files
 		df = pd.read_csv('calib_params.tbl', delimiter=' *, *', engine='python')  # this strips away the whitesapce
@@ -212,6 +218,13 @@ class CalibrationMaster():
 	
 
 	def CreateAnalScript(self, **kwargs):
+		"""
+		Create the job submit script for the analysis step.
+		Previous code did the analysis on the head node and 
+		ran into memory issues. This way, each file read process 
+		(called later) gets started and closed with each iteration,
+		so memory leaks in the python netcdf library don't accumulate
+		"""
 		# remove previous analysis submit script 
 		try:
 			os.system('rm {}/submit_analysis.sh'.format(self.setup.clbdirc))
@@ -220,9 +233,12 @@ class CalibrationMaster():
 		namelistHolder = self.setup.clbdirc+'/{}'	
 		insert = {"CLBDIRC":self.setup.clbdirc, 
 		          "ITERATION":self.iters}
+		
+		# create the job submit template. 
+		ancil.GenericWrite('{}/namelists/submit_analysis.TEMPLATE.sh'.format(self.setup.cwd), insert,  \
+				    namelistHolder.format('submit_analysis.sh'))
+        
 
-		ancil.GenericWrite('./namelists/submit_analysis.TEMPLATE.sh', insert, namelistHolder.format('submit_analysis.sh'))
-	
 	def UpdateParamFiles(self):
 		# update the NC files given the adjustment param
 		# Group parameters by the file type   -- tbl or nc
@@ -239,15 +255,21 @@ class CalibrationMaster():
 				# the different files have differend dimensions 
 				print(self.df.loc[param].factor)
 				print(param)
+				# returns a function (addition or multiplication) to apply 
 				updateFun = AddOrMult(self.df.loc[param].factor)
+				# get the dims of the parameter
 				dims = self.df.loc[param].dims 
+				# create the value for updating --- this will include the 'ini' value 
+				updateVal = self.df.nextValue.loc[param] + self.df.ini.loc[param]
+				
+				# apply logic to update w/ the correct dims 
 				if dims == 1:
-					UpdateMe[param][:] = updateFun(UpdateMe[param][:],self.df.nextValue.loc[param])
+					UpdateMe[param][:] = updateFun(UpdateMe[param][:], updateVal) 
 				if dims == 2:
-					UpdateMe[param][:,:] = updateFun(UpdateMe[param][:,:],self.df.nextValue.loc[param])
+					UpdateMe[param][:,:] = updateFun(UpdateMe[param][:,:], updateVal) 
 				if dims == 3:
-					UpdateMe[param][:,:,:] = updateFun(UpdateMe[param][:,:,:],self.df.nextValue.loc[param])
-				print('updated--{} in file {}--with value {}'.format(param,ncSingle,self.df.nextValue.loc[param]))
+					UpdateMe[param][:,:,:] = updateFun(UpdateMe[param][:,:,:], updateVal) 
+				print('updated--{} in file {}--with value {}'.format(param,ncSingle, updateVal))
 			# done looping thru params 
 			# save the file now and close  
 			UpdateMe.to_netcdf(self.paramDir+'/'+ncSingle, mode='w')
@@ -255,15 +277,16 @@ class CalibrationMaster():
 		# update the dataframe to reflect that the 'next param' values have been inserted into the current params 
 		self.df['currentValue'] = self.df['nextValue']
 
-	def ObFun(self):
+	def ApplyObjFun(self):
 		dbdir = self.setup.clbdirc+'/'
-		print(dbdir)
 		merged = GrepSQLstate(self.iters, dbdir=dbdir)
 		# RMSE 
 		# the 'merged' dataframe gets created in the ReadQ step
-		rmse = np.sqrt(np.mean((merged.qMod - merged.qObs)**2))
-		print(rmse)
-		return rmse
+		#rmse = np.sqrt(np.mean((merged.qMod - merged.qObs)**2))
+		#print(rmse)
+		obj = self.objFun(merged.qMod, merged.qObs)
+		self.obj = obj
+		return obj
 
 	def LogLik(self,curiter, maxiter):
 		# logliklihood function
@@ -331,19 +354,17 @@ class CalibrationMaster():
 			
 
 	def EvaluateIteration(self):
+		obj = self.ApplyObjFun()
 		# check the obfun. 
 		# if the performance of the last parameter set us better, then update the 
 		# calib.data frame 
-		obj = self.ObFun()
 		improvement = 0  # were the parameters improved upon?
-		self.obj = obj	
-
 		# check if the new parameters improved the objective function 
 		if self.iters == 0:
 			print('ON ITER O')
 			# this is the first iteration; we have just tested 
 			# the 'stock' parameters 
-			self.bestObj = obj 
+			self.bestObj = obj
 			improvement = 0 	
 			# update the active params 
 			for param in self.df.groupby('calib_flag').groups[1]:
@@ -382,7 +403,7 @@ class CalibrationMaster():
 	
 	def MoveForward(self):
 		# move the model forward one iteration
-		self.iters +=1
+		self.iters = self.iters+1
 
 	def __call__(self):
 		# This creatres a "call" -- when we do calib.), we 
