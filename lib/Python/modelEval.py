@@ -27,7 +27,7 @@ def ReadQ(clbdirc, iteration):
 			 'time':modQfiles['time'].values}
 			)
 	qDf.set_index('time', inplace=True)
-	modQdly = pd.DataFrame(qDf.resample('D').sum())
+	modQdly = pd.DataFrame(qDf.resample('D').mean())
 
 	# read usgs obs 
 	obsQ = pd.read_csv(clbdirc+'/obsStrData.csv')
