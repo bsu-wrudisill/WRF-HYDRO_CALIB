@@ -4,6 +4,7 @@ import numpy as np
 Objective functions. Calculates how well the model compares to observations
 """
 
+
 # KGE 
 def KGE(mod,obs):
 	# Kling-Gupta Efficiency 
@@ -24,8 +25,11 @@ def KGE(mod,obs):
 	# this way, a lower value is more optimal
 	# same as RMSE or most other objective functions 
 	kgeval = np.sqrt((r-1.)**2 + (a-1.)**2 + (b-1)**2)
+	if kgeval == None:
+		kgeval = 1000.
 	return kgeval
 
 # RMSE 
 def RMSE(mod,obs):
 	rmse = np.sqrt(np.mean((mod - obs)**2))
+	return rmse

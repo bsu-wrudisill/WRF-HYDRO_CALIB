@@ -17,6 +17,9 @@ try:
 except:
 	pass
 
+#optionally pass in a name extender 
+
+
 # ------ # ----- # --- 
 
 # lib.SystemCmd('source ./env_nwm_r2.sh') ## this doesn't work 
@@ -29,7 +32,7 @@ setup.GatherObs()
 setup.CreateNamelist()
 setup.CreateSubmitScript()
 calib = CalibrationMaster(setup)
-for i in range(3):
+for i in range(1000):
 	# initiate the calibration object
 	# prepare a job submite script for the analysis step
 	# we have to create a new one each time... the iteration 
