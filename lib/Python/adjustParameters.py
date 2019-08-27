@@ -15,6 +15,9 @@ from ObjectiveFunctions import KGE, RMSE
 # User options 
 #xr.set_options(file_cache_maxsize=1)
 
+'''
+Helper functions. Move these to another script eventually 
+'''
 
 # Helper functions   !!! MOVE ME TO THE ANCIL SCRIPT !!! 
 def returnItem(dic,x):
@@ -43,7 +46,11 @@ def AddOrMult(factor):
 
 # !!! THIS IS HERE FOR NOW..... MAKE ME A STATIC METHOD LATER !!!
 def GrepSQLstate(iteration,**kwargs):
-	# read 	
+	'''
+	This function reads both observations and model outputs from the 
+	sql database
+	'''
+	#read 	
 	dbdir = kwargs.get('dbdir','CALIBRATION.db')
 	
 	# select data from the table 
@@ -60,9 +67,17 @@ def GrepSQLstate(iteration,**kwargs):
 	merged = obs.copy()
 	merged['qMod'] = mod['qMod']
 	merged.dropna(inplace=True)
+	
+	# assign index
+	merged.set_index(merged.time, inplace=True)
 	return merged	
 
-#!!!!!!!!!!!!!!! Classes Below !!!!!!!!!!!!!# 
+
+''''
+Below here are the classes. 
+1) SetMeUp: gathers user parameters by reading json files
+2) CalibMaster: requires a SetMeUp instance (for now). Does all of the calibrating 
+'''
 
 class SetMeUp:
 	def __init__(self,setup,**kwargs):
@@ -91,10 +106,16 @@ class SetMeUp:
 		self.catchid = 'catch_{}'.format(self.usgs_code)
 	        	
 		# get dates for start, end of spinup,eval period
-		self.calib_date = jsonfile['calib_date']
-		self.start_date = self.calib_date['start_date']
-		self.end_date = self.calib_date['end_date']
-		self.eval_date = jsonfile['eval_date']	
+		calib_date = jsonfile['calib_date']
+		self.start_date = calib_date['start_date']
+		self.end_date = calib_date['end_date']
+		
+		# evaluation period 
+		eval_date = jsonfile['eval_date']	
+		self.eval_start_date = eval_date['start_date']
+		self.eval_end_date = eval_date['end_date']
+	
+		
 
 	def GatherObs(self, **kwargs):
 		# run the rscripts to download the USGS observations for the correct 
@@ -280,11 +301,12 @@ class CalibrationMaster():
 	def ApplyObjFun(self):
 		dbdir = self.setup.clbdirc+'/'
 		merged = GrepSQLstate(self.iters, dbdir=dbdir)
-		# RMSE 
-		# the 'merged' dataframe gets created in the ReadQ step
-		#rmse = np.sqrt(np.mean((merged.qMod - merged.qObs)**2))
-		#print(rmse)
-		obj = self.objFun(merged.qMod, merged.qObs)
+		
+		# only evaluate during the evaluation period
+		eval_period = merged.loc[self.setup.eval_start_date : self.setup.eval_end_date]
+		
+		# compute the objective function
+		obj = self.objFun(eval_period.qMod, eval_period.qObs)
 		self.obj = obj
 		return obj
 
