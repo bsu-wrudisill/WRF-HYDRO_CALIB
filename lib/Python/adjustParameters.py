@@ -202,7 +202,7 @@ class CalibrationMaster():
 		#self.paramDir = '/scratch/wrudisill/WillCaancil.ydro/TestDOMAIN'    #TEMPORARY 
 		self.MaxIters = 1e5   # the maximum # of iterations allowed
 		self.bestObj = 1e16
-		self.objFun = KGE   # !!!!!  make this dynamic later  !!!! 
+		self.objFun = RMSE   # !!!!!  make this dynamic later  !!!! 
 		self.dbcon = self.setup.clbdirc+'/CALIBRATION.db'
 		# create a dataframe w/ the parameter values and links to the right files
 		df = pd.read_csv('calib_params.tbl', delimiter=' *, *', engine='python')  # this strips away the whitesapce
@@ -253,8 +253,8 @@ class CalibrationMaster():
 			for param in grouped.groups[ncSingle]: 
 				# PERFORM THE DDS PARAMETER UPDATE FOR EACH PARAM
 				# the different files have differend dimensions 
-				print(self.df.loc[param].factor)
-				print(param)
+				#print(self.df.loc[param].factor)
+				#print(param)
 				# returns a function (addition or multiplication) to apply 
 				updateFun = AddOrMult(self.df.loc[param].factor)
 				# get the dims of the parameter
@@ -269,7 +269,7 @@ class CalibrationMaster():
 					UpdateMe[param][:,:] = updateFun(UpdateMe[param][:,:], updateVal) 
 				if dims == 3:
 					UpdateMe[param][:,:,:] = updateFun(UpdateMe[param][:,:,:], updateVal) 
-				print('updated--{} in file {}--with value {}'.format(param,ncSingle, updateVal))
+				#print('updated--{} in file {}--with value {}'.format(param,ncSingle, updateVal))
 			# done looping thru params 
 			# save the file now and close  
 			UpdateMe.to_netcdf(self.paramDir+'/'+ncSingle, mode='w')
@@ -303,16 +303,27 @@ class CalibrationMaster():
 		dbL.LogObjToDB(str(self.iters), self.obj, self.improvement, dbcon=self.dbcon)
 
 	def DDS(self):
+		"""
+		The DDS parameter selection algorithm, adapted from Tolson et al.
+		"Greedy" algorithm -- holds onto best parameter estimate and updates
+		from there by adding random gaussian noise with a specified standard deviation
+		and mean of zero. 
+		
+		This function established the correct parameter values
+		and saves them to a pandas dataframe. Another function then
+		updates the parameter values in the correct files. 
+		"""
+
 		# Begin algorithm
-		r= .2
+		r= 0.2    # there is a justification for this value... can't recall. 
 		self.ALG = 'DDS'
 		# read the parameter tables 
 	   	# this seems like a dumb algorithm.... 
 		activeParams = list(self.df.groupby('calib_flag').groups[1])
-
+		
 		# Part 1: Randomly select parameters to update 
 		prob = self.LogLik(self.iters+1, self.MaxIters)
-		
+		#print(prob)	
 		for param in activeParams:
 			sel = np.random.choice(2, p=[1-prob,prob])
 			if sel == 1: 
@@ -339,12 +350,15 @@ class CalibrationMaster():
 			xj_best = J.bestValue
 			sigj = r * (xj_max - xj_min)
 			x_new = xj_best + sigj*np.random.randn(1)
+			
 			if x_new < xj_min: # if it is less than min, reflect to middle
 				x_new = xj_min + (xj_min - x_new)
-			if x_new > xj_max:
+			
+			if x_new > xj_max: # if xnew is greater than the max, reflect to middle
 				x_new = xj_max - (x_new - xj_max)
+			
+			# assign the parameter to the 'next value' 
 			self.df.at[param,'nextValue'] = np.float(x_new)
-			#self.df.at[param,"CALIB_{}".format(self.iters)] = np.float(x_new)
 		
 		for param in deselectedParams:
 			J = self.df.loc[param]
@@ -398,7 +412,7 @@ class CalibrationMaster():
 		# these get updated by the DDS ( or whatever alg. we chose...)
 		self.improvement = improvement
 		self.df['nextValue'] = np.float(0)
-		self.df['onOff'] = 0
+		#self.df['onOff'] = 0
 		return obj,improvement
 	
 	def MoveForward(self):
