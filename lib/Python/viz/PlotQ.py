@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import matplotlib.ticker as ticker
 
 
 # read stuff from the database and create a plot 
@@ -44,7 +46,7 @@ def EnsemblePlot(ax):
 	obs = pd.read_sql(sql="SELECT * FROM OBSERVATIONS", con="sqlite:///CALIBRATION.db")
 	obs['time'] = pd.to_datetime(obs['time'])
 	obs.drop(columns=['site_no'], inplace=True)
-	
+
 	#df.drop(columns=["Directory", "Iterations"], inplace=True)
 	mod['time'] = pd.to_datetime(mod['time'])
 	df_cd = pd.merge(calib, mod, how='outer', left_on = 'Iteration', right_on = 'Iterations')
@@ -53,12 +55,18 @@ def EnsemblePlot(ax):
 	# now plot ....
 	for iteration in df_cd['Iteration'].unique():
 		sub = df_cd.loc[df_cd['Iteration'] == iteration][['time', 'qMod']]
-		ax.plot(sub['time'], sub['qMod'])
-	ax.plot(obs['time'], obs['qObs'])
+		ax.plot(sub['time'], sub['qMod'], label='_nolegend_')
+	# plot the observations ... 
+	ax.plot(obs['time'], obs['qObs'], color='black', label='Observations')
+	fig.autofmt_xdate()
+	ax.fmt_xdata = mdates.DateFormatter('%Y-%m-%d')
+	ax.xaxis.set_major_locator(ticker.MultipleLocator(7))
+	ax.set_ylabel('Q cms')
+	ax.legend()
 	plt.savefig('ensemble_plot', dpi=500)
-#
-#
-#
+
+
+
 def ParameterPlot():
 	# CHANGE ME LATER 
 	fig,ax =  plt.subplots(2,3)
@@ -85,6 +93,7 @@ def ParameterPlot():
 
 
 if __name__ == '__main__':
+	pass
 	# plot one 
 	fig,ax = plt.subplots(1)
 	PlotObj(ax)
@@ -96,4 +105,3 @@ if __name__ == '__main__':
 	
 	# plot 2 
 	ParameterPlot()
-
