@@ -223,7 +223,7 @@ class CalibrationMaster():
 		#self.paramDir = '/scratch/wrudisill/WillCaancil.ydro/TestDOMAIN'    #TEMPORARY 
 		self.MaxIters = 1e5   # the maximum # of iterations allowed
 		self.bestObj = 1e16
-		self.objFun = RMSE   # !!!!!  make this dynamic later  !!!! 
+		self.objFun = KGE   # !!!!!  make this dynamic later  !!!! 
 		self.dbcon = self.setup.clbdirc+'/CALIBRATION.db'
 		# create a dataframe w/ the parameter values and links to the right files
 		df = pd.read_csv('calib_params.tbl', delimiter=' *, *', engine='python')  # this strips away the whitesapce
@@ -260,44 +260,6 @@ class CalibrationMaster():
 				    namelistHolder.format('submit_analysis.sh'))
         
 
-	def UpdateParamFiles(self):
-		# update the NC files given the adjustment param
-		# Group parameters by the file type   -- tbl or nc
-		grouped = self.df.groupby('file')
-		# process the netcdf files first 
-		ncList = grouped.groups.keys()
-		for ncSingle in ncList:
-			UpdateMe = xr.open_dataset(self.setup.clbdirc+'/ORIG_PARM/'+ncSingle)
-			# remove the file... we overwrite w/ the update 
-			os.remove(self.paramDir+'/'+ncSingle)
-			# loop through the params and update. write files 
-			for param in grouped.groups[ncSingle]: 
-				# PERFORM THE DDS PARAMETER UPDATE FOR EACH PARAM
-				# the different files have differend dimensions 
-				#print(self.df.loc[param].factor)
-				#print(param)
-				# returns a function (addition or multiplication) to apply 
-				updateFun = AddOrMult(self.df.loc[param].factor)
-				# get the dims of the parameter
-				dims = self.df.loc[param].dims 
-				# create the value for updating --- this will include the 'ini' value 
-				updateVal = self.df.nextValue.loc[param] + self.df.ini.loc[param]
-				
-				# apply logic to update w/ the correct dims 
-				if dims == 1:
-					UpdateMe[param][:] = updateFun(UpdateMe[param][:], updateVal) 
-				if dims == 2:
-					UpdateMe[param][:,:] = updateFun(UpdateMe[param][:,:], updateVal) 
-				if dims == 3:
-					UpdateMe[param][:,:,:] = updateFun(UpdateMe[param][:,:,:], updateVal) 
-				#print('updated--{} in file {}--with value {}'.format(param,ncSingle, updateVal))
-			# done looping thru params 
-			# save the file now and close  
-			UpdateMe.to_netcdf(self.paramDir+'/'+ncSingle, mode='w')
-			UpdateMe.close()
-		# update the dataframe to reflect that the 'next param' values have been inserted into the current params 
-		self.df['currentValue'] = self.df['nextValue']
-
 	def ApplyObjFun(self):
 		dbdir = self.setup.clbdirc+'/'
 		merged = GrepSQLstate(self.iters, dbdir=dbdir)
@@ -323,7 +285,59 @@ class CalibrationMaster():
 	
 	def LogObj(self):
 		dbL.LogObjToDB(str(self.iters), self.obj, self.improvement, dbcon=self.dbcon)
-
+	
+	'''
+	Function: EvaluateIteration
+		1.a. apply objective function, evaluating perfomance of model relative to the observations
+		1.b  determine if the model improved or not, assignt improvement flag to 0 or 1 
+		1.c  set the 'next value' to the initial value
+	'''
+	def EvaluateIteration(self):
+		obj = self.ApplyObjFun()
+		# check the obfun. 
+		# if the performance of the last parameter set us better, then update the 
+		# calib.data frame 
+		improvement = 0  # were the parameters improved upon?
+		# check if the new parameters improved the objective function 
+		if self.iters == 0:
+			print('ON ITER O')
+			# this is the first iteration; we have just tested 
+			# the 'stock' parameters 
+			self.bestObj = obj
+			improvement = 0 	
+			# update the active params 
+			for param in self.df.groupby('calib_flag').groups[1]:
+				self.df.at[param, 'bestValue'] = self.df.loc[param,'ini']
+			# keep the inactive params at 0 
+			try:
+				for param in self.df.groupby('calib_flag').groups[0]:
+					self.df.at[param, 'bestValue'] = self.df.loc[param, 'ini'] 
+				print('we are on the first iter')
+			except KeyError:
+				print('all parameters are active')
+		else:
+			# we ar beyond the first iteration
+			# test of the onbjective fx hax improved 
+			if obj < self.bestObj:
+				# hold onto the best obj 
+				self.bestObj = obj
+				# the 'next value' is what we just tested; 
+				# if it resulted in a better objfun, assign 
+				# it to the 'best value' column
+				self.df['bestValue'] = self.df['nextValue']
+				improvement = 1
+				print('obj. improvement')
+					
+			elif obj >= self.bestObj:
+				# the self.bestObj remains the same
+				improvement = 0
+				print('no obj. improvement')
+		# lastly, let's clean the nextvalue and onOff switches 
+		# these get updated by the DDS ( or whatever alg. we chose...)
+		self.improvement = improvement
+		self.df['nextValue'] = self.df['ini'] 
+		return obj,improvement
+	
 	def DDS(self):
 		"""
 		The DDS parameter selection algorithm, adapted from Tolson et al.
@@ -389,53 +403,45 @@ class CalibrationMaster():
 			#self.df.at[param,"CALIB_{}".format(self.iters)] = np.float(xj_best)
 			
 
-	def EvaluateIteration(self):
-		obj = self.ApplyObjFun()
-		# check the obfun. 
-		# if the performance of the last parameter set us better, then update the 
-		# calib.data frame 
-		improvement = 0  # were the parameters improved upon?
-		# check if the new parameters improved the objective function 
-		if self.iters == 0:
-			print('ON ITER O')
-			# this is the first iteration; we have just tested 
-			# the 'stock' parameters 
-			self.bestObj = obj
-			improvement = 0 	
-			# update the active params 
-			for param in self.df.groupby('calib_flag').groups[1]:
-				self.df.at[param, 'bestValue'] = self.df.loc[param,'ini']
-			# keep the inactive params at 0 
-			try:
-				for param in self.df.groupby('calib_flag').groups[0]:
-					self.df.at[param, 'bestValue'] = 0.0 
-				print('we are on the first iter')
-			except KeyError:
-				print('all parameters are active')
-		else:
-			# we ar beyond the first iteration
-			# test of the onbjective fx hax improved 
-			if obj < self.bestObj:
-				# hold onto the best obj 
-				self.bestObj = obj
-				# the 'next value' is what we just tested; 
-				# if it resulted in a better objfun, assign 
-				# it to the 'best value' column
-				self.df['bestValue'] = self.df['nextValue']
-				improvement = 1
-				print('obj. improvement')
-					
-			elif obj >= self.bestObj:
-				# the self.bestObj remains the same
-				improvement = 0
-				print('no obj. improvement')
+	def UpdateParamFiles(self):
+		# update the NC files given the adjustment param
+		# Group parameters by the file type   -- tbl or nc
+		grouped = self.df.groupby('file')
+		# process the netcdf files first 
+		ncList = grouped.groups.keys()
+		for ncSingle in ncList:
+			UpdateMe = xr.open_dataset(self.setup.clbdirc+'/ORIG_PARM/'+ncSingle)
+			# remove the file... we overwrite w/ the update 
+			os.remove(self.paramDir+'/'+ncSingle)
+			# loop through the params and update. write files 
+			for param in grouped.groups[ncSingle]: 
+				# PERFORM THE DDS PARAMETER UPDATE FOR EACH PARAM
+				# the different files have differend dimensions 
+				#print(self.df.loc[param].factor)
+				#print(param)
+				# returns a function (addition or multiplication) to apply 
+				updateFun = AddOrMult(self.df.loc[param].factor)
+				# get the dims of the parameter
+				dims = self.df.loc[param].dims 
+				# create the value for updating --- this will include the 'ini' value 
+				updateVal = self.df.nextValue.loc[param] + self.df.ini.loc[param]
+				
+				# apply logic to update w/ the correct dims 
+				if dims == 1:
+					UpdateMe[param][:] = updateFun(UpdateMe[param][:], updateVal) 
+				if dims == 2:
+					UpdateMe[param][:,:] = updateFun(UpdateMe[param][:,:], updateVal) 
+				if dims == 3:
+					UpdateMe[param][:,:,:] = updateFun(UpdateMe[param][:,:,:], updateVal) 
+				#print('updated--{} in file {}--with value {}'.format(param,ncSingle, updateVal))
+			# done looping thru params 
+			# save the file now and close  
+			UpdateMe.to_netcdf(self.paramDir+'/'+ncSingle, mode='w')
+			UpdateMe.close()
+		# update the dataframe to reflect that the 'next param' values have been inserted into the current params 
+		self.df['currentValue'] = self.df['nextValue']
 
-		# lastly, let's clean the nextvalue and onOff switches 
-		# these get updated by the DDS ( or whatever alg. we chose...)
-		self.improvement = improvement
-		self.df['nextValue'] = np.float(0)
-		#self.df['onOff'] = 0
-		return obj,improvement
+	
 	
 	def MoveForward(self):
 		# move the model forward one iteration
