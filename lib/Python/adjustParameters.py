@@ -5,6 +5,7 @@ import sys
 import glob 
 import ancil 
 import subprocess
+import logging 
 import xarray as xr
 import pandas as pd
 import functools as ft
@@ -75,8 +76,6 @@ def GrepSQLstate(iteration,**kwargs):
 	return merged	
 
 
-
-
 ''''
 Below here are the classes. 
 1) SetMeUp: gathers user parameters by reading json files
@@ -123,7 +122,17 @@ class SetMeUp:
 		eval_date = jsonfile['eval_date']	
 		self.eval_start_date = eval_date['start_date']
 		self.eval_end_date = eval_date['end_date']
-	
+		
+		# LOG all of the things 
+		self.startingLog()
+	def startingLog(self):
+		#
+		logging.info("Calibrating to USGS code {}".format(self.usgs_code))
+		logging.info("ParentDirectory: {}".format(self.clbdirc))
+		logging.info("StartDate: {}".format(self.start_date))
+		logging.info("EndDate: {} ".format(self.end_date))
+			
+
 	def GatherForcings(self,**kwargs):
 		# find all of the forcings for the specified time period 	
 		# this recursively searches all directories 
@@ -136,6 +145,7 @@ class SetMeUp:
 		linkForcingPath = [] 
 		# create a dictionary with name:filepath
 		globDic = dict([(p.name, p) for p in Path(self.forcdirc).glob("**/wrfout*")])
+		
 		# loop through the forcing list, try to find all of the files  
 		failureFlag = 0 
 		for f in forcingList:

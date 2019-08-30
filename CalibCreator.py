@@ -26,7 +26,7 @@ except:
 cwd = os.getcwd()
 
 # Do some checks here that things are reasonable... (maybe?..)
-setup = SetMeUp("setup.json")
+setup = SetMeUp("setup.json", name_ext='_MoreParamsWithCoeff')
 setup.CreateRunDir()
 setup.GatherObs()
 setup.CreateNamelist()
