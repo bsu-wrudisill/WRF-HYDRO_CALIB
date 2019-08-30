@@ -1,6 +1,7 @@
 import json
 import shutil
-import os 
+import os
+import sys
 import glob 
 import ancil 
 import subprocess
@@ -11,6 +12,7 @@ import netCDF4 as nc
 import numpy as np
 import dbLogger as dbL
 from ObjectiveFunctions import KGE, RMSE 
+from pathlib import Path
 
 # User options 
 #xr.set_options(file_cache_maxsize=1)
@@ -73,6 +75,8 @@ def GrepSQLstate(iteration,**kwargs):
 	return merged	
 
 
+
+
 ''''
 Below here are the classes. 
 1) SetMeUp: gathers user parameters by reading json files
@@ -102,6 +106,11 @@ class SetMeUp:
 		self.exedirc = jsonfile['executable_location']
 		self.forcdirc = jsonfile['forcing_location']
 		self.cwd = os.getcwd()
+		
+		# forcing files stuff goes here 
+		self.forcings_time_format = "%Y-%m-%d_%H:%M:%S" #!!! FOR WRF -- CHANGE ME LATER !!! 
+		self.forcings_format ="wrfout_d02_{}"  # !! FOR WRF -- CHANGE ME LATER !!! 
+		
 		# create catch id file name 	
 		self.catchid = 'catch_{}'.format(self.usgs_code)
 	        	
@@ -109,13 +118,43 @@ class SetMeUp:
 		calib_date = jsonfile['calib_date']
 		self.start_date = calib_date['start_date']
 		self.end_date = calib_date['end_date']
-		
+	
 		# evaluation period 
 		eval_date = jsonfile['eval_date']	
 		self.eval_start_date = eval_date['start_date']
 		self.eval_end_date = eval_date['end_date']
 	
+	def GatherForcings(self,**kwargs):
+		# find all of the forcings for the specified time period 	
+		# this recursively searches all directories 
+		# date range of calibration period 
+		# ASSUME HOURLY FORCINGS 
+		dRange = pd.date_range(self.start_date, self.end_date, freq='H').strftime("%Y-%m-%d_%H:%M:%S") 
+		# create list of forcing names 
+		forcingList = [self.forcings_format.format(x) for x in dRange] 
+		# create the copy path 
+		linkForcingPath = [] 
+		# create a dictionary with name:filepath
+		globDic = dict([(p.name, p) for p in Path(self.forcdirc).glob("**/wrfout*")])
+		# loop through the forcing list, try to find all of the files  
+		failureFlag = 0 
+		for f in forcingList:
+			if f in globDic:  # check if the key is in the dictionary
+				linkForcingPath.append(globDic[f])
+			else:
+				failureFlag += 1  
+				print('cannot locate: \n {}'.format(f))
+		# check if things failed 
+		if failureFlag!=0:
+			print('unable to locate {} forcing files'.format(failureFlag))
+			sys.exit()
+		else:
+			print('found required forcing files, continuing')
 		
+		# assign the copy list to self
+		self.linkForcingPath = linkForcingPath 
+
+
 
 	def GatherObs(self, **kwargs):
 		# run the rscripts to download the USGS observations for the correct 
@@ -159,9 +198,11 @@ class SetMeUp:
 
 		# copy files in the 'grab me list' to the run directory 
 		[shutil.copy(self.exedirc+'/'+item, self.clbdirc) for item in grabMe]
-
+		
 		# link forcings
-		os.symlink(self.forcdirc, self.clbdirc+'/FORCING')
+		os.mkdir(self.clbdirc+'/FORCING')
+		for source in self.linkForcingPath:
+			os.symlink(str(source), self.clbdirc+'/FORCING/{}'.format(source.name))
 
 		# copy namelist (from THIS directory. we modify the namelists here, not in the far-away directory)
 		shutil.copy('./namelists/hydro.namelist.TEMPLATE', self.clbdirc+'/hydro.namelist') 
