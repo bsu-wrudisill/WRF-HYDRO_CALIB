@@ -11,7 +11,7 @@
  START_HOUR  = HH 
  START_MIN   = 00
 
- RESTART_FILENAME_REQUESTED = "RESTARTFILENAME"
+ RESTART_FILENAME_REQUESTED 
 
  ! Specification of simulation length in days OR hours
  KDAY = NDAYS 

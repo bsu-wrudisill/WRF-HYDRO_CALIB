@@ -97,8 +97,23 @@ class SetMeUp:
 			jsonfile=setup
 		self.usgs_code = jsonfile['usgs_code']
 		self.clbdirc = jsonfile['calib_location'] + self.usgs_code + name_ext
-		self.hydrorestart = jsonfile['hydro_restart_file']  # NOT CURRENTLY ACTIVE --- CHANGE ME
-		self.hrldasrestart = jsonfile['hrldas_restart_file']  # NOT CURRENTLY ACTIVE --- CHANGE ME
+		
+		
+		# ---- restart file logic -- a bit ugly  ---- 
+		self.hydrorestart = jsonfile['hydro_restart_file']  
+		self.hrldasrestart = jsonfile['hrldas_restart_file'] 
+		
+		if self.hrldasrestart == "None":
+			self.hrldasrestart = "!RESTART_FILENAME_REQUESTED"
+		else:
+			self.hrldasrestart = "RESTART_FILENAME_REQUESTED = {}".format(self.hrldasrestart)
+
+		if self.hydrorestart == "None":
+			self.hydrorestart = "!RESTART_FILE"
+		else:
+			self.hydrorestart = "RESTART_FILE = {}".format(self.hydrorestart)
+		
+		# --- directories and run parameters 
 		self.queue = jsonfile['QUEUE']
 		self.nodes = jsonfile['NODES']
 		self.parmdirc = jsonfile['parameter_location'].format(self.usgs_code)
@@ -125,8 +140,8 @@ class SetMeUp:
 		
 		# LOG all of the things 
 		self.startingLog()
+	
 	def startingLog(self):
-		#
 		logging.info("Calibrating to USGS code {}".format(self.usgs_code))
 		logging.info("ParentDirectory: {}".format(self.clbdirc))
 		logging.info("StartDate: {}".format(self.start_date))
@@ -231,12 +246,13 @@ class SetMeUp:
 			    "DD": startDate.day,
 			    "HH": startDate.hour,
 			    "NDAYS": dateRange.days,
-			    "RESTARTFILENAME": self.hrldasrestart
+			    "RESTART_FILENAME_REQUESTED": self.hrldasrestart
 			    }
-		# create the submission script 	
+		#modify namelist.hrldas
 		ancil.GenericWrite('./namelists/namelist.hrldas.TEMPLATE', nlistDic, self.clbdirc+'/namelist.hrldas')	
+		
 		# modify the hydro.namelist
-		hydDic = {"HYDRO_RSTFILENAME":self.hydrorestart}
+		hydDic = {"RESTART_FILE":self.hydrorestart}
 		ancil.GenericWrite('./namelists/hydro.namelist.TEMPLATE',hydDic,self.clbdirc+'/hydro.namelist')
 
 	def CreateSubmitScript(self,**kwargs):
@@ -309,7 +325,6 @@ class CalibrationMaster():
 		# create the job submit template. 
 		ancil.GenericWrite('{}/namelists/submit_analysis.TEMPLATE.sh'.format(self.setup.cwd), insert,  \
 				    namelistHolder.format('submit_analysis.sh'))
-        
 
 	def ApplyObjFun(self):
 		dbdir = self.setup.clbdirc+'/'
