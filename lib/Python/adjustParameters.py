@@ -86,17 +86,17 @@ class SetMeUp:
 	def __init__(self,setup,**kwargs):
 		# Read in all of the parameter files and hanf 
 		# onto them.
-		name_ext = kwargs.get('name_ext', '')
-		# 
+		#name_ext = kwargs.get('name_ext', '')
 		#!!!! ----- THIS IS WAY TOO VERBOSE ---- DO SOMETHING TO CHANGE -----!!!!
-		# 
 		if type(setup) == str:
 			with open(setup) as j:
 				jsonfile = json.load(j)[0]
 		if type(setup) == dict:
 			jsonfile=setup
+		
+		self.name_ext = jsonfile['name_ext']
 		self.usgs_code = jsonfile['usgs_code']
-		self.clbdirc = jsonfile['calib_location'] + self.usgs_code + name_ext
+		self.clbdirc = jsonfile['calib_location'] + self.usgs_code + self.name_ext
 		
 		
 		# ---- restart file logic -- a bit ugly  ---- 
@@ -106,12 +106,12 @@ class SetMeUp:
 		if self.hrldasrestart == "None":
 			self.hrldasrestart = "!RESTART_FILENAME_REQUESTED"
 		else:
-			self.hrldasrestart = "RESTART_FILENAME_REQUESTED = {}".format(self.hrldasrestart)
+			self.hrldasrestart = "RESTART_FILENAME_REQUESTED = \"{}\"".format(self.hrldasrestart)
 
 		if self.hydrorestart == "None":
 			self.hydrorestart = "!RESTART_FILE"
 		else:
-			self.hydrorestart = "RESTART_FILE = {}".format(self.hydrorestart)
+			self.hydrorestart = "RESTART_FILE = \"{}\"".format(self.hydrorestart)
 		
 		# --- directories and run parameters 
 		self.queue = jsonfile['QUEUE']
@@ -168,17 +168,16 @@ class SetMeUp:
 				linkForcingPath.append(globDic[f])
 			else:
 				failureFlag += 1  
-				print('cannot locate: \n {}'.format(f))
+				logging.info('cannot locate: \n {}'.format(f))
 		# check if things failed 
 		if failureFlag!=0:
-			print('unable to locate {} forcing files'.format(failureFlag))
+			logging.info('unable to locate {} forcing files'.format(failureFlag))
 			sys.exit()
 		else:
-			print('found required forcing files, continuing')
+			logging.info('found required forcing files, continuing')
 		
 		# assign the copy list to self
 		self.linkForcingPath = linkForcingPath 
-
 
 
 	def GatherObs(self, **kwargs):

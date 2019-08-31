@@ -46,7 +46,7 @@ def adjustForcings(setup):
 	# and create a symlik from the FORCING_MOD directory 
 	# to FORCING; this is easier than telling the run 
 	# scripts later where to look ( i think ...) 
-	print('creating symlinks...')
+	logging.info('creating symlinks for forcings')
 	os.rename(fdir, fdir.parent.joinpath('FORCING_ORIG'))
 	os.symlink(outdir, fdir)
 
