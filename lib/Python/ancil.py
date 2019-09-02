@@ -29,6 +29,20 @@ def CleanUp(path):
 	# move back to o.g. dir
 	os.chdir(cwd)
 
+def GaugeToGrid(chrtout, lat, lon):
+	# go from lat-lon pair to the gauge location on the 
+	# routing grid   
+	ds = xr.open_dataset(chrtout)
+	latgrid = ds['latitude'].values
+	longrid  = ds['longitude'].values
+
+	# finds the lat/lon that corresponds 
+	# to a given gauge point. 
+	# returns an integer
+	return np.sqrt((latgrid-lat)**2 + (longrid-lon)**2).argmin()
+
+
+
 def ConcatLDAS(path,ID):
 	# path to output files
 	# ID to assign to the output name 
@@ -86,7 +100,10 @@ def WaitForJob(jobid,user):
 	pass 
 
 def formatDate(dstr):
-	return datetime.datetime.strptime(dstr, '%Y-%m-%d')
+	if type(dstr) == str:
+		return datetime.datetime.strptime(dstr, '%Y-%m-%d')
+	if type(dstr) == datetime.datetime:
+		return dstr
 	
 
 def GenericWrite(readpath,replacedata,writepath):
