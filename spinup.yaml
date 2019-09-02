@@ -1,0 +1,31 @@
+# setup.yaml 
+# purpose: set parameters for WRF-Hydro calibration, spinup, or run
+
+# USGS gauge to calibrate to 
+# extra descriptor for directory name; i.e. the name will be <usgs_code><name_ext>/  
+usgs_code: 13185000 
+name_ext: TESTER
+calib_location: /scratch/wrudisill/WRF-HYDRO_CALIB/
+
+# locations of executables, forcings, and parameter files  
+executable_location: /home/wrudisill/scratch/NewHydroBuilt/WRF_HYDRO-R2/wrf_hydro_nwm_public/trunk/NDHMS/Run
+forcing_location: /home/wrudisill/leaf/WRF-Hydro_Forcing/BOISE_TWIN/
+parameter_location: /scratch/leaf/share/WRF_hydro_subsets_201810/{}
+
+# Specify restart file locations. both are required if doing a restart run. 
+# Put None for a 'cold-start' run
+hydro_restart_file: None 
+hrldas_restart_file: None 
+
+# Job submit criteria. More to be added later  
+QUEUE: defq   # name of the queue 
+NODES: 2      # number of desired nodes
+
+# Specify the start and end dates for the 'calibration' and 'evaluation'
+# periods respectively.
+calib_date: 
+        start_date: 2005-10-01
+        end_date: 2009-09-30
+eval_date: 
+        start_date: 2008-07-01 
+        end_date: 2008-08-01

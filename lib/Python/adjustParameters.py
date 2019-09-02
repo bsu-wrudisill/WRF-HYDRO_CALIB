@@ -1,4 +1,4 @@
-import json
+import yaml
 import shutil
 import os
 import sys
@@ -78,7 +78,7 @@ def GrepSQLstate(iteration,**kwargs):
 
 ''''
 Below here are the classes. 
-1) SetMeUp: gathers user parameters by reading json files
+1) SetMeUp: gathers user parameters by reading yaml files
 2) CalibMaster: requires a SetMeUp instance (for now). Does all of the calibrating 
 '''
 
@@ -89,19 +89,19 @@ class SetMeUp:
 		#name_ext = kwargs.get('name_ext', '')
 		#!!!! ----- THIS IS WAY TOO VERBOSE ---- DO SOMETHING TO CHANGE -----!!!!
 		if type(setup) == str:
-			with open(setup) as j:
-				jsonfile = json.load(j)[0]
+			with open(setup) as y:
+				yamlfile = yaml.load(y, Loader=yaml.FullLoader)
 		if type(setup) == dict:
-			jsonfile=setup
+			yamlfile=setup
 		
-		self.name_ext = jsonfile['name_ext']
-		self.usgs_code = jsonfile['usgs_code']
-		self.clbdirc = jsonfile['calib_location'] + self.usgs_code + self.name_ext
+		self.name_ext = yamlfile['name_ext']
+		self.usgs_code = str(yamlfile['usgs_code'])
+		self.clbdirc = yamlfile['calib_location'] + self.usgs_code + self.name_ext
 		
 		
 		# ---- restart file logic -- a bit ugly  ---- 
-		self.hydrorestart = jsonfile['hydro_restart_file']  
-		self.hrldasrestart = jsonfile['hrldas_restart_file'] 
+		self.hydrorestart = yamlfile['hydro_restart_file']  
+		self.hrldasrestart = yamlfile['hrldas_restart_file'] 
 		
 		if self.hrldasrestart == "None":
 			self.hrldasrestart = "!RESTART_FILENAME_REQUESTED"
@@ -114,11 +114,11 @@ class SetMeUp:
 			self.hydrorestart = "RESTART_FILE = \"{}\"".format(self.hydrorestart)
 		
 		# --- directories and run parameters 
-		self.queue = jsonfile['QUEUE']
-		self.nodes = jsonfile['NODES']
-		self.parmdirc = jsonfile['parameter_location'].format(self.usgs_code)
-		self.exedirc = jsonfile['executable_location']
-		self.forcdirc = jsonfile['forcing_location']
+		self.queue = yamlfile['QUEUE']
+		self.nodes = yamlfile['NODES']
+		self.parmdirc = yamlfile['parameter_location'].format(self.usgs_code)
+		self.exedirc = yamlfile['executable_location']
+		self.forcdirc = yamlfile['forcing_location']
 		self.cwd = os.getcwd()
 		
 		# forcing files stuff goes here 
@@ -129,14 +129,14 @@ class SetMeUp:
 		self.catchid = 'catch_{}'.format(self.usgs_code)
 	        	
 		# get dates for start, end of spinup,eval period
-		calib_date = jsonfile['calib_date']
-		self.start_date = calib_date['start_date']
-		self.end_date = calib_date['end_date']
+		calib_date = yamlfile['calib_date']
+		self.start_date = pd.to_datetime(calib_date['start_date'])
+		self.end_date = pd.to_datetime(calib_date['end_date'])
 	
 		# evaluation period 
-		eval_date = jsonfile['eval_date']	
-		self.eval_start_date = eval_date['start_date']
-		self.eval_end_date = eval_date['end_date']
+		eval_date = yamlfile['eval_date']	
+		self.eval_start_date = pd.to_datetime(eval_date['start_date'])
+		self.eval_end_date = pd.to_datetime(eval_date['end_date'])
 		
 		# LOG all of the things 
 		self.startingLog()
@@ -191,7 +191,7 @@ class SetMeUp:
 		"""
 		Create run directory for WRF-hdyro calib.ation runs.
 		Copies files from the "directory_location" to the 
-		"calib.location" defined in the setup.json file
+		"calib.location" defined in the setup.yaml file
 		"""
 		
 		# now, lets create the directory to perform the calib.ation in
@@ -237,8 +237,8 @@ class SetMeUp:
 
 	def CreateNamelist(self, **kwargs):
 		# modify the namelist templates that reside in the run dir
-		startDate = ancil.formatDate(self.start_date)	
-		endDate = ancil.formatDate(self.end_date)	
+		startDate = self.start_date
+		endDate = self.end_date	
 		dateRange = endDate - startDate		
 		nlistDic = {"YYYY": startDate.year,
 			    "MM": startDate.month,
