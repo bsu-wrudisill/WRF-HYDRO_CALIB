@@ -26,7 +26,7 @@ def main(setupfile):
 	
 	logging.info('creating run directory')
 	setup.CreateRunDir()
-	#adjustForcings(setup)	 #OPTIONAL
+	adjustForcings(setup)	 #OPTIONAL
 	setup.CreateNamelist()
 	setup.CreateSubmitScript()
 	setup.GatherObs()

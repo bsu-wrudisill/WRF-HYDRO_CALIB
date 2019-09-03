@@ -21,22 +21,6 @@ from pathlib import Path
 '''
 Helper functions. Move these to another script eventually 
 '''
-
-# Helper functions   !!! MOVE ME TO THE ANCIL SCRIPT !!! 
-def returnItem(dic,x):
-	# not sure what i'm supposed to do!
-	try:
-		return dic[x]
-		#return 1
-	except KeyError:
-		return None
-
-def minDistance(latgrid, longrid, lat,lon):
-	# finds the lat/lon that corresponds 
-	# to a given gauge point. 
-	# returns an integer
-	return np.sqrt((latgrid-lat)**2 + (longrid-lon)**2).argmin()
-
 def AddOrMult(factor):
 	# create and addition or mult function 
 	# based on a string input 
@@ -171,7 +155,8 @@ class SetMeUp:
 				logging.info('cannot locate: \n {}'.format(f))
 		# check if things failed 
 		if failureFlag!=0:
-			logging.info('unable to locate {} forcing files'.format(failureFlag))
+			logging.error('unable to locate {} forcing files'.format(failureFlag))
+			print('unable to locate forcing files. check log for full description')
 			sys.exit()
 		else:
 			logging.info('found required forcing files, continuing')
@@ -185,8 +170,14 @@ class SetMeUp:
 		# time period and gauge 
 		obsFileName='obsStrData.csv'
 		cmdEmpty = 'Rscript ./lib/R/fetchUSGSobs.R {} {} {} {}/{}'
-		os.system(cmdEmpty.format(self.usgs_code, self.start_date, self.end_date, self.clbdirc, obsFileName))	
-			
+		# 
+		try:
+			os.system(cmdEmpty.format(self.usgs_code, self.start_date, self.end_date, self.clbdirc, obsFileName))	
+		except:
+			logging.error('unable to execute command {}'.format(cmdEmpty))
+			# if it is a calibrate command ... then maybe sys.exit. since we need this  
+
+
 	def CreateRunDir(self, **kwargs):
 		"""
 		Create run directory for WRF-hdyro calib.ation runs.
@@ -234,6 +225,9 @@ class SetMeUp:
 		shutil.copy('./env_nwm_r2.sh', self.clbdirc) 
 		shutil.copy('./lib/Python/modelEval.py', self.clbdirc) 
 		shutil.copy('./lib/Python/viz/PlotQ.py', self.clbdirc) 
+		
+		# log success
+		logging.info('created run directory {}'.format(self.clbdirc))
 
 	def CreateNamelist(self, **kwargs):
 		# modify the namelist templates that reside in the run dir
@@ -253,7 +247,9 @@ class SetMeUp:
 		# modify the hydro.namelist
 		hydDic = {"RESTART_FILE":self.hydrorestart}
 		ancil.GenericWrite('./namelists/hydro.namelist.TEMPLATE',hydDic,self.clbdirc+'/hydro.namelist')
-
+		# log 
+		logging.info('created namelist files')
+	
 	def CreateSubmitScript(self,**kwargs):
 		"""
 		Read the  the submit script template and modify the correct lines
@@ -270,7 +266,7 @@ class SetMeUp:
 			    }
 		# create the submission script 	
 		ancil.GenericWrite('{}/namelists/submit.TEMPLATE.sh'.format(self.cwd), slurmDic, namelistHolder.format('submit.sh'))
-
+		logging.info('created job submission script')
 
 
 class CalibrationMaster():
@@ -300,9 +296,16 @@ class CalibrationMaster():
 		df["currentValue"] = df["ini"]
 		df["nextValue"] = None 
 		df["onOff"] = df["calib_flag"]  # used for the DDS alg... 
+		
 		# assign the df to itself, so we can hold onto it in later fx  
 		self.df = df 
-	
+		
+		# log lots of things 
+		logging.info('Initialized CalibrationMaster')
+		logging.info('Using calib_params.tbl')
+		logging.info('Objective function: {}'.format(str(self.objFun)))
+		logging.info('Maximum iters: {}'.format(self.MaxIters))
+		
 
 	def CreateAnalScript(self, **kwargs):
 		"""
@@ -313,18 +316,21 @@ class CalibrationMaster():
 		so memory leaks in the python netcdf library don't accumulate
 		"""
 		# remove previous analysis submit script 
-		try:
-			os.system('rm {}/submit_analysis.sh'.format(self.setup.clbdirc))
+		submit_analysis = 'rm {}/submit_analysis.sh'.format(self.setup.clbdirc)
+		if os.path.isfile(submit_analysis)
+			os.remove(submit_analysis)
+			logging.info('removed previous analysis job submit script {}'.format(submit_analysis))
 		except:
 			pass
+		# 
 		namelistHolder = self.setup.clbdirc+'/{}'	
 		insert = {"CLBDIRC":self.setup.clbdirc, 
 		          "ITERATION":self.iters}
-		
+		# 	
 		# create the job submit template. 
 		ancil.GenericWrite('{}/namelists/submit_analysis.TEMPLATE.sh'.format(self.setup.cwd), insert,  \
 				    namelistHolder.format('submit_analysis.sh'))
-
+	# 	
 	def ApplyObjFun(self):
 		dbdir = self.setup.clbdirc+'/'
 		merged = GrepSQLstate(self.iters, dbdir=dbdir)
@@ -370,9 +376,11 @@ class CalibrationMaster():
 			# the 'stock' parameters 
 			self.bestObj = obj
 			improvement = 0 	
+			
 			# update the active params 
 			for param in self.df.groupby('calib_flag').groups[1]:
 				self.df.at[param, 'bestValue'] = self.df.loc[param,'ini']
+			
 			# keep the inactive params at 0 
 			try:
 				for param in self.df.groupby('calib_flag').groups[0]:
@@ -411,8 +419,8 @@ class CalibrationMaster():
 		and mean of zero. 
 		
 		This function established the correct parameter values
-		and saves them to a pandas dataframe. Another function then
-		updates the parameter values in the correct files. 
+		and saves them to a pandas dataframe. 'self.UpdateParamFiles'
+		then updates the parameter values in the correct files. 
 		"""
 
 		# Begin algorithm
@@ -421,7 +429,6 @@ class CalibrationMaster():
 		# read the parameter tables 
 	   	# this seems like a dumb algorithm.... 
 		activeParams = list(self.df.groupby('calib_flag').groups[1])
-		
 		# Part 1: Randomly select parameters to update 
 		prob = self.LogLik(self.iters+1, self.MaxIters)
 		#print(prob)	
@@ -440,7 +447,7 @@ class CalibrationMaster():
 			deselectedParams = list(self.df.groupby('onOff').groups[0])
 
 		except KeyError:
-			print('no parameters were selected during DDS search algorithm')
+			logger.warning('no parameters were selected during DDS search algorithm')
 			return
 
 		# 'active params' just contains those to update now
@@ -467,6 +474,7 @@ class CalibrationMaster():
 			self.df.at[param,'nextValue'] = np.float(xj_best) # no updating 
 			#self.df.at[param,"CALIB_{}".format(self.iters)] = np.float(xj_best)
 			
+		logging.info('Performed DDS update for iteration {}'.format(self.iters)
 
 	def UpdateParamFiles(self):
 		# update the NC files given the adjustment param
@@ -480,10 +488,6 @@ class CalibrationMaster():
 			os.remove(self.paramDir+'/'+ncSingle)
 			# loop through the params and update. write files 
 			for param in grouped.groups[ncSingle]: 
-				# PERFORM THE DDS PARAMETER UPDATE FOR EACH PARAM
-				# the different files have differend dimensions 
-				#print(self.df.loc[param].factor)
-				#print(param)
 				# returns a function (addition or multiplication) to apply 
 				updateFun = AddOrMult(self.df.loc[param].factor)
 				# get the dims of the parameter
@@ -498,15 +502,16 @@ class CalibrationMaster():
 					UpdateMe[param][:,:] = updateFun(UpdateMe[param][:,:], updateVal) 
 				if dims == 3:
 					UpdateMe[param][:,:,:] = updateFun(UpdateMe[param][:,:,:], updateVal) 
-				#print('updated--{} in file {}--with value {}'.format(param,ncSingle, updateVal))
+				# log info
+				logger.info('updated--{} in file {}--with value {}'.format(param,ncSingle, updateVal))
 			# done looping thru params 
 			# save the file now and close  
 			UpdateMe.to_netcdf(self.paramDir+'/'+ncSingle, mode='w')
 			UpdateMe.close()
+		
 		# update the dataframe to reflect that the 'next param' values have been inserted into the current params 
 		self.df['currentValue'] = self.df['nextValue']
 
-	
 	
 	def MoveForward(self):
 		# move the model forward one iteration

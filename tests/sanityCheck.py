@@ -11,18 +11,14 @@ import numpy as np
 #libPath = '../lib/Python/'
 #sys.path.insert(0,libPath)
 #from adjustParameters import *
-
-
 '''
 Checks that the necessary files, folders, and environments are setup before starting the calibration procedure
 The purpose is to be QUICK -- not completely thorough. The goal is to check for common or likely mistakes 
 '''
-
 setup = 'spinup.yaml'
 if type(setup) == str:
 	with open(setup) as y:
 		yamlfile = yaml.load(y, Loader=yaml.FullLoader)
-
 
 class testSetup(unittest.TestCase):
 	'''
@@ -197,6 +193,7 @@ class RunPreSubmitTest(testSetup):
 					{}: | south_north | {}\n".format(forcingFilename, forcing.dims['south_north'], 
 						                                        wrfinputFilename, wrfinput.dims['south_north']))
 if __name__ == '__main__':
+	# this is the absolute worst thing ....
+	# unittest.main cannot deal w/ command 
+	# line arguments 
 	state=unittest.main(verbosity=2)
-	loggiing.info(state)
-
