@@ -71,15 +71,20 @@ class SetMeUp:
 		# Read in all of the parameter files and hanf 
 		# onto them.
 		#name_ext = kwargs.get('name_ext', '')
-		#!!!! ----- THIS IS WAY TOO VERBOSE ---- DO SOMETHING TO CHANGE -----!!!!
+		
+		# ------- THIS SYSTEM MIGHT CHANGE LATER ------------# 
 		if type(setup) == str:
 			with open(setup) as y:
 				yamlfile = yaml.load(y, Loader=yaml.FullLoader)
 		if type(setup) == dict:
 			yamlfile=setup
 		
+		self.setup = setup # name of the setup file. THIS MIGHT CHANGE LATER !!!!	
+		#----------------------------------------------------# 
+		
 		self.name_ext = yamlfile['name_ext']
 		self.usgs_code = str(yamlfile['usgs_code'])
+		self.MaxIters = yamlfile['dds_iter']
 		self.clbdirc = yamlfile['calib_location'] + self.usgs_code + self.name_ext
 		
 		
@@ -123,6 +128,7 @@ class SetMeUp:
 		self.eval_end_date = pd.to_datetime(eval_date['end_date'])
 		
 		# LOG all of the things 
+		self.gauge_loc = None
 		self.startingLog()
 	
 	def startingLog(self):
@@ -170,9 +176,11 @@ class SetMeUp:
 		# time period and gauge 
 		obsFileName='obsStrData.csv'
 		cmdEmpty = 'Rscript ./lib/R/fetchUSGSobs.R {} {} {} {}/{}'
-		# 
+		#
+		startString = str(self.start_date.strftime("%Y-%m-%d"))
+		endString = str(self.end_date.strftime("%Y-%m-%d"))
 		try:
-			os.system(cmdEmpty.format(self.usgs_code, self.start_date, self.end_date, self.clbdirc, obsFileName))	
+			os.system(cmdEmpty.format(self.usgs_code, startString, endString, self.clbdirc, obsFileName))	
 		except:
 			logging.error('unable to execute command {}'.format(cmdEmpty))
 			# if it is a calibrate command ... then maybe sys.exit. since we need this  
@@ -223,6 +231,9 @@ class SetMeUp:
 		shutil.copy('./namelists/hydro.namelist.TEMPLATE', self.clbdirc+'/hydro.namelist') 
 		shutil.copy('./namelists/namelist.hrldas.TEMPLATE', self.clbdirc) 
 		shutil.copy('./env_nwm_r2.sh', self.clbdirc) 
+		shutil.copy('./{}'.format(self.setup), self.clbdirc) 
+		
+		# why am i copying model eval
 		shutil.copy('./lib/Python/modelEval.py', self.clbdirc) 
 		shutil.copy('./lib/Python/viz/PlotQ.py', self.clbdirc) 
 		
@@ -257,7 +268,7 @@ class SetMeUp:
 		"""
 		namelistHolder = self.clbdirc+'/{}'
 		taskX = 16 
-		runTime = "02:00:00"   # THIS IS A DEFAULT-- CHANGE ME LATER 
+		runTime = "03:00:00"   # THIS IS A DEFAULT-- CHANGE ME LATER 
 		slurmDic = {"QUEUE":self.queue, 
 			    "NODES":self.nodes, 
 			    "TASKS":int(self.nodes)*taskX,
@@ -283,7 +294,7 @@ class CalibrationMaster():
 		self.setup = setup  # pass the setup class into here...  
 		self.paramDir = "{}/DOMAIN".format(self.setup.clbdirc)
 		#self.paramDir = '/scratch/wrudisill/WillCaancil.ydro/TestDOMAIN'    #TEMPORARY 
-		self.MaxIters = 1e5   # the maximum # of iterations allowed
+		self.MaxIters = self.setup.MaxIters
 		self.bestObj = 1e16
 		self.objFun = KGE   # !!!!!  make this dynamic later  !!!! 
 		self.dbcon = self.setup.clbdirc+'/CALIBRATION.db'
@@ -317,15 +328,13 @@ class CalibrationMaster():
 		"""
 		# remove previous analysis submit script 
 		submit_analysis = 'rm {}/submit_analysis.sh'.format(self.setup.clbdirc)
-		if os.path.isfile(submit_analysis)
+		if os.path.isfile(submit_analysis):
 			os.remove(submit_analysis)
 			logging.info('removed previous analysis job submit script {}'.format(submit_analysis))
-		except:
-			pass
-		# 
+		
 		namelistHolder = self.setup.clbdirc+'/{}'	
 		insert = {"CLBDIRC":self.setup.clbdirc, 
-		          "ITERATION":self.iters}
+		          "ITERATION":self.iters} 
 		# 	
 		# create the job submit template. 
 		ancil.GenericWrite('{}/namelists/submit_analysis.TEMPLATE.sh'.format(self.setup.cwd), insert,  \
@@ -447,7 +456,7 @@ class CalibrationMaster():
 			deselectedParams = list(self.df.groupby('onOff').groups[0])
 
 		except KeyError:
-			logger.warning('no parameters were selected during DDS search algorithm')
+			logging.warning('no parameters were selected during DDS search algorithm')
 			return
 
 		# 'active params' just contains those to update now
@@ -474,7 +483,7 @@ class CalibrationMaster():
 			self.df.at[param,'nextValue'] = np.float(xj_best) # no updating 
 			#self.df.at[param,"CALIB_{}".format(self.iters)] = np.float(xj_best)
 			
-		logging.info('Performed DDS update for iteration {}'.format(self.iters)
+		logging.info('Performed DDS update for iteration {}'.format(self.iters))
 
 	def UpdateParamFiles(self):
 		# update the NC files given the adjustment param
@@ -503,7 +512,7 @@ class CalibrationMaster():
 				if dims == 3:
 					UpdateMe[param][:,:,:] = updateFun(UpdateMe[param][:,:,:], updateVal) 
 				# log info
-				logger.info('updated--{} in file {}--with value {}'.format(param,ncSingle, updateVal))
+				logging.info('updated--{} in file {}--with value {}'.format(param,ncSingle, updateVal))
 			# done looping thru params 
 			# save the file now and close  
 			UpdateMe.to_netcdf(self.paramDir+'/'+ncSingle, mode='w')
