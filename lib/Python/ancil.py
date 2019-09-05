@@ -5,6 +5,8 @@ import subprocess
 import time 
 import glob 
 import xarray as xr
+import logging
+import numpy as np
 #
 #   
 def CleanUp(path):
@@ -27,6 +29,7 @@ def CleanUp(path):
 			except:
 				pass
 	# move back to o.g. dir
+	logging.info('cleaning up model run directory ({})'.format(path)) 
 	os.chdir(cwd)
 
 def GaugeToGrid(chrtout, lat, lon):
@@ -40,8 +43,6 @@ def GaugeToGrid(chrtout, lat, lon):
 	# to a given gauge point. 
 	# returns an integer
 	return np.sqrt((latgrid-lat)**2 + (longrid-lon)**2).argmin()
-
-
 
 def ConcatLDAS(path,ID):
 	# path to output files
@@ -68,18 +69,6 @@ def Submit(subname,catchid):
 	return jobid.decode("utf-8").rstrip(),err
 
 def WaitForJob(jobid,user):
-	#---- PREVIOUS METHOD; PROBLEMATIC ------# 
-	# Gather the Job id from the catch file
-	# (the catchid gets updated with eath iteration of real/wrf)
-	#gid = "grep \"\" {} | cut -d' ' -f4".format(catch)    
-	#gidout,giderr = SystemCmd(gid)    
-	#print(gidout)
-	
-	# IF STDERROR NULL (NO ERRORS) THEN CONTINUE
-	#jobid = gidout[0]           # assign jobid
-	#print("jobid found {}".format(jobid))
-
-
 	# ----NEW METHOD--- PASS IN JOBID 
 	still_running = 1     # start with 1 for still running 
 	while still_running == 1: # as long as theres a job running, keep looping and checking
@@ -92,12 +81,13 @@ def WaitForJob(jobid,user):
 		# convert the id to an integer
 		# the length of the list. should be zero or one. one means the job ID is found 
 		still_running_list = list(filter(lambda x: x == jobid, chidout))
-		print(still_running_list)
-		still_running = len(still_running_list)
 		
+		still_running = len(still_running_list)
+		logging.info('jobID {} is still running...'.format(still_running_list))
+		print('jobID {} is still running...'.format(still_running_list))
+		logging.info('sleep for 10 seconds')
 		time.sleep(10)
-		print('still running...')
-	pass 
+		
 
 def formatDate(dstr):
 	if type(dstr) == str:
