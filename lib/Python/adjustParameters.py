@@ -18,46 +18,7 @@ from pathlib import Path
 # User options 
 #xr.set_options(file_cache_maxsize=1)
 
-'''
-Helper functions. Move these to another script eventually 
-'''
-def AddOrMult(factor):
-	# create and addition or mult function 
-	# based on a string input 
-	if factor == 'mult':
-		return lambda a,b: a*b
-	if factor == 'add':
-		return lambda a,b: a+b
-	else:
-		return None
 
-# !!! THIS IS HERE FOR NOW..... MAKE ME A STATIC METHOD LATER !!!
-def GrepSQLstate(iteration,**kwargs):
-	'''
-	This function reads both observations and model outputs from the 
-	sql database
-	'''
-	#read 	
-	dbdir = kwargs.get('dbdir','CALIBRATION.db')
-	
-	# select data from the table 
-	mod_cmd = "SELECT * FROM MODOUT WHERE ITERATIONS = {}".format(iteration)
-	mod = pd.read_sql(sql = mod_cmd, con="sqlite:///{}/CALIBRATION.db".format(dbdir))
-	mod['time'] = pd.to_datetime(mod['time']) 
-	
-	# read obs 	
-	obs = pd.read_sql(sql="SELECT * FROM OBSERVATIONS", con="sqlite:///{}/CALIBRATION.db".format(dbdir))
-	obs['time'] = pd.to_datetime(obs['time'])
-	obs.drop(columns=['site_no'], inplace=True)
-	
-	# merge things  
-	merged = obs.copy()
-	merged['qMod'] = mod['qMod']
-	merged.dropna(inplace=True)
-	
-	# assign index
-	merged.set_index(merged.time, inplace=True)
-	return merged	
 
 
 ''''
@@ -342,7 +303,7 @@ class CalibrationMaster():
 	# 	
 	def ApplyObjFun(self):
 		dbdir = self.setup.clbdirc+'/'
-		merged = GrepSQLstate(self.iters, dbdir=dbdir)
+		merged = dbL.GrepSQLstate(self.iters, dbdir=dbdir)
 		
 		# only evaluate during the evaluation period
 		eval_period = merged.loc[self.setup.eval_start_date : self.setup.eval_end_date]
@@ -498,7 +459,7 @@ class CalibrationMaster():
 			# loop through the params and update. write files 
 			for param in grouped.groups[ncSingle]: 
 				# returns a function (addition or multiplication) to apply 
-				updateFun = AddOrMult(self.df.loc[param].factor)
+				updateFun = ancil.AddOrMult(self.df.loc[param].factor)
 				# get the dims of the parameter
 				dims = self.df.loc[param].dims 
 				# create the value for updating --- this will include the 'ini' value 

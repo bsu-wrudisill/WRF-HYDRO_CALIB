@@ -8,7 +8,17 @@ import xarray as xr
 import logging
 import numpy as np
 #
-#   
+#  
+
+def AddOrMult(factor):
+	# create and addition or mult function 
+	# based on a string input 
+	if factor == 'mult':
+		return lambda a,b: a*b
+	if factor == 'add':
+		return lambda a,b: a+b
+	else:
+		return None
 def CleanUp(path):
 	# remove files from the run directory 
 	cwd = os.getcwd()
