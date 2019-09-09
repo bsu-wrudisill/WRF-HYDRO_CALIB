@@ -7,8 +7,22 @@ import glob
 import xarray as xr
 import logging
 import numpy as np
-#
-#   
+import time 
+
+
+'''
+FUNCTIONS 
+'''
+def AddOrMult(factor):
+	# create and addition or mult function 
+	# based on a string input 
+	if factor == 'mult':
+		return lambda a,b: a*b
+	if factor == 'add':
+		return lambda a,b: a+b
+	else:
+		return None
+
 def CleanUp(path):
 	# remove files from the run directory 
 	cwd = os.getcwd()
@@ -112,4 +126,23 @@ def GenericWrite(readpath,replacedata,writepath):
 	with open(writepath, 'w') as file:
 	    file.write(filedata)
 	# done 
+
+
+
+'''
+DECORATORS
+'''
+
+def timer(function):
+	# simple decorator to time a function
+	def wrapper(*args,**kwargs):
+		t1 = datetime.datetime.now()
+		wrapped_function = function(*args,**kwargs)
+		t2 = datetime.datetime.now()
+		dt = (t2 - t1).total_seconds()/60   # time in minutes
+		logging.info('function {} took {} minutes complete'.format(function.__name__, dt))	
+		return wrapped_function
+	return wrapper
+
+
 

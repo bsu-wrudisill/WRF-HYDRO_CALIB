@@ -69,7 +69,7 @@ io_form_outputs = 1
 ! Realtime run configuration option:
 ! 0=all (default), 1=analysis, 2=short-range, 3=medium-range, 4=long-range, 5=retrospective,
 ! 6=diagnostic (includes all of 1-4 outputs combined)
-io_config_outputs = 1
+io_config_outputs = 6
 
 ! Option to write output files at time 0 (restart cold start time): 0=no, 1=yes (default)
 t0OutputFlag = 1
@@ -79,7 +79,7 @@ t0OutputFlag = 1
 ! 0=None (default), 1=channel influxes (qSfcLatRunoff, qBucket)
 ! 2=channel+bucket fluxes    (qSfcLatRunoff, qBucket, qBtmVertRunoff_toBucket)
 ! 3=channel accumulations    (accSfcLatRunoff, accBucket) *** NOT TESTED ***
-output_channelBucket_influx = 0
+output_channelBucket_influx = 2
 
 ! Output netcdf file control
 CHRTOUT_DOMAIN = 1           ! Netcdf point timeseries output at all channel points (1d)

@@ -15,6 +15,6 @@
 conda activate WRFDev
 
 echo 'ITERATION'
-python modelEval.py CLBDIRC ITERATION
+python modelEval.py CLBDIRC ITERATION 
 
 exit 
