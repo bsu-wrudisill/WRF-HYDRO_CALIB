@@ -11,7 +11,7 @@ import pandas as pd
 import functools as ft
 import netCDF4 as nc
 import numpy as np
-import dbLogger as dbL
+import dblogger as dbl
 from ObjectiveFunctions import KGE, RMSE 
 from pathlib import Path
 
@@ -89,6 +89,7 @@ class SetMeUp:
 		self.eval_end_date = pd.to_datetime(eval_date['end_date'])
 		
 		# LOG all of the things 
+		self.objfun = KGE
 		self.gauge_loc = None
 		self.startingLog()
 	
@@ -300,33 +301,22 @@ class CalibrationMaster():
 		# create the job submit template. 
 		ancil.GenericWrite('{}/namelists/submit_analysis.TEMPLATE.sh'.format(self.setup.cwd), insert,  \
 				    namelistHolder.format('submit_analysis.sh'))
-	# 	
-	def ApplyObjFun(self):
-		dbdir = self.setup.clbdirc+'/'
-		merged = dbL.GrepSQLstate(self.iters, dbdir=dbdir)
-		
-		# only evaluate during the evaluation period
-		eval_period = merged.loc[self.setup.eval_start_date : self.setup.eval_end_date]
-		
-		# compute the objective function
-		obj = self.objFun(eval_period.qMod, eval_period.qObs)
-		self.obj = obj
-		return obj
 
-	def LogLik(self,curiter, maxiter):
-		# logliklihood function
-		return 1 - np.log(curiter)/np.log(maxiter)
-
-	def LogParams(self):
+	def LogParameters(self):
 		# Log Params  
 		sql_params = self.df.copy()
 		sql_params['Iteration'] = str(self.iters)
 		sql_params.drop(columns=['file', 'dims','nextValue'], inplace=True)
-		dbL.LogResultsToDB(sql_params, 'PARAMETERS', dbcon=self.dbcon)
+		dbl.logDataframe(sql_params, 'PARAMETERS', dbcon=self.dbcon)
 	
-	def LogObj(self):
-		dbL.LogObjToDB(str(self.iters), self.obj, self.improvement, dbcon=self.dbcon)
 	
+	def LogPerformance(self):
+		paramDic = {'Iteration': [str(self.iters)], 
+			    'Objective':  [self.obj], 
+			    'Improvement': [self.improvement],
+			    'Function': [str(self.setup.objfun)]}   # CHANGE ME! make __repr__ instead. obfun needs to be class thoguh
+		pdf = pd.DataFrame(paramDic)
+		dbl.logDataframe(pdf, 'CALIBRATION', dbcon=self.dbcon)
 	'''
 	Function: EvaluateIteration
 		1.a. apply objective function, evaluating perfomance of model relative to the observations
@@ -334,7 +324,16 @@ class CalibrationMaster():
 		1.c  set the 'next value' to the initial value
 	'''
 	def EvaluateIteration(self):
-		obj = self.ApplyObjFun()
+		dbdir = self.setup.clbdirc+'/'
+		merged = dbl.getDischarge(self.iters, dbdir=dbdir)
+		# only evaluate during the evaluation period
+		eval_period = merged.loc[self.setup.eval_start_date : self.setup.eval_end_date]
+		# compute the objective function
+		obj = self.objFun(eval_period.qMod, eval_period.qObs)
+		self.obj = obj
+		
+
+		#obj = self.ApplyObjFun()
 		# check the obfun. 
 		# if the performance of the last parameter set us better, then update the 
 		# calib.data frame 
@@ -400,7 +399,13 @@ class CalibrationMaster():
 	   	# this seems like a dumb algorithm.... 
 		activeParams = list(self.df.groupby('calib_flag').groups[1])
 		# Part 1: Randomly select parameters to update 
-		prob = self.LogLik(self.iters+1, self.MaxIters)
+		
+		
+		#def LogLik(self,curiter, maxiter):
+		# logliklihood function
+		#return 1 - np.log(curiter)/np.log(maxiter)
+		
+		prob = 1 - np.log(self.iters+1) / np.log(self.MaxIters)
 		#print(prob)	
 		for param in activeParams:
 			sel = np.random.choice(2, p=[1-prob,prob])

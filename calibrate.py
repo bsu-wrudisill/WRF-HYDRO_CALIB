@@ -85,8 +85,8 @@ def main(setupfile):
 
 		#os.chdir(cwd)
 		## log the parameters and obfun to the database
-		calib.LogParams()     
-		calib.LogObj() 
+		calib.LogParameters()     
+		calib.LogPerformance()
 
 		## generate new parameters 
 		calib.DDS()          

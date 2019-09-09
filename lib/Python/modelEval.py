@@ -14,7 +14,7 @@ import logging
 
 libPath = '/scratch/wrudisill/WRF-HYDRO_CALIB/lib/Python'  #CHANGE ME TO SOMETHING BETTER !!!!! 
 sys.path.insert(0,libPath)
-import dbLogger as dbL
+import dblogger as dbl
 import ancil
 
 def ReadQ(clbdirc, iteration):
@@ -49,11 +49,11 @@ def ReadQ(clbdirc, iteration):
 	# log the output to a database for keeping 
 	# add iteration count to the df.
 	modQdly['Iterations'] = str(iteration)
-	dbL.LogResultsToDB(modQdly, 'MODOUT')
+	dbl.logDataframe(modQdly, 'MODOUT')
 	
 	# log the observations only once 
 	if iteration == str(0):
-		dbL.LogResultsToDB(obsQ, 'Observations')
+		dbl.logDataframe(obsQ, 'Observations')
 		print('logging the observations to db')	
 
 	# close files ... (not that it does anything...)

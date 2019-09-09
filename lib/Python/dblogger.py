@@ -6,7 +6,7 @@ import pandas as pd
 
 
 # !!! THIS IS HERE FOR NOW..... MAKE ME A STATIC METHOD LATER !!!
-def GrepSQLstate(iteration,**kwargs):
+def getDischarge(iteration,**kwargs):
 	'''
 	This function reads both observations and model outputs from the 
 	sql database
@@ -33,34 +33,10 @@ def GrepSQLstate(iteration,**kwargs):
 	merged.set_index(merged.time, inplace=True)
 	return merged	
 
-def LogResultsToDB(df,table_name,**kwargs):
+def logDataframe(df,table_name,**kwargs):
 	db_connection = kwargs.get('dbcon', 'CALIBRATION.db')
 	#
 	engine = create_engine('sqlite:///{}'.format(db_connection), echo=False)
 	df.to_sql(table_name, con = engine, if_exists='append')
 
-def LogObjToDB(iterations, objectivefx, improvement, **kwargs):
-	db_connection = kwargs.get('dbcon', './CALIBRATION.db')
-	#
-	#
-	#dbConn = sqlite3.connect("./CALIBRATION.db", timeout=10)
-	dbConn = sqlite3.connect(db_connection, timeout=10)
-	cursor = dbConn.cursor()
-	
-	cursor.execute('''CREATE TABLE IF NOT EXISTS CALIBRATION(
-				Iteration TEXT,
-				ObjectiveFX REAL,
-				Improvement INTEGER 
-				)''')
-	
-	cursor.execute('''INSERT INTO CALIBRATION(
-				Iteration,
-				ObjectiveFX,
-				Improvement
-				)
-			VALUES(?,?,?)''',
-			(iterations, objectivefx,improvement))
-	
-	dbConn.commit()
-	dbConn.close()
 
