@@ -238,6 +238,14 @@ class SetMeUp:
 		ancil.GenericWrite('{}/namelists/submit.TEMPLATE.sh'.format(self.cwd), slurmDic, namelistHolder.format('submit.sh'))
 		logging.info('created job submission script')
 
+	def __call__(self):
+		# do the things in the right order -- 
+		# find forcings, create directory, write namelist, write submit script, gather observations 
+		self.GatherForcings()
+		self.CreateRunDir()
+		self.CreateNamelist()
+		self.CreateSubmitScript()
+		self.GatherObs()
 
 class CalibrationMaster():
 	"""
@@ -298,13 +306,49 @@ class CalibrationMaster():
 		# create the job submit template. 
 		ancil.GenericWrite('{}/namelists/submit_analysis.TEMPLATE.sh'.format(self.setup.cwd), insert,  \
 				    namelistHolder.format('submit_analysis.sh'))
+	
+	# this is nothing more than a bookkeeping step to make this a static method 
+	# no different than letting it live outside of this class 
+	@staticmethod
+	def ReadQ(clbdirc, iteration):
+		# read usgs obs 
+		obsQ = pd.read_csv(clbdirc+'/obsStrData.csv')
+		obsQ.drop(columns=['Unnamed: 0', 'POSIXct', "agency_cd"], inplace=True)
+		obsQ.rename(index=str, columns={"Date":"time", "obs":"qObs"}, inplace=True)
+		obsQ.set_index('time',inplace=True)
+		obsQ.index = pd.to_datetime(obsQ.index)
+		lat = obsQ['lat'].iloc[0]
+		lon = obsQ['lon'].iloc[0]
+		# get the gauge location grid cell 
+		chrtFiles = glob.glob(clbdirc+'/*CHRTOUT_DOMAIN2*')
+		gauge_loc = ancil.GaugeToGrid(chrtFiles[0], lat, lon) # pick the first chrt file 
+		logging.info('gauge_loc is ... {}'.format(gauge_loc))
+		modQfiles = xr.open_mfdataset(chrtFiles)
+		# do some slicing and dicing... 	
+		qDf = pd.DataFrame(
+				{'qMod':modQfiles['streamflow'][:,gauge_loc].values,
+				 'time':modQfiles['time'].values}
+				)
+		qDf.set_index('time', inplace=True)
+		modQdly = pd.DataFrame(qDf.resample('D').mean())
+		# log the output to a database for keeping 
+		# add iteration count to the df.
+		modQdly['Iterations'] = str(iteration)
+		dbl.logDataframe(modQdly, 'MODOUT',clbdirc)
+		# log the observations only once 
+		if iteration == str(0):
+			dbl.logDataframe(obsQ, 'Observations', clbdirc)
+			print('logging the observations to db')	
+		# close files ... (not that it does anything...)
+		modQfiles.close()
+		
 
 	def LogParameters(self):
 		# Log Params  
 		sql_params = self.df.copy()
 		sql_params['Iteration'] = str(self.iters)
 		sql_params.drop(columns=['file', 'dims','nextValue'], inplace=True)
-		dbl.logDataframe(sql_params, 'PARAMETERS', dbcon=self.dbcon)
+		dbl.logDataframe(sql_params, 'PARAMETERS', self.setup.clbdirc)
 	
 	
 	def LogPerformance(self):
@@ -313,16 +357,16 @@ class CalibrationMaster():
 			    'Improvement': [self.improvement],
 			    'Function': [str(self.setup.objfun)]}   # CHANGE ME! make __repr__ instead. obfun needs to be class thoguh
 		pdf = pd.DataFrame(paramDic)
-		dbl.logDataframe(pdf, 'CALIBRATION', dbcon=self.dbcon)
+		dbl.logDataframe(pdf, 'CALIBRATION', self.setup.clbdirc)
 	'''
 	Function: EvaluateIteration
 		1.a. apply objective function, evaluating perfomance of model relative to the observations
 		1.b  determine if the model improved or not, assignt improvement flag to 0 or 1 
 		1.c  set the 'next value' to the initial value
 	'''
+	
 	def EvaluateIteration(self):
-		dbdir = self.setup.clbdirc+'/'
-		merged = dbl.getDischarge(self.iters, dbdir=dbdir)
+		merged = dbl.getDischarge(self.iters, self.setup.clbdirc)
 		# only evaluate during the evaluation period
 		eval_period = merged.loc[self.setup.eval_start_date : self.setup.eval_end_date]
 		# compute the objective function
@@ -538,8 +582,9 @@ class CalibrationMaster():
 		# are applying this function that is inside of here
 		# this way ... we can call the calib.ation routine N 
 		# times and update the calib.method w/ each step 
-		pass 	
-	
+		for i in range(self.MaxIters):
+			self.OneLoop()
+		
 
 if __name__ == '__main__':
 	pass
