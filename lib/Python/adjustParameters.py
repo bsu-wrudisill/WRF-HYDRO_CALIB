@@ -14,13 +14,10 @@ import numpy as np
 import dblogger as dbl
 from ObjectiveFunctions import KGE, RMSE 
 from pathlib import Path
+import time 
 
 # User options 
 #xr.set_options(file_cache_maxsize=1)
-
-
-
-
 ''''
 Below here are the classes. 
 1) SetMeUp: gathers user parameters by reading yaml files
@@ -492,6 +489,50 @@ class CalibrationMaster():
 		# move the model forward one iteration
 		self.iters = self.iters+1
 
+
+	def OneLoop(self):
+		# create analysis script 
+		self.CreateAnalScript()
+		
+		# switch to the selfdirectory 
+		os.chdir(self.setup.clbdirc)
+
+		## submit the job 
+		jobid, err = ancil.Submit('submit.sh', self.setup.catchid)
+
+		## sleep 
+		time.sleep(1) # wait a second before checking for the job
+
+		## wait for the job to complete 
+		ancil.WaitForJob(jobid, 'wrudisill')
+
+		## --- MODEL EVALUATION ---- # 
+		print('submitting analysis job')
+		jobid, err = ancil.Submit('submit_analysis.sh', self.setup.catchid)   # THIS STEP LOGS THE MODEL FILES TO THE DB
+
+		## wait for the job to complete 
+		ancil.WaitForJob(jobid, 'wrudisill')
+
+		#print("evaluate... obj fun")
+		obj,improvement = self.EvaluateIteration()  # check if the model improved 
+
+		#os.chdir(cwd)
+		## log the parameters and obfun to the database
+		self.LogParameters()     
+		self.LogPerformance()
+
+		## generate new parameters 
+		self.DDS()          
+
+		## update the parameters 
+		self.UpdateParamFiles()  # write the new parameters to files 
+
+		## clean up the directory 
+		ancil.CleanUp(self.setup.clbdirc)
+
+		## move the iternal iteration state one forward 
+		self.MoveForward()
+	
 	def __call__(self):
 		# This creatres a "call" -- when we do calib.), we 
 		# are applying this function that is inside of here
