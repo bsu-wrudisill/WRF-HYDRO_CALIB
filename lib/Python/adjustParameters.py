@@ -3,7 +3,7 @@ import shutil
 import os
 import sys
 import glob 
-import ancil 
+import accessories as acc
 import subprocess
 import logging 
 import xarray as xr
@@ -212,11 +212,11 @@ class SetMeUp:
 			    "RESTART_FILENAME_REQUESTED": self.hrldasrestart
 			    }
 		#modify namelist.hrldas
-		ancil.GenericWrite('./namelists/namelist.hrldas.TEMPLATE', nlistDic, self.clbdirc+'/namelist.hrldas')	
+		acc.GenericWrite('./namelists/namelist.hrldas.TEMPLATE', nlistDic, self.clbdirc+'/namelist.hrldas')	
 		
 		# modify the hydro.namelist
 		hydDic = {"RESTART_FILE":self.hydrorestart}
-		ancil.GenericWrite('./namelists/hydro.namelist.TEMPLATE',hydDic,self.clbdirc+'/hydro.namelist')
+		acc.GenericWrite('./namelists/hydro.namelist.TEMPLATE',hydDic,self.clbdirc+'/hydro.namelist')
 		# log 
 		logging.info('created namelist files')
 	
@@ -235,7 +235,7 @@ class SetMeUp:
 			    "CATCHID":"catch_{}".format(self.usgs_code)
 			    }
 		# create the submission script 	
-		ancil.GenericWrite('{}/namelists/submit.TEMPLATE.sh'.format(self.cwd), slurmDic, namelistHolder.format('submit.sh'))
+		acc.GenericWrite('{}/namelists/submit.TEMPLATE.sh'.format(self.cwd), slurmDic, namelistHolder.format('submit.sh'))
 		logging.info('created job submission script')
 
 	def __call__(self):
@@ -246,6 +246,8 @@ class SetMeUp:
 		self.CreateNamelist()
 		self.CreateSubmitScript()
 		self.GatherObs()
+
+
 
 class CalibrationMaster():
 	"""
@@ -260,7 +262,7 @@ class CalibrationMaster():
 		self.iters = 0 # keep track of the iterations of calib.ation 
 		self.setup = setup  # pass the setup class into here...  
 		self.paramDir = "{}/DOMAIN".format(self.setup.clbdirc)
-		#self.paramDir = '/scratch/wrudisill/WillCaancil.ydro/TestDOMAIN'    #TEMPORARY 
+		#self.paramDir = '/scratch/wrudisill/WillCaacc.ydro/TestDOMAIN'    #TEMPORARY 
 		self.MaxIters = self.setup.MaxIters
 		self.bestObj = 1e16
 		self.objFun = KGE   # !!!!!  make this dynamic later  !!!! 
@@ -304,45 +306,11 @@ class CalibrationMaster():
 		          "ITERATION":self.iters} 
 		# 	
 		# create the job submit template. 
-		ancil.GenericWrite('{}/namelists/submit_analysis.TEMPLATE.sh'.format(self.setup.cwd), insert,  \
+		acc.GenericWrite('{}/namelists/submit_analysis.TEMPLATE.sh'.format(self.setup.cwd), insert,  \
 				    namelistHolder.format('submit_analysis.sh'))
 	
 	# this is nothing more than a bookkeeping step to make this a static method 
 	# no different than letting it live outside of this class 
-	@staticmethod
-	def ReadQ(clbdirc, iteration):
-		# read usgs obs 
-		obsQ = pd.read_csv(clbdirc+'/obsStrData.csv')
-		obsQ.drop(columns=['Unnamed: 0', 'POSIXct', "agency_cd"], inplace=True)
-		obsQ.rename(index=str, columns={"Date":"time", "obs":"qObs"}, inplace=True)
-		obsQ.set_index('time',inplace=True)
-		obsQ.index = pd.to_datetime(obsQ.index)
-		lat = obsQ['lat'].iloc[0]
-		lon = obsQ['lon'].iloc[0]
-		# get the gauge location grid cell 
-		chrtFiles = glob.glob(clbdirc+'/*CHRTOUT_DOMAIN2*')
-		gauge_loc = ancil.GaugeToGrid(chrtFiles[0], lat, lon) # pick the first chrt file 
-		logging.info('gauge_loc is ... {}'.format(gauge_loc))
-		modQfiles = xr.open_mfdataset(chrtFiles)
-		# do some slicing and dicing... 	
-		qDf = pd.DataFrame(
-				{'qMod':modQfiles['streamflow'][:,gauge_loc].values,
-				 'time':modQfiles['time'].values}
-				)
-		qDf.set_index('time', inplace=True)
-		modQdly = pd.DataFrame(qDf.resample('D').mean())
-		# log the output to a database for keeping 
-		# add iteration count to the df.
-		modQdly['Iterations'] = str(iteration)
-		dbl.logDataframe(modQdly, 'MODOUT',clbdirc)
-		# log the observations only once 
-		if iteration == str(0):
-			dbl.logDataframe(obsQ, 'Observations', clbdirc)
-			print('logging the observations to db')	
-		# close files ... (not that it does anything...)
-		modQfiles.close()
-		
-
 	def LogParameters(self):
 		# Log Params  
 		sql_params = self.df.copy()
@@ -505,7 +473,7 @@ class CalibrationMaster():
 			# loop through the params and update. write files 
 			for param in grouped.groups[ncSingle]: 
 				# returns a function (addition or multiplication) to apply 
-				updateFun = ancil.AddOrMult(self.df.loc[param].factor)
+				updateFun = acc.AddOrMult(self.df.loc[param].factor)
 				# get the dims of the parameter
 				dims = self.df.loc[param].dims 
 				# create the value for updating --- this will include the 'ini' value 
@@ -542,20 +510,20 @@ class CalibrationMaster():
 		os.chdir(self.setup.clbdirc)
 
 		## submit the job 
-		jobid, err = ancil.Submit('submit.sh', self.setup.catchid)
+		jobid, err = acc.Submit('submit.sh', self.setup.catchid)
 
 		## sleep 
 		time.sleep(1) # wait a second before checking for the job
 
 		## wait for the job to complete 
-		ancil.WaitForJob(jobid, 'wrudisill')
+		acc.WaitForJob(jobid, 'wrudisill')
 
 		## --- MODEL EVALUATION ---- # 
 		print('submitting analysis job')
-		jobid, err = ancil.Submit('submit_analysis.sh', self.setup.catchid)   # THIS STEP LOGS THE MODEL FILES TO THE DB
+		jobid, err = acc.Submit('submit_analysis.sh', self.setup.catchid)   # THIS STEP LOGS THE MODEL FILES TO THE DB
 
 		## wait for the job to complete 
-		ancil.WaitForJob(jobid, 'wrudisill')
+		acc.WaitForJob(jobid, 'wrudisill')
 
 		#print("evaluate... obj fun")
 		obj,improvement = self.EvaluateIteration()  # check if the model improved 
@@ -572,7 +540,7 @@ class CalibrationMaster():
 		self.UpdateParamFiles()  # write the new parameters to files 
 
 		## clean up the directory 
-		ancil.CleanUp(self.setup.clbdirc)
+		acc.CleanUp(self.setup.clbdirc)
 
 		## move the iternal iteration state one forward 
 		self.MoveForward()
