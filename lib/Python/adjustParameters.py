@@ -23,43 +23,27 @@ Below here are the classes.
 1) SetMeUp: gathers user parameters by reading yaml files
 2) CalibMaster: requires a SetMeUp instance (for now). Does all of the calibrating 
 '''
-
 class SetMeUp:
 	def __init__(self,setup,**kwargs):
 		# Read in all of the parameter files and hanf 
 		# onto them.
 		#name_ext = kwargs.get('name_ext', '')
-		
 		# ------- THIS SYSTEM MIGHT CHANGE LATER ------------# 
 		if type(setup) == str:
 			with open(setup) as y:
 				yamlfile = yaml.load(y, Loader=yaml.FullLoader)
 		if type(setup) == dict:
 			yamlfile=setup
-		
+		self.parameter_table = 'calib_params.tbl'	
 		self.setup = setup # name of the setup file. THIS MIGHT CHANGE LATER !!!!	
 		#----------------------------------------------------# 
-		
 		self.name_ext = yamlfile['name_ext']
 		self.usgs_code = str(yamlfile['usgs_code'])
-		self.MaxIters = yamlfile['dds_iter']
+		self.max_iters = yamlfile['dds_iter']
 		self.clbdirc = yamlfile['calib_location'] + self.usgs_code + self.name_ext
-		
-		
 		# ---- restart file logic -- a bit ugly  ---- 
-		self.hydrorestart = yamlfile['hydro_restart_file']  
-		self.hrldasrestart = yamlfile['hrldas_restart_file'] 
-		
-		if self.hrldasrestart == "None":
-			self.hrldasrestart = "!RESTART_FILENAME_REQUESTED"
-		else:
-			self.hrldasrestart = "RESTART_FILENAME_REQUESTED = \"{}\"".format(self.hrldasrestart)
-
-		if self.hydrorestart == "None":
-			self.hydrorestart = "!RESTART_FILE"
-		else:
-			self.hydrorestart = "RESTART_FILE = \"{}\"".format(self.hydrorestart)
-		
+		self.hydrorestart = yamlfile['hydro_restart_file']
+		self.hrldasrestart = yamlfile['hrldas_restart_file']
 		# --- directories and run parameters 
 		self.queue = yamlfile['QUEUE']
 		self.nodes = yamlfile['NODES']
@@ -67,35 +51,41 @@ class SetMeUp:
 		self.exedirc = yamlfile['executable_location']
 		self.forcdirc = yamlfile['forcing_location']
 		self.cwd = os.getcwd()
-		
 		# forcing files stuff goes here 
 		self.forcings_time_format = "%Y-%m-%d_%H:%M:%S" #!!! FOR WRF -- CHANGE ME LATER !!! 
 		self.forcings_format ="wrfout_d02_{}"  # !! FOR WRF -- CHANGE ME LATER !!! 
+		self.files_to_copy = ["wrf_hydro.exe",
+			      	      "SOILPARM.TBL",
+				      "CHANPARM.TBL",
+				      "GENPARM.TBL",
+				      "HYDRO.TBL",
+				      "MPTABLE.TBL",
+				       "SOILPARM.TBL"]
 		
+		self.calib_files_to_copy = ['hydro2dtbl.nc',
+			     		    'Route_Link.nc',
+			     		    'soil_properties.nc', 
+			     		    'GWBUCKPARM.nc']			     
 		# create catch id file name 	
 		self.catchid = 'catch_{}'.format(self.usgs_code)
-	        	
 		# get dates for start, end of spinup,eval period
 		calib_date = yamlfile['calib_date']
 		self.start_date = pd.to_datetime(calib_date['start_date'])
 		self.end_date = pd.to_datetime(calib_date['end_date'])
-	
 		# evaluation period 
-		eval_date = yamlfile['eval_date']	
+		eval_date = yamlfile['eval_date']
 		self.eval_start_date = pd.to_datetime(eval_date['start_date'])
 		self.eval_end_date = pd.to_datetime(eval_date['end_date'])
-		
 		# LOG all of the things 
 		self.objfun = KGE
 		self.gauge_loc = None
 		self.startingLog()
-	
+
 	def startingLog(self):
 		logging.info("Calibrating to USGS code {}".format(self.usgs_code))
 		logging.info("ParentDirectory: {}".format(self.clbdirc))
 		logging.info("StartDate: {}".format(self.start_date))
 		logging.info("EndDate: {} ".format(self.end_date))
-			
 
 	def GatherForcings(self,**kwargs):
 		# find all of the forcings for the specified time period 	
@@ -160,26 +150,10 @@ class SetMeUp:
 		os.mkdir(startingParamDir)
 
 		# make copies of the domain parameters that we will later calib.ate
-		caliblist = ['hydro2dtbl.nc',
-			     'Route_Link.nc',
-			     'soil_properties.nc', 
-			     'GWBUCKPARM.nc']			     
-
-		# make copies of these 
-		[shutil.copy("{}/{}".format(self.parmdirc,i), startingParamDir+i) for i in caliblist]
+		[shutil.copy("{}/{}".format(self.parmdirc,i), startingParamDir+i) for i in self.calib_files_to_copy]
 	
-		# 
-		# get these files. ..
-		grabMe = ["wrf_hydro.exe",
-			  "SOILPARM.TBL",
-			  "CHANPARM.TBL",
-			  "GENPARM.TBL",
-			  "HYDRO.TBL",
-			  "MPTABLE.TBL",
-			  "SOILPARM.TBL"]
-
-		# copy files in the 'grab me list' to the run directory 
-		[shutil.copy(self.exedirc+'/'+item, self.clbdirc) for item in grabMe]
+		# copy files in the 'files_to_copy list' to the run directory 
+		[shutil.copy(self.exedirc+'/'+item, self.clbdirc) for item in self.files_to_copy]
 		
 		# link forcings
 		os.mkdir(self.clbdirc+'/FORCING')
@@ -200,6 +174,16 @@ class SetMeUp:
 		logging.info('created run directory {}'.format(self.clbdirc))
 
 	def CreateNamelist(self, **kwargs):
+		if self.hrldasrestart == "None":
+			hrldasrestart = "!RESTART_FILENAME_REQUESTED"
+		else:
+			hrldasrestart = "RESTART_FILENAME_REQUESTED = \"{}\"".format(self.hrldasrestart)
+
+		if self.hydrorestart == "None":
+			hydrorestart = "!RESTART_FILE"
+		else:
+			hydrorestart = "RESTART_FILE = \"{}\"".format(self.hydrorestart)
+		
 		# modify the namelist templates that reside in the run dir
 		startDate = self.start_date
 		endDate = self.end_date	
@@ -209,13 +193,13 @@ class SetMeUp:
 			    "DD": startDate.day,
 			    "HH": startDate.hour,
 			    "NDAYS": dateRange.days,
-			    "RESTART_FILENAME_REQUESTED": self.hrldasrestart
+			    "RESTART_FILENAME_REQUESTED": hrldasrestart
 			    }
 		#modify namelist.hrldas
 		acc.GenericWrite('./namelists/namelist.hrldas.TEMPLATE', nlistDic, self.clbdirc+'/namelist.hrldas')	
 		
 		# modify the hydro.namelist
-		hydDic = {"RESTART_FILE":self.hydrorestart}
+		hydDic = {"RESTART_FILE":hydrorestart}
 		acc.GenericWrite('./namelists/hydro.namelist.TEMPLATE',hydDic,self.clbdirc+'/hydro.namelist')
 		# log 
 		logging.info('created namelist files')
@@ -249,7 +233,7 @@ class SetMeUp:
 
 
 
-class CalibrationMaster():
+class CalibrationMaster(SetMeUp):
 	"""
 	The "Calibration" class. This requires a "setup" object (created above) to be passed in. 
 	This object will 1) submit batch jobs to run WRF-Hydro, 2) submit (and create) the analysis
@@ -257,18 +241,17 @@ class CalibrationMaster():
 	model parameter files according to the DDS rule, and 5) log items to a SQL database 
 	"""
 	
-	def __init__(self,setup):
-		# --- keep track of the number of iterations ---# 
+	def __init__(self, setup):
+		# get all of the methods from SetMeUp... 
+		super(self.__class__, self).__init__(setup)
 		self.iters = 0 # keep track of the iterations of calib.ation 
-		self.setup = setup  # pass the setup class into here...  
-		self.paramDir = "{}/DOMAIN".format(self.setup.clbdirc)
-		#self.paramDir = '/scratch/wrudisill/WillCaacc.ydro/TestDOMAIN'    #TEMPORARY 
-		self.MaxIters = self.setup.MaxIters
 		self.bestObj = 1e16
 		self.objFun = KGE   # !!!!!  make this dynamic later  !!!! 
-		self.dbcon = self.setup.clbdirc+'/CALIBRATION.db'
+		self.dbcon = self.clbdirc+'/CALIBRATION.db'
+		self.paramDir = "{}/DOMAIN".format(self.clbdirc)
+
 		# create a dataframe w/ the parameter values and links to the right files
-		df = pd.read_csv('calib_params.tbl', delimiter=' *, *', engine='python')  # this strips away the whitesapce
+		df = pd.read_csv(self.parameter_table, delimiter=' *, *', engine='python')  # this strips away the whitesapce
 		df.set_index('parameter', inplace=True)
 		
 		# initialize the best value parameter  
@@ -276,15 +259,14 @@ class CalibrationMaster():
 		df["currentValue"] = df["ini"]
 		df["nextValue"] = None 
 		df["onOff"] = df["calib_flag"]  # used for the DDS alg... 
-		
 		# assign the df to itself, so we can hold onto it in later fx  
 		self.df = df 
 		
 		# log lots of things 
-		logging.info('Initialized CalibrationMaster')
-		logging.info('Using calib_params.tbl')
-		logging.info('Objective function: {}'.format(str(self.objFun)))
-		logging.info('Maximum iters: {}'.format(self.MaxIters))
+		#logging.info('Initialized CalibrationMaster')
+		#logging.info('Using calib_params.tbl')
+		#logging.info('Objective function: {}'.format(str(self.objFun)))
+		#logging.info('Maximum iters: {}'.format(self.max_iters))
 		
 
 	def CreateAnalScript(self, **kwargs):
@@ -296,17 +278,17 @@ class CalibrationMaster():
 		so memory leaks in the python netcdf library don't accumulate
 		"""
 		# remove previous analysis submit script 
-		submit_analysis = 'rm {}/submit_analysis.sh'.format(self.setup.clbdirc)
+		submit_analysis = 'rm {}/submit_analysis.sh'.format(self.clbdirc)
 		if os.path.isfile(submit_analysis):
 			os.remove(submit_analysis)
 			logging.info('removed previous analysis job submit script {}'.format(submit_analysis))
 		
-		namelistHolder = self.setup.clbdirc+'/{}'	
-		insert = {"CLBDIRC":self.setup.clbdirc, 
+		namelistHolder = self.clbdirc+'/{}'	
+		insert = {"CLBDIRC":self.clbdirc, 
 		          "ITERATION":self.iters} 
 		# 	
 		# create the job submit template. 
-		acc.GenericWrite('{}/namelists/submit_analysis.TEMPLATE.sh'.format(self.setup.cwd), insert,  \
+		acc.GenericWrite('{}/namelists/submit_analysis.TEMPLATE.sh'.format(self.cwd), insert,  \
 				    namelistHolder.format('submit_analysis.sh'))
 	
 	# this is nothing more than a bookkeeping step to make this a static method 
@@ -316,16 +298,17 @@ class CalibrationMaster():
 		sql_params = self.df.copy()
 		sql_params['Iteration'] = str(self.iters)
 		sql_params.drop(columns=['file', 'dims','nextValue'], inplace=True)
-		dbl.logDataframe(sql_params, 'PARAMETERS', self.setup.clbdirc)
+		dbl.logDataframe(sql_params, 'PARAMETERS', self.clbdirc)
 	
 	
 	def LogPerformance(self):
 		paramDic = {'Iteration': [str(self.iters)], 
 			    'Objective':  [self.obj], 
 			    'Improvement': [self.improvement],
-			    'Function': [str(self.setup.objfun)]}   # CHANGE ME! make __repr__ instead. obfun needs to be class thoguh
+			    'Function': [str(self.objfun)]}   # CHANGE ME! make __repr__ instead. obfun needs to be class thoguh
 		pdf = pd.DataFrame(paramDic)
-		dbl.logDataframe(pdf, 'CALIBRATION', self.setup.clbdirc)
+		pdf.set_index('Iteration', inplace=True)
+		dbl.logDataframe(pdf, 'CALIBRATION', self.clbdirc)
 	'''
 	Function: EvaluateIteration
 		1.a. apply objective function, evaluating perfomance of model relative to the observations
@@ -334,19 +317,16 @@ class CalibrationMaster():
 	'''
 	
 	def EvaluateIteration(self):
-		merged = dbl.getDischarge(self.iters, self.setup.clbdirc)
+		merged = dbl.getDischarge(self.iters, self.clbdirc)
 		# only evaluate during the evaluation period
-		eval_period = merged.loc[self.setup.eval_start_date : self.setup.eval_end_date]
+		eval_period = merged.loc[self.eval_start_date : self.eval_end_date]
 		# compute the objective function
 		obj = self.objFun(eval_period.qMod, eval_period.qObs)
 		self.obj = obj
-		
 
-		#obj = self.ApplyObjFun()
-		# check the obfun. 
 		# if the performance of the last parameter set us better, then update the 
 		# calib.data frame 
-		improvement = 0  # were the parameters improved upon?
+		improvement = 0  
 		# check if the new parameters improved the objective function 
 		if self.iters == 0:
 			print('ON ITER O')
@@ -414,7 +394,7 @@ class CalibrationMaster():
 		# logliklihood function
 		#return 1 - np.log(curiter)/np.log(maxiter)
 		
-		prob = 1 - np.log(self.iters+1) / np.log(self.MaxIters)
+		prob = 1 - np.log(self.iters+1) / np.log(self.max_iters)
 		#print(prob)	
 		for param in activeParams:
 			sel = np.random.choice(2, p=[1-prob,prob])
@@ -467,7 +447,7 @@ class CalibrationMaster():
 		# process the netcdf files first 
 		ncList = grouped.groups.keys()
 		for ncSingle in ncList:
-			UpdateMe = xr.open_dataset(self.setup.clbdirc+'/ORIG_PARM/'+ncSingle)
+			UpdateMe = xr.open_dataset(self.clbdirc+'/ORIG_PARM/'+ncSingle)
 			# remove the file... we overwrite w/ the update 
 			os.remove(self.paramDir+'/'+ncSingle)
 			# loop through the params and update. write files 
@@ -507,20 +487,19 @@ class CalibrationMaster():
 		self.CreateAnalScript()
 		
 		# switch to the selfdirectory 
-		os.chdir(self.setup.clbdirc)
+		os.chdir(self.clbdirc)
 
-		## submit the job 
-		jobid, err = acc.Submit('submit.sh', self.setup.catchid)
+		# submit the job 
+		jobid, err = acc.Submit('submit.sh', self.catchid)
 
-		## sleep 
+		# sleep 
 		time.sleep(1) # wait a second before checking for the job
 
-		## wait for the job to complete 
+		# wait for the job to complete 
 		acc.WaitForJob(jobid, 'wrudisill')
 
-		## --- MODEL EVALUATION ---- # 
-		print('submitting analysis job')
-		jobid, err = acc.Submit('submit_analysis.sh', self.setup.catchid)   # THIS STEP LOGS THE MODEL FILES TO THE DB
+		# --- MODEL EVALUATION ---- # 
+		jobid, err = acc.Submit('submit_analysis.sh', self.catchid)   # THIS STEP LOGS THE MODEL FILES TO THE DB
 
 		## wait for the job to complete 
 		acc.WaitForJob(jobid, 'wrudisill')
@@ -529,20 +508,19 @@ class CalibrationMaster():
 		obj,improvement = self.EvaluateIteration()  # check if the model improved 
 
 		#os.chdir(cwd)
-		## log the parameters and obfun to the database
+		# log the parameters and obfun to the database
 		self.LogParameters()     
-		self.LogPerformance()
-
-		## generate new parameters 
+		self.LogPerformance() 
+		# generate new parameters 
 		self.DDS()          
 
-		## update the parameters 
+		# update the parameters 
 		self.UpdateParamFiles()  # write the new parameters to files 
 
-		## clean up the directory 
-		acc.CleanUp(self.setup.clbdirc)
+		# clean up the directory 
+		acc.CleanUp(self.clbdirc)
 
-		## move the iternal iteration state one forward 
+		# move the iternal iteration state one forward 
 		self.MoveForward()
 	
 	def __call__(self):
@@ -550,7 +528,7 @@ class CalibrationMaster():
 		# are applying this function that is inside of here
 		# this way ... we can call the calib.ation routine N 
 		# times and update the calib.method w/ each step 
-		for i in range(self.MaxIters):
+		for i in range(self.max_iters):
 			self.OneLoop()
 		
 
