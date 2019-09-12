@@ -16,13 +16,10 @@ from ObjectiveFunctions import KGE, RMSE
 from pathlib import Path
 import time 
 
-# User options 
-#xr.set_options(file_cache_maxsize=1)
-''''
-Below here are the classes. 
-1) SetMeUp: gathers user parameters by reading yaml files
-2) CalibMaster: requires a SetMeUp instance (for now). Does all of the calibrating 
-'''
+import logging
+logger = logging.getLogger(__name__)
+
+
 class SetMeUp:
 	def __init__(self,setup,**kwargs):
 		# Read in all of the parameter files and hanf 
@@ -36,7 +33,6 @@ class SetMeUp:
 			yamlfile=setup
 		self.parameter_table = 'calib_params.tbl'	
 		self.setup = setup # name of the setup file. THIS MIGHT CHANGE LATER !!!!	
-		#----------------------------------------------------# 
 		self.name_ext = yamlfile['name_ext']
 		self.usgs_code = str(yamlfile['usgs_code'])
 		self.max_iters = yamlfile['dds_iter']
@@ -79,13 +75,7 @@ class SetMeUp:
 		# LOG all of the things 
 		self.objfun = KGE
 		self.gauge_loc = None
-		self.startingLog()
 
-	def startingLog(self):
-		logging.info("Calibrating to USGS code {}".format(self.usgs_code))
-		logging.info("ParentDirectory: {}".format(self.clbdirc))
-		logging.info("StartDate: {}".format(self.start_date))
-		logging.info("EndDate: {} ".format(self.end_date))
 
 	def GatherForcings(self,**kwargs):
 		# find all of the forcings for the specified time period 	
@@ -95,6 +85,7 @@ class SetMeUp:
 		dRange = pd.date_range(self.start_date, self.end_date, freq='H').strftime("%Y-%m-%d_%H:%M:%S") 
 		# create list of forcing names 
 		forcingList = [self.forcings_format.format(x) for x in dRange] 
+		forcingNumber  = len(forcingList)
 		# create the copy path 
 		linkForcingPath = [] 
 		# create a dictionary with name:filepath
@@ -110,12 +101,12 @@ class SetMeUp:
 				logging.info('cannot locate: \n {}'.format(f))
 		# check if things failed 
 		if failureFlag!=0:
-			logging.error('unable to locate {} forcing files'.format(failureFlag))
-			print('unable to locate forcing files. check log for full description')
+			logger.error('Unable to locate {} of {} forcing files'.format(failureFlag, forcingNumber))
+			# raise FileNotFoundError("cannot locate {}... files .... or something")
 			sys.exit()
 		else:
-			logging.info('found required forcing files, continuing')
-		
+			logging.info('Found {} required forcing files, continuing'.format(forcingNumber))
+			
 		# assign the copy list to self
 		self.linkForcingPath = linkForcingPath 
 
@@ -223,6 +214,12 @@ class SetMeUp:
 		logging.info('created job submission script')
 
 	def __call__(self):
+		loggin.info("Tests Successful...presumably")
+		logging.info("Calibrating to USGS code {}".format(self.usgs_code))
+		logging.info("ParentDirectory: {}".format(self.clbdirc))
+		logging.info("StartDate: {}".format(self.start_date))
+		logging.info("EndDate: {} ".format(self.end_date))
+		
 		# do the things in the right order -- 
 		# find forcings, create directory, write namelist, write submit script, gather observations 
 		self.GatherForcings()
@@ -343,9 +340,9 @@ class CalibrationMaster(SetMeUp):
 			try:
 				for param in self.df.groupby('calib_flag').groups[0]:
 					self.df.at[param, 'bestValue'] = self.df.loc[param, 'ini'] 
-				print('we are on the first iter')
+				logger.info('we are on the first iter')
 			except KeyError:
-				print('all parameters are active')
+				logger.info('all parameters are active')
 		else:
 			# we ar beyond the first iteration
 			# test of the onbjective fx hax improved 
@@ -357,12 +354,12 @@ class CalibrationMaster(SetMeUp):
 				# it to the 'best value' column
 				self.df['bestValue'] = self.df['nextValue']
 				improvement = 1
-				print('obj. improvement')
+				logger.info('the objective fx improved on iteration {}'.format(self.iters))
 					
 			elif obj >= self.bestObj:
 				# the self.bestObj remains the same
 				improvement = 0
-				print('no obj. improvement')
+				logger.info('no obj. improvement on iteration {}'.format(self.iters))
 		# lastly, let's clean the nextvalue and onOff switches 
 		# these get updated by the DDS ( or whatever alg. we chose...)
 		self.improvement = improvement
@@ -483,6 +480,7 @@ class CalibrationMaster(SetMeUp):
 
 
 	def OneLoop(self):
+		logger.info('Calling OneLoop for iteration {}'.format(self.iters))
 		# create analysis script 
 		self.CreateAnalScript()
 		
@@ -503,8 +501,7 @@ class CalibrationMaster(SetMeUp):
 
 		## wait for the job to complete 
 		acc.WaitForJob(jobid, 'wrudisill')
-
-		#print("evaluate... obj fun")
+			
 		obj,improvement = self.EvaluateIteration()  # check if the model improved 
 
 		#os.chdir(cwd)

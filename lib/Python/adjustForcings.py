@@ -9,6 +9,9 @@ from pathlib import Path
 import os 
 import logging 
 
+import logging
+logger = logging.getLogger(__name__)
+
 def adjustForcings(setup):
 	# requires an instance of 'setup' to gather the correct paths 
 	# MAKE THIS OPTIONAL-- add ability to pass in the forcing directory
