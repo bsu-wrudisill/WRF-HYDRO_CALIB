@@ -8,8 +8,8 @@ import subprocess
 import logging 
 import xarray as xr
 import pandas as pd
-import functools as ft
-import netCDF4 as nc
+#import functools as ft
+#import netCDF4 as nc
 import numpy as np
 import dblogger as dbl
 from ObjectiveFunctions import KGE, RMSE 
@@ -31,12 +31,15 @@ class SetMeUp:
 				yamlfile = yaml.load(y, Loader=yaml.FullLoader)
 		if type(setup) == dict:
 			yamlfile=setup
+		
 		self.parameter_table = 'calib_params.tbl'	
 		self.setup = setup # name of the setup file. THIS MIGHT CHANGE LATER !!!!	
 		self.name_ext = yamlfile['name_ext']
 		self.usgs_code = str(yamlfile['usgs_code'])
 		self.max_iters = yamlfile['dds_iter']
 		self.clbdirc = yamlfile['calib_location'] + self.usgs_code + self.name_ext
+		self.obsFileName='obsStrData.csv' # this gets created
+		
 		# ---- restart file logic -- a bit ugly  ---- 
 		self.hydrorestart = yamlfile['hydro_restart_file']
 		self.hrldasrestart = yamlfile['hrldas_restart_file']
@@ -98,14 +101,14 @@ class SetMeUp:
 				linkForcingPath.append(globDic[f])
 			else:
 				failureFlag += 1  
-				logging.info('cannot locate: \n {}'.format(f))
+				logger.info('cannot locate: \n {}'.format(f))
 		# check if things failed 
 		if failureFlag!=0:
 			logger.error('Unable to locate {} of {} forcing files'.format(failureFlag, forcingNumber))
 			# raise FileNotFoundError("cannot locate {}... files .... or something")
 			sys.exit()
 		else:
-			logging.info('Found {} required forcing files, continuing'.format(forcingNumber))
+			logger.info('Found {} required forcing files, continuing'.format(forcingNumber))
 			
 		# assign the copy list to self
 		self.linkForcingPath = linkForcingPath 
@@ -114,15 +117,15 @@ class SetMeUp:
 	def GatherObs(self, **kwargs):
 		# run the rscripts to download the USGS observations for the correct 
 		# time period and gauge 
-		obsFileName='obsStrData.csv'
+		
 		cmdEmpty = 'Rscript ./lib/R/fetchUSGSobs.R {} {} {} {}/{}'
 		#
 		startString = str(self.start_date.strftime("%Y-%m-%d"))
 		endString = str(self.end_date.strftime("%Y-%m-%d"))
 		try:
-			os.system(cmdEmpty.format(self.usgs_code, startString, endString, self.clbdirc, obsFileName))	
+			os.system(cmdEmpty.format(self.usgs_code, startString, endString, self.clbdirc, self.obsFileName))	
 		except:
-			logging.error('unable to execute command {}'.format(cmdEmpty))
+			logger.error('unable to execute command {}'.format(cmdEmpty))
 			# if it is a calibrate command ... then maybe sys.exit. since we need this  
 
 
@@ -162,7 +165,7 @@ class SetMeUp:
 		shutil.copy('./lib/Python/viz/PlotQ.py', self.clbdirc) 
 		
 		# log success
-		logging.info('created run directory {}'.format(self.clbdirc))
+		logger.info('created run directory {}'.format(self.clbdirc))
 
 	def CreateNamelist(self, **kwargs):
 		if self.hrldasrestart == "None":
@@ -193,7 +196,7 @@ class SetMeUp:
 		hydDic = {"RESTART_FILE":hydrorestart}
 		acc.GenericWrite('./namelists/hydro.namelist.TEMPLATE',hydDic,self.clbdirc+'/hydro.namelist')
 		# log 
-		logging.info('created namelist files')
+		logger.info('created namelist files')
 	
 	def CreateSubmitScript(self,**kwargs):
 		"""
@@ -211,14 +214,13 @@ class SetMeUp:
 			    }
 		# create the submission script 	
 		acc.GenericWrite('{}/namelists/submit.TEMPLATE.sh'.format(self.cwd), slurmDic, namelistHolder.format('submit.sh'))
-		logging.info('created job submission script')
+		logger.info('created job submission script')
 
 	def __call__(self):
-		loggin.info("Tests Successful...presumably")
-		logging.info("Calibrating to USGS code {}".format(self.usgs_code))
-		logging.info("ParentDirectory: {}".format(self.clbdirc))
-		logging.info("StartDate: {}".format(self.start_date))
-		logging.info("EndDate: {} ".format(self.end_date))
+		logger.info("Calibrating to USGS code {}".format(self.usgs_code))
+		logger.info("ParentDirectory: {}".format(self.clbdirc))
+		logger.info("StartDate: {}".format(self.start_date))
+		logger.info("EndDate: {} ".format(self.end_date))
 		
 		# do the things in the right order -- 
 		# find forcings, create directory, write namelist, write submit script, gather observations 
@@ -259,13 +261,11 @@ class CalibrationMaster(SetMeUp):
 		# assign the df to itself, so we can hold onto it in later fx  
 		self.df = df 
 		
-		# log lots of things 
-		#logging.info('Initialized CalibrationMaster')
-		#logging.info('Using calib_params.tbl')
-		#logging.info('Objective function: {}'.format(str(self.objFun)))
-		#logging.info('Maximum iters: {}'.format(self.max_iters))
-		
 
+	def MoveForward(self):
+		# advance internal model state
+		self.iters = self.iters+1
+	
 	def CreateAnalScript(self, **kwargs):
 		"""
 		Create the job submit script for the analysis step.
@@ -278,7 +278,7 @@ class CalibrationMaster(SetMeUp):
 		submit_analysis = 'rm {}/submit_analysis.sh'.format(self.clbdirc)
 		if os.path.isfile(submit_analysis):
 			os.remove(submit_analysis)
-			logging.info('removed previous analysis job submit script {}'.format(submit_analysis))
+			logger.info('removed previous analysis job submit script {}'.format(submit_analysis))
 		
 		namelistHolder = self.clbdirc+'/{}'	
 		insert = {"CLBDIRC":self.clbdirc, 
@@ -288,10 +288,9 @@ class CalibrationMaster(SetMeUp):
 		acc.GenericWrite('{}/namelists/submit_analysis.TEMPLATE.sh'.format(self.cwd), insert,  \
 				    namelistHolder.format('submit_analysis.sh'))
 	
-	# this is nothing more than a bookkeeping step to make this a static method 
-	# no different than letting it live outside of this class 
+	
 	def LogParameters(self):
-		# Log Params  
+		# dataframe --> sql database 
 		sql_params = self.df.copy()
 		sql_params['Iteration'] = str(self.iters)
 		sql_params.drop(columns=['file', 'dims','nextValue'], inplace=True)
@@ -299,6 +298,7 @@ class CalibrationMaster(SetMeUp):
 	
 	
 	def LogPerformance(self):
+		# dataframe --> sql database 
 		paramDic = {'Iteration': [str(self.iters)], 
 			    'Objective':  [self.obj], 
 			    'Improvement': [self.improvement],
@@ -318,7 +318,7 @@ class CalibrationMaster(SetMeUp):
 		# only evaluate during the evaluation period
 		eval_period = merged.loc[self.eval_start_date : self.eval_end_date]
 		# compute the objective function
-		obj = self.objFun(eval_period.qMod, eval_period.qObs)
+		obj, corrcoef, mn, std = self.objFun(eval_period.qMod, eval_period.qObs) #CHANGE ME --- BAD IDEA 
 		self.obj = obj
 
 		# if the performance of the last parameter set us better, then update the 
@@ -408,7 +408,7 @@ class CalibrationMaster(SetMeUp):
 			deselectedParams = list(self.df.groupby('onOff').groups[0])
 
 		except KeyError:
-			logging.warning('no parameters were selected during DDS search algorithm')
+			logger.warning('no parameters were selected during DDS search algorithm')
 			return
 
 		# 'active params' just contains those to update now
@@ -435,7 +435,7 @@ class CalibrationMaster(SetMeUp):
 			self.df.at[param,'nextValue'] = np.float(xj_best) # no updating 
 			#self.df.at[param,"CALIB_{}".format(self.iters)] = np.float(xj_best)
 			
-		logging.info('Performed DDS update for iteration {}'.format(self.iters))
+		logger.info('Performed DDS update for iteration {}'.format(self.iters))
 
 	def UpdateParamFiles(self):
 		# update the NC files given the adjustment param
@@ -464,7 +464,7 @@ class CalibrationMaster(SetMeUp):
 				if dims == 3:
 					UpdateMe[param][:,:,:] = updateFun(UpdateMe[param][:,:,:], updateVal) 
 				# log info
-				logging.info('updated--{} in file {}--with value {}'.format(param,ncSingle, updateVal))
+				logger.info('updated--{} in file {}--with value {}'.format(param,ncSingle, updateVal))
 			# done looping thru params 
 			# save the file now and close  
 			UpdateMe.to_netcdf(self.paramDir+'/'+ncSingle, mode='w')
@@ -473,12 +473,32 @@ class CalibrationMaster(SetMeUp):
 		# update the dataframe to reflect that the 'next param' values have been inserted into the current params 
 		self.df['currentValue'] = self.df['nextValue']
 
-	
-	def MoveForward(self):
-		# move the model forward one iteration
-		self.iters = self.iters+1
+	def ForwardModel(self):
+		logger.info('Calling ForwardModel for iteration {}'.format(self.iters))
+		# create analysis script 
+		self.CreateAnalScript()
+		
+		# switch to the selfdirectory 
+		os.chdir(self.clbdirc)
 
+		# submit the job 
+		jobid, err = acc.Submit('submit.sh', self.catchid)
 
+		# sleep 
+		time.sleep(1) # wait a second before checking for the job
+
+		# wait for the job to complete 
+		acc.WaitForJob(jobid, 'wrudisill')
+
+		# --- MODEL EVALUATION ---- # 
+		jobid, err = acc.Submit('submit_analysis.sh', self.catchid)   # THIS STEP LOGS THE MODEL FILES TO THE DB
+
+		## wait for the job to complete 
+		acc.WaitForJob(jobid, 'wrudisill')
+		# 	
+		obj,improvement = self.EvaluateIteration()  # check if the model improved 
+
+	@acc.passfail
 	def OneLoop(self):
 		logger.info('Calling OneLoop for iteration {}'.format(self.iters))
 		# create analysis script 
@@ -521,13 +541,23 @@ class CalibrationMaster(SetMeUp):
 		self.MoveForward()
 	
 	def __call__(self):
-		# This creatres a "call" -- when we do calib.), we 
-		# are applying this function that is inside of here
-		# this way ... we can call the calib.ation routine N 
-		# times and update the calib.method w/ each step 
-		for i in range(self.max_iters):
-			self.OneLoop()
-		
+		# usage: calib = CalibrationMaster(); calib()  
+		# allow 3 failures in a row-- this probably means something is wrong 
+		threeFailureMax = 0 
+		for loop in range(self.max_iters):
+			while threeFailureMax <= 3:
+				success,status = self.OneLoop()
+				if success: 
+					logger.info(status) 
+					threeFailureMax = 1 
+				if not success: 
+					logger.error(status)
+					threeFailureMax += 1 		
+			else:	
+				message="Three failures in a row. Check logs for more details. \n \
+				       	 Exiting"
+				logger.error(message)
+				sys.exit()
 
 if __name__ == '__main__':
 	pass
