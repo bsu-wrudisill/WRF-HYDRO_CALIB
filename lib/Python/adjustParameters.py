@@ -540,6 +540,12 @@ class CalibrationMaster(SetMeUp):
 		# move the iternal iteration state one forward 
 		self.MoveForward()
 	
+	def PlotRunner(self):
+		#to do when the iterations are complete; or otherwise  
+			
+		pass
+
+
 	def __call__(self):
 		# usage: calib = CalibrationMaster(); calib()  
 		# allow 3 failures in a row-- this probably means something is wrong 

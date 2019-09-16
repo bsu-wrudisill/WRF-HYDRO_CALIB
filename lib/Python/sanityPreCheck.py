@@ -1,37 +1,23 @@
-import json
 import sys 
 import yaml
 import pandas as pd 
-import unittest 
 import os
 import xarray as xr
 import glob
-import numpy as np
 from adjustParameters import *
+from accessories import passfail 
 
 '''
 Checks that the necessary files, folders, and environments are setup before starting the calibration procedure
 The purpose is to be QUICK -- not completely thorough. The goal is to check for common or likely mistakes 
 '''
-
-
-# Decorators 
-def passfail(func):
-	def wrapped_func(*args, **kwargs):
-		try:
-			func(*args)
-			message = "{} Passed".format(str(func))
-			return (1,message)
-		except Exception as e:
-			error_message = "{} Failed with the following Error: {}".format(str(func), e)
-			return (0,error_message)
-	return wrapped_func
+import logging
+logger = logging.getLogger(__name__)
 
 
 # Checker Classes 
 class RunPreCheck(SetMeUp):
-	'''
-	'''
+	# checks that the config.yaml file is sensible (paths exist, etc)
 	def __init__(self, setup):
 		# This is an incredibly handy function all of the self.X attrs. from SetMeUP 
 		# instance get put into the "self" of this object
@@ -43,7 +29,7 @@ class RunPreCheck(SetMeUp):
 	
 	@passfail
 	def test_existenz(self):
-		assert os.path.exists(self.clbdirc), '{} already exists'.format(self.clbdirc)
+		assert os.path.exists(self.clbdirc) == False, '{} already exists'.format(self.clbdirc)
 	
 	@passfail
 	def test_dates(self):
@@ -51,18 +37,16 @@ class RunPreCheck(SetMeUp):
 		assert (self.end_date > self.start_date), "Specified model start date is before the model end date. Fatal"
 		assert (self.eval_end_date <= self.end_date) & (self.eval_start_date >= self.eval_start_date), "Specified evaluation date is not \
 				within the range of the \calibration date period. Fatal."
-	
 	@passfail
 	def test_filePaths(self):
 		assert os.path.exists(self.hydrorestart) or self.hydrorestart == 'None', "hydro restart file {} not found (or it isn't set to None)".format(self.hydrorestart)
 		assert os.path.exists(self.hrldasrestart) or self.hrldasrestart == 'None', "hrldas restart file {} not found (or it isn't set to None)".format(self.hydrorestart)
 		assert os.path.exists(self.parmdirc), "parameter directory {} does not exists".format(self.parmdirc)
-		assert os.path.exists(self.parmdirc), "parameter directory {} does not exists".format(self.parmdirc)
 		assert os.path.exists(self.exedirc), "parameter directory {} does not exists".format(self.exedirc)
 			
 	@passfail
 	def test_queue(self):
-		queuelist = ['leaf','defq','shortq']	
+		queuelist = ['leaf','defq','shortq', 'gpuq']	
 		assert self.queue in queuelist, '{} is not one of {}'.format(self.queue, " ".join(queuelist))
 		if self.queue == 'leaf':
 			assert self.nodes <= 2, 'More nodes ({}) requested than the available 2 on leaf'.format(self.nodes)
@@ -71,23 +55,28 @@ class RunPreCheck(SetMeUp):
 		testList = [method for method in dir(self.__class__) if method.startswith('test_')]	
 		numTests = len(testList)
 		numPassedTests = 0 
-		print("========================   {}     ===================".format(self.__class__.__name__))
+		logger.info("========================   {}     ===================".format(self.__class__.__name__))
 		for test in testList:
 			testFunction = getattr(self.__class__, test)
 			success,status = testFunction(self)
-			print(status)
+			if success: logger.info(status) 
+			if not success: logger.error(status)
 			numPassedTests += success # zero or one 
-		print("{} out of {} tests passed".format(numPassedTests, numTests))
-
+		logger.info("{} out of {} tests passed".format(numPassedTests, numTests))
+		# return status of test passing  
+		if numPassedTests != numTests:
+			return False 
+		else:	
+			return True
 
 
 class RunCalibCheck(SetMeUp):
-	# 
+	# verify that the calib_params makes sense
 	def __init__(self, setup):
 		# same as above ... 
 		super(self.__class__, self).__init__(setup)
 		self.calib = CalibrationMaster(setup) # this is maybe a bad idea
-
+		logger.info(self.calib.df)
 	@passfail
 	def test_filenames(self):
 		#check that the requested filenames correspond with a wrf-hydro file name
@@ -115,7 +104,7 @@ class RunCalibCheck(SetMeUp):
 		# check that the min is l.t max
 		for param in self.calib.df.index:
 			calib_flag = self.calib.df.loc[param]['calib_flag']
-			assert (calib_flag == 1 or calib_flag == 0).all(), 'calib_flag must be 0 or 1. {} in {} has a value of  \
+			assert (calib_flag == 1 or calib_flag == 0), 'calib_flag must be 0 or 1. {} in {} has a value of  \
 					                                    {}'.format(param , self.parameter_table, calib_flag)
 	@passfail
 	def test_calib_iters(self):
@@ -126,14 +115,18 @@ class RunCalibCheck(SetMeUp):
 		testList = [method for method in dir(self.__class__) if method.startswith('test_')]	
 		numTests = len(testList)
 		numPassedTests = 0 
-		print("========================   {}     ===================".format(self.__class__.__name__))
+		logger.info("========================   {}     ===================".format(self.__class__.__name__))
 		for test in testList:
 			testFunction = getattr(self.__class__, test)
 			success,status = testFunction(self)
-			print(status)
+			if success: logger.info(status)
+			if not success: logger.error(status)
 			numPassedTests += success # zero or one 
-		print("{} out of {} tests passed".format(numPassedTests, numTests))
-
+		logger.info("{} out of {} tests passed".format(numPassedTests, numTests))
+		if numPassedTests != numTests:
+			return False 
+		else:	
+			return True
 
 class RunPreSubmitTest(SetMeUp):
 	'''
@@ -201,20 +194,28 @@ class RunPreSubmitTest(SetMeUp):
 										     {}: | south_north | {}\n".format(
 										forcingFilename, forcing.dims['south_north'],  
 										wrfinputFilename, wrfinput.dims['south_north'])
+	@passfail
+	def test_observations(self):
+		observation_file = self.clbdirc+'/'+self.obsFileName
+		assert os.path.isfile(observation_file), "{} not found".format(observation_file)
 
 	def run_all(self):
 		# emulate behavior of the unittesting module 
 		testList = [method for method in dir(self.__class__) if method.startswith('test_')]	
 		numTests = len(testList)
 		numPassedTests = 0 
-		print("========================   {}     ===================".format(self.__class__.__name__))
+		logger.info("========================   {}     ===================".format(self.__class__.__name__))
 		for test in testList:
 			testFunction = getattr(self.__class__, test)
 			success,status = testFunction(self)
-			print(status)
+			if success: logger.info(status) 
+			if not success: logger.error(status)
 			numPassedTests += success # zero or one 
-		print("{} out of {} tests passed".format(numPassedTests, numTests))
-	
+		logger.info("{} out of {} tests passed".format(numPassedTests, numTests))
+		if numPassedTests != numTests:
+			return False 
+		else:	
+			return True
 
 
 if __name__ == '__main__':

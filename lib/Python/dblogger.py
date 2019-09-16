@@ -1,6 +1,5 @@
 import sys
 import os
-import sqlite3
 from sqlalchemy import create_engine
 import pandas as pd 
 import glob
@@ -8,35 +7,28 @@ import accessories as acc
 import logging
 import xarray as xr
 
-# !!! THIS IS HERE FOR NOW..... MAKE ME A STATIC METHOD LATER !!!
 
 def logDataframe(df,table_name,clbdirc):
-	#db_connection = kwargs.get('dbcon', 'CALIBRATION.db')
-	#
 	engine = create_engine('sqlite:///{}/CALIBRATION.db'.format(clbdirc), echo=False)
 	df.to_sql(table_name, con = engine, if_exists='append')
 
 def getDischarge(iteration,clbdirc):
 	'''
 	Description: creates a pandas dataframe from observations in the SQL database
-	
-	<calibration_directory>/CALIBRATION.db ------> (model_output_i, observations)_dataframe                                         
+	<calibration_directory>/CALIBRATION.db ---> [model_output_i, observations]_dataframe                                         
 	'''
 	# select data from the table 
 	mod_cmd = "SELECT * FROM MODOUT WHERE ITERATIONS = {}".format(iteration)
 	mod = pd.read_sql(sql = mod_cmd, con="sqlite:///{}/CALIBRATION.db".format(clbdirc))
 	mod['time'] = pd.to_datetime(mod['time']) 
-	
 	# read obs 	
 	obs = pd.read_sql(sql="SELECT * FROM OBSERVATIONS", con="sqlite:///{}/CALIBRATION.db".format(clbdirc))
 	obs['time'] = pd.to_datetime(obs['time'])
 	obs.drop(columns=['site_no'], inplace=True)
-	
 	# merge things  
 	merged = obs.copy()
 	merged['qMod'] = mod['qMod']
 	merged.dropna(inplace=True)
-	
 	# assign index
 	merged.set_index(merged.time, inplace=True)
 	return merged	
@@ -50,7 +42,6 @@ def logModelout(clbdirc, iteration):
 	ModelOutput_i  ------> <calibration_directory>/CALIBRATION.db
 	USGS Observations ------^
 	'''
-	
 	# read usgs obs 
 	obsQ = pd.read_csv(clbdirc+'/obsStrData.csv')
 	obsQ.drop(columns=['Unnamed: 0', 'POSIXct', "agency_cd"], inplace=True)
@@ -78,6 +69,6 @@ def logModelout(clbdirc, iteration):
 	# log the observations only once 
 	if iteration == str(0):
 		logDataframe(obsQ, 'Observations', clbdirc)
-		print('logging the observations to db')	
 	# close files ... (not that it does anything...)
 	modQfiles.close()
+
