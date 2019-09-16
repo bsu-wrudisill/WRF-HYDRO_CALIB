@@ -3,7 +3,7 @@
 
 # USGS gauge to calibrate to 
 usgs_code: 13185000 
-name_ext: '_CALIB'
+name_ext: '_WY2014_PREDUCE'
 
 # Specify directories 
 executable_location: /home/wrudisill/scratch/NewHydroBuilt/WRF_HYDRO-R2/wrf_hydro_nwm_public/trunk/NDHMS/Run
@@ -13,8 +13,8 @@ parameter_location: /scratch/leaf/share/WRF_hydro_subsets_201810/{}
 
 # Specify restart file locations. both are required if doing a restart run. 
 # Put None for a 'cold-start' run
-hydro_restart_file: None #/home/wrudisill/scratch/13185000_SPINUP/RESTARTS/HYDRO_RST.2011-09-01_00:00_DOMAIN2
-hrldas_restart_file: None #/home/wrudisill/scratch/WRF-HYDRO_CALIB/13185000_SPINUP/RESTARTS/RESTART.2011090100_DOMAIN1
+hydro_restart_file: /home/wrudisill/scratch/CompletedCalib/13185000_SPINUP/RESTARTS/HYDRO_RST.2011-09-01_00:00_DOMAIN2 
+hrldas_restart_file: /home/wrudisill/scratch/CompletedCalib/13185000_SPINUP/RESTARTS/RESTART.2011090100_DOMAIN1 
 
 # Job submit criteria. More to be added later  
 QUEUE: leaf   # name of the queue 
@@ -26,8 +26,8 @@ dds_iter: 1000
 # Specify the start and end dates for the 'calibration' and 'evaluation'
 # periods respectively.
 calib_date: 
-        start_date: 2011-09-01
-        end_date: 2011-09-03
+        start_date: 2013-09-01
+        end_date: 2014-08-27
 eval_date: 
-        start_date: 2011-09-02 
-        end_date: 2011-09-03
+        start_date: 2013-11-15 
+        end_date: 2014-07-01
