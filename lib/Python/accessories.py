@@ -6,10 +6,27 @@ import time
 import glob 
 import xarray as xr
 import numpy as np
-
+import traceback
 import logging
 logger = logging.getLogger(__name__)
 
+# function decorators 
+def passfail(func):
+	def wrapped_func(*args, **kwargs):
+		try:
+			func(*args)
+			message = "{} Passed".format(str(func))
+			return (True,message)
+		except Exception as e:
+			trace_string =  traceback.format_exc()	
+			error_message = "{} Failed with the following Error: {}\n {}".format(str(func), e, trace_string)
+			return (False, error_message)
+	return wrapped_func
+
+def timer(func):
+	return 
+
+# functions 
 def AddOrMult(factor):
 	# create and addition or mult function 
 	# based on a string input 
@@ -31,7 +48,7 @@ def CleanUp(path):
 		    ,"*HYDRO_RST*"
 	            "log_wrf_hydro*"]
 	
-	logging.info('cleaning up model run directory ({})'.format(path)) 
+	logger.info('cleaning up model run directory ({})'.format(path)) 
 	for removeMe in removeList:
 		for singleFile in glob.glob(removeMe):
 			try:
@@ -75,8 +92,9 @@ def Submit(subname,catchid):
 	cmd = 'sbatch --parsable {}'.format(subname)
 	proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)	
 	jobid,err = proc.communicate()
-	logger.log("issuing system command {}".format(cmd))
+	logger.info("issuing system command {}".format(cmd))
 	return jobid.decode("utf-8").rstrip(),err
+
 
 def WaitForJob(jobid,user):
 	# ----NEW METHOD--- PASS IN JOBID 
@@ -92,10 +110,9 @@ def WaitForJob(jobid,user):
 		still_running_list = list(filter(lambda x: x == jobid, chidout))
 		
 		still_running = len(still_running_list)
-		logging.info('jobID {} is still running...'.format(still_running_list))
-		logging.info('sleep for 10 seconds')
+		logger.info('jobID {} is still running...'.format(still_running_list))
+		logger.info('sleep for 10 seconds')
 		time.sleep(10)
-		
 
 def formatDate(dstr):
 	if type(dstr) == str:
