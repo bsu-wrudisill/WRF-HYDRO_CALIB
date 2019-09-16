@@ -34,22 +34,27 @@ setupfile = 'setup.yaml'
 calibrationfile = 'calib_params.tbl' 
 
 # start the logging with some handy info
-logger.info('starting {}. using {} setup parameters and {}' .format(__name__, setupfile, calibrationfile))
+logger.warning('RUN ONE YEAR ONLY')
+logger.info('starting {}. using {} setup parameters' .format(__name__, setupfile))
 logger.info('Logging to file: {}/{}'.format(os.getcwd(), logfile))
 
 # ---- run 'sanity checks' -----  
 if not RunPreCheck(setupfile).run_all(): sys.exit()
-if not RunCalibCheck(setupfile).run_all(): sys.exit()
+#if not RunCalibCheck(setupfile).run_all(): sys.exit()  -- dont check params, we are not calibratin 
 
 # create the setup instance 
 setup = SetMeUp(setupfile)
 setup()   # gather forcing files, create directories, etc.
+
+# BE CAREFUL --- maybe change this later .... make it a namelist option 
+adjustForcings(setup)
 #
+
 ## check that setup() was successful 
 if not RunPreSubmitTest(setupfile).run_all(): sys.exit()
 calib = CalibrationMaster(setupfile)
-#calib.ForwardModel() # run once, no updating parameters 
-calib()
+calib.ForwardModel() # run once, no updating parameters. this does log obs and model output to the .db 
+#calib()
 #
 #
 ## clean up 
