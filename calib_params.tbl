@@ -1,22 +1,21 @@
 parameter,calib_flag,minValue,maxValue,ini,file,dims,factor
-bexp,        0,      0.40,      1.90,      0.0,soil_properties.nc,3,add
-smcmax,      1,      0.9,       1.2,      1.0,soil_properties.nc,3,mult
-dksat,       1,      0.9,       1.2,        1.0,soil_properties.nc,3,mult
-dwsat,       0,      0.20,      100.0,     0.0,soil_properties.nc,3,add
-refkdt,      0,      -.15,      3.00,      0.0,soil_properties.nc,3,add
-cwpvt,       0,      0.50,      2.0,       0.0,soil_properties.nc,3,add
-vcmx25,      0,      0.60,      1.4,       0.0,soil_properties.nc,3,add 
-slope,       1,      .8,        1.1,        1.0,soil_properties.nc,3,mult
-mp,          0,      0.60,      1.4,       0.0,soil_properties.nc,3,add 
-hvt,         0,      0.25,      1.5,       0.0,soil_properties.nc,3,add 
-mfsno,       0,      0.50,      2.0,       0.0,soil_properties.nc,3,add
-Expon,       0,      1.00,      8.0,       0.0,GWBUCKPARM.nc,1,add
-Zmax,        0,      .01,       10.0,     1.0,GWBUCKPARM.nc,1,mult
-Zinit,       0,      .01,       10.0,     1.0,GWBUCKPARM.nc,1,mult
-Coeff,       0,      1.0,       2.0,       0.0,GWBUCKPARM.nc,1,add 
-OV_ROUGH2D,  0,      -.005,     1.0,       0.0,hydro2dtbl.nc,2,add
-LKSAT,       0,      0,         2E-6,      0.0,hydro2dtbl.nc,2,add
-Kchan,       1,      .1,        4.0,      1.0,Route_Link.nc,1,mult
-ChSlp,       1,      0.1,       2.0,      1.0,Route_Link.nc,1,mult
-
-
+bexp,        1,      0.5,       2.0,   1.0,soil_properties.nc,3,mult
+smcmax,      1,      0.5,       2.0,   1.0,soil_properties.nc,3,mult
+dksat,       1,      0.5,       2.0,   1.0,soil_properties.nc,3,mult
+dwsat,       0,      0.5,       5.0,   1.0,soil_properties.nc,3,mult
+refkdt,      1,      0.5,       2.0,   1.0,soil_properties.nc,3,mult
+cwpvt,       0,      0.50,      2.0,   1.0,soil_properties.nc,3,mult
+vcmx25,      0,      0.60,      1.4,   1.0,soil_properties.nc,3,mult 
+slope,       1,      .9,        2.0,   1.0,soil_properties.nc,3,mult
+mp,          1,      0.5,       2.0,   1.0,soil_properties.nc,3,mult
+hvt,         1,      0.5,       2.0,   1.0,soil_properties.nc,3,mult
+mfsno,       1,      0.5,       2.0,   1.0,soil_properties.nc,3,mult
+Expon,       1,      .01,       10.0,  1.0,GWBUCKPARM.nc,1,mult
+Zmax,        1,      .01,       10.0,  1.0,GWBUCKPARM.nc,1,mult
+Zinit,       0,      .01,       10.0,  1.0,GWBUCKPARM.nc,1,mult
+Coeff,       0,      1.0,       2.0,   1.0,GWBUCKPARM.nc,1,mult 
+OV_ROUGH2D,  1,      -.005,     1.0,   1.0,hydro2dtbl.nc,2,mult
+LKSAT,       0,      0,         2E-6,   1.0,hydro2dtbl.nc,2,mult
+Kchan,       1,      .5,        2.0,   1.0,Route_Link.nc,1,mult
+ChSlp,       1,      .5,        2.0,   1.0,Route_Link.nc,1,mult
+n,           1,      .5,        2.0,   1.0,Route_Link.nc,1,mult
