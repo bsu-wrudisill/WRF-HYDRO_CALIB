@@ -385,14 +385,9 @@ class CalibrationMaster(SetMeUp):
 	   	# this seems like a dumb algorithm.... 
 		activeParams = list(self.df.groupby('calib_flag').groups[1])
 		# Part 1: Randomly select parameters to update 
-		
-		
-		#def LogLik(self,curiter, maxiter):
-		# logliklihood function
-		#return 1 - np.log(curiter)/np.log(maxiter)
-		
 		prob = 1 - np.log(self.iters+1) / np.log(self.max_iters)
-		#print(prob)	
+		
+		# determine the 'active set'
 		for param in activeParams:
 			sel = np.random.choice(2, p=[1-prob,prob])
 			if sel == 1: 
@@ -408,24 +403,43 @@ class CalibrationMaster(SetMeUp):
 			deselectedParams = list(self.df.groupby('onOff').groups[0])
 
 		except KeyError:
+			# CHANGE ME --- select 1 random parameter instead 	
 			logger.warning('no parameters were selected during DDS search algorithm')
 			return
-
+		
 		# 'active params' just contains those to update now
 		for param in selectedParams: 
+			# get the parameter, and the static bounds (xmin-----xmax)
 			J = self.df.loc[param]
-			xj_min = J.minValue
-			xj_max = J.maxValue
+			xj_min = J.minValue  # Note -- 
+			xj_max = J.maxValue  # Note -- 
 			xj_best = J.bestValue
-			sigj = r * (xj_max - xj_min)
-			x_new = xj_best + sigj*np.random.randn(1)
+			xj_init = J.ini
 			
-			if x_new < xj_min: # if it is less than min, reflect to middle
-				x_new = xj_min + (xj_min - x_new)
+			# is this a multiplicative parameter or an additive one? 
+			factor = J.factor 		
+			updateFun = acc.AddOrMult(factor)		
 			
-			if x_new > xj_max: # if xnew is greater than the max, reflect to middle
-				x_new = xj_max - (x_new - xj_max)
+			if factor == 'mult':	
+				sigj = r * (np.log10(xj_max) - np.log10(xj_min))
+				x_update = sigj*np.random.randn(1) + np.log10(xj_init) # randomly chosen unit normal variable 
+				x_new = xj_best*10**x_update 
+				if x_new < xj_min: # if it is less than min, reflect to middle
+					x_new = xj_min + (xj_min - x_new)
+				
+				if x_new > xj_max: # if xnew is greater than the max, reflect to middle
+					x_new = xj_max - (x_new - xj_max)
 			
+			if factor == 'add':	
+				sigj = r * (xj_max - xj_min)
+				x_update = sigj*np.random.randn(1) + xj_init # randomly chosen unit normal variable 
+				x_new = xj_best+x_update 
+				
+				if x_new < xj_min: # if it is less than min, reflect to middle
+					x_new = xj_min + (xj_min - x_new)
+				
+				if x_new > xj_max: # if xnew is greater than the max, reflect to middle
+					x_new = xj_max - (x_new - xj_max)
 			# assign the parameter to the 'next value' 
 			self.df.at[param,'nextValue'] = np.float(x_new)
 		
@@ -454,7 +468,7 @@ class CalibrationMaster(SetMeUp):
 				# get the dims of the parameter
 				dims = self.df.loc[param].dims 
 				# create the value for updating --- this will include the 'ini' value 
-				updateVal = self.df.nextValue.loc[param] + self.df.ini.loc[param]
+				updateVal = self.df.nextValue.loc[param] 
 				
 				# apply logic to update w/ the correct dims 
 				if dims == 1:
