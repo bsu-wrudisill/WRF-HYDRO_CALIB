@@ -21,15 +21,15 @@
  DYNAMIC_VEG_OPTION                = 4
  CANOPY_STOMATAL_RESISTANCE_OPTION = 1
  BTR_OPTION                        = 1
- RUNOFF_OPTION                     = 1
+ RUNOFF_OPTION                     = 3
  SURFACE_DRAG_OPTION               = 1
  FROZEN_SOIL_OPTION                = 1
  SUPERCOOLED_WATER_OPTION          = 1
  RADIATIVE_TRANSFER_OPTION         = 3
  SNOW_ALBEDO_OPTION                = 2
- PCP_PARTITION_OPTION              = 4
+ PCP_PARTITION_OPTION              = 1
  TBOT_OPTION                       = 2
- TEMP_TIME_SCHEME_OPTION           = 1
+ TEMP_TIME_SCHEME_OPTION           = 3
  GLACIER_OPTION                    = 2
  SURFACE_RESISTANCE_OPTION         = 4
 
@@ -70,6 +70,3 @@
  !                                 7=WRF w/ spec. precip 
  FORC_TYP = 3
 /
-
-
-

@@ -1,11 +1,10 @@
-import os,sys
+import os
+import sys 
 import datetime 
-from collections import OrderedDict
 import subprocess
 import time 
 import glob 
 import xarray as xr
-import logging
 import numpy as np
 import time 
 
@@ -13,6 +12,24 @@ import time
 '''
 FUNCTIONS 
 '''
+import traceback
+import logging
+logger = logging.getLogger(__name__)
+
+# function decorators 
+def passfail(func):
+	def wrapped_func(*args, **kwargs):
+		try:
+			func(*args)
+			message = "{} Passed".format(str(func))
+			return (True,message)
+		except Exception as e:
+			trace_string =  traceback.format_exc()	
+			error_message = "{} Failed with the following Error: {}\n {}".format(str(func), e, trace_string)
+			return (False, error_message)
+	return wrapped_func
+
+# functions 
 def AddOrMult(factor):
 	# create and addition or mult function 
 	# based on a string input 
@@ -22,7 +39,6 @@ def AddOrMult(factor):
 		return lambda a,b: a+b
 	else:
 		return None
-
 def CleanUp(path):
 	# remove files from the run directory 
 	cwd = os.getcwd()
@@ -34,8 +50,8 @@ def CleanUp(path):
 		    ,"*diag_hydro*"
 		    ,"*HYDRO_RST*"
 	            "log_wrf_hydro*"]
-
-	print('cleaning up...')
+	
+	logger.info('cleaning up model run directory ({})'.format(path)) 
 	for removeMe in removeList:
 		for singleFile in glob.glob(removeMe):
 			try:
@@ -43,7 +59,6 @@ def CleanUp(path):
 			except:
 				pass
 	# move back to o.g. dir
-	logging.info('cleaning up model run directory ({})'.format(path)) 
 	os.chdir(cwd)
 
 def GaugeToGrid(chrtout, lat, lon):
@@ -52,22 +67,22 @@ def GaugeToGrid(chrtout, lat, lon):
 	ds = xr.open_dataset(chrtout)
 	latgrid = ds['latitude'].values
 	longrid  = ds['longitude'].values
-
+	
 	# finds the lat/lon that corresponds 
 	# to a given gauge point. 
 	# returns an integer
-	return np.sqrt((latgrid-lat)**2 + (longrid-lon)**2).argmin()
+	return np.sqrt((latgrid-lat)**2 + (longrid-lon)**2).argmin()	
 
 def ConcatLDAS(path,ID):
 	# path to output files
 	# ID to assign to the output name 
-	print('reading LDAS files')	
+	logger.info('reading LDAS files')	
 	ldas = glob.glob(path+'/*LDASOUT_DOMAIN1')
 	var_list = ['x', 'y', 'SNLIQ', 'SOIL_T', 'SNOWH', 'ISNOW']
 	ds = xr.open_mfdataset(ldas, drop_variables=var_list)
-	print('concatenating LDAS files...')
+	logger.info('concatenating LDAS files...')
 	ds.to_netcdf("{}_LDASFILES.nc".format(ID))
-	print('wrote {}_LDASFILES.nc'.format(ID))
+	logger.info('wrote {}_LDASFILES.nc'.format(ID))
 	del ds
 
 def SystemCmd(cmd):
@@ -80,7 +95,9 @@ def Submit(subname,catchid):
 	cmd = 'sbatch --parsable {}'.format(subname)
 	proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)	
 	jobid,err = proc.communicate()
+	logger.info("issuing system command {}".format(cmd))
 	return jobid.decode("utf-8").rstrip(),err
+
 
 def WaitForJob(jobid,user):
 	# ----NEW METHOD--- PASS IN JOBID 
@@ -91,17 +108,14 @@ def WaitForJob(jobid,user):
 		# run command and parse output 
 		chidout, chiderr = SystemCmd(chid)    
 		chidout = [i.decode("utf-8") for i in chidout]
-		#assert len(chidout) > 0, 'cryptic error'
 		# convert the id to an integer
 		# the length of the list. should be zero or one. one means the job ID is found 
 		still_running_list = list(filter(lambda x: x == jobid, chidout))
 		
 		still_running = len(still_running_list)
-		logging.info('jobID {} is still running...'.format(still_running_list))
-		print('jobID {} is still running...'.format(still_running_list))
-		logging.info('sleep for 10 seconds')
+		logger.info('jobID {} is still running...'.format(still_running_list))
+		logger.info('sleep for 10 seconds')
 		time.sleep(10)
-		
 
 def formatDate(dstr):
 	if type(dstr) == str:
@@ -114,7 +128,6 @@ def GenericWrite(readpath,replacedata,writepath):
 	# path to file to read 
 	# data dictionary to put into file
 	# path to the write out file 
-
 	with open(readpath, 'r') as file:
 	    filedata = file.read()
 	    #  

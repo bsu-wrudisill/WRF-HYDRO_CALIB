@@ -8,13 +8,14 @@ import glob
 from pathlib import Path
 import os 
 import logging 
+logger = logging.getLogger(__name__)
 
 def adjustForcings(setup):
 	# requires an instance of 'setup' to gather the correct paths 
 	# MAKE THIS OPTIONAL-- add ability to pass in the forcing directory
 	clbdirc = setup.clbdirc
 
-	logging.info('adjustForcings has been called')
+	logger.info('adjustForcings has been called')
 	def ModifyVars(ds):
 		# ds is an opened xarray dataset 
 		# adjustmetn parameters --- make this more extensible later ---- 
@@ -23,10 +24,9 @@ def adjustForcings(setup):
 		# adjust 
 		ds[VAR][0,:,:] = ds[VAR][0,:,:]*VALUE
 		# log 
-		logging.info('___________ {} by * {}'.format(VAR,VALUE))
+		logger.info('___________ {} by * {}'.format(VAR,VALUE))
 		return ds
-
-	# 
+	#
 	fdir =Path(clbdirc+"/FORCING")
 	forcingList = [f for f in fdir.glob('*')]
 
@@ -46,7 +46,7 @@ def adjustForcings(setup):
 	# and create a symlik from the FORCING_MOD directory 
 	# to FORCING; this is easier than telling the run 
 	# scripts later where to look ( i think ...) 
-	logging.info('creating symlinks for forcings')
+	logger.info('creating symlinks for forcings')
 	os.rename(fdir, fdir.parent.joinpath('FORCING_ORIG'))
 	os.symlink(outdir, fdir)
 
