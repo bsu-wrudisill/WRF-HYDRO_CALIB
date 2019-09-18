@@ -425,10 +425,9 @@ class CalibrationMaster(SetMeUp):
 				x_update = sigj*np.random.randn(1) + np.log10(xj_init) # randomly chosen unit normal variable 
 				x_new = xj_best*10**x_update 
 				if x_new < xj_min: # if it is less than min, reflect to middle
-					x_new = xj_min + (xj_min - x_new)
-				
+					x_new = 10**(np.log10(xj_min) + (np.log10(xj_min) - np.log10(x_new)))
 				if x_new > xj_max: # if xnew is greater than the max, reflect to middle
-					x_new = xj_max - (x_new - xj_max)
+					x_new = 10**(np.log10(xj_max) - (np.log10(x_new) - np.log10(xj_max)))
 			
 			if factor == 'add':	
 				sigj = r * (xj_max - xj_min)
