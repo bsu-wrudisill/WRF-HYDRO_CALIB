@@ -7,14 +7,10 @@ import glob
 import xarray as xr
 import numpy as np
 import time 
-
-
-'''
-FUNCTIONS 
-'''
 import traceback
 import logging
 logger = logging.getLogger(__name__)
+
 
 # function decorators 
 def passfail(func):
@@ -28,6 +24,18 @@ def passfail(func):
 			error_message = "{} Failed with the following Error: {}\n {}".format(str(func), e, trace_string)
 			return (False, error_message)
 	return wrapped_func
+
+
+def timer(function):
+	# simple decorator to time a function
+	def wrapper(*args,**kwargs):
+		t1 = datetime.datetime.now()
+		wrapped_function = function(*args,**kwargs)
+		t2 = datetime.datetime.now()
+		dt = (t2 - t1).total_seconds()/60   # time in minutes
+		logging.info('function {} took {} minutes complete'.format(function.__name__, dt))	
+		return wrapped_function
+	return wrapper
 
 # functions 
 def AddOrMult(factor):
@@ -139,23 +147,5 @@ def GenericWrite(readpath,replacedata,writepath):
 	with open(writepath, 'w') as file:
 	    file.write(filedata)
 	# done 
-
-
-
-'''
-DECORATORS
-'''
-
-def timer(function):
-	# simple decorator to time a function
-	def wrapper(*args,**kwargs):
-		t1 = datetime.datetime.now()
-		wrapped_function = function(*args,**kwargs)
-		t2 = datetime.datetime.now()
-		dt = (t2 - t1).total_seconds()/60   # time in minutes
-		logging.info('function {} took {} minutes complete'.format(function.__name__, dt))	
-		return wrapped_function
-	return wrapper
-
 
 
