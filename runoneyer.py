@@ -47,7 +47,7 @@ setup = SetMeUp(setupfile)
 setup()   # gather forcing files, create directories, etc.
 
 # BE CAREFUL --- maybe change this later .... make it a namelist option 
-adjustForcings(setup)
+#adjustForcings(setup)
 #
 
 ## check that setup() was successful 
