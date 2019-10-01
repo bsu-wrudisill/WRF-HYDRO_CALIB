@@ -46,7 +46,7 @@ class RunPreCheck(SetMeUp):
 			
 	@passfail
 	def test_queue(self):
-		queuelist = ['leaf','defq','shortq', 'gpuq']	
+		queuelist = ['leaf','defq','shortq', 'gpuq', 'ipowerq']	
 		assert self.queue in queuelist, '{} is not one of {}'.format(self.queue, " ".join(queuelist))
 		if self.queue == 'leaf':
 			assert self.nodes <= 2, 'More nodes ({}) requested than the available 2 on leaf'.format(self.nodes)
