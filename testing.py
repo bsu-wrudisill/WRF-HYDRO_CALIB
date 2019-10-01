@@ -1,11 +1,4 @@
-<<<<<<< HEAD
-import pandas as pd 
-import json
-=======
-#import pandas as pd 
-#import json
 import shutil
->>>>>>> CleanUpState
 import os 
 import time 
 import sys 

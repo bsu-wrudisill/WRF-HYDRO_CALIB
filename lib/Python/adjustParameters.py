@@ -536,7 +536,6 @@ class CalibrationMaster(SetMeUp):
 		acc.WaitForJob(jobid, 'wrudisill')
 			
 		obj,improvement = self.EvaluateIteration()  # check if the model improved 
-
 		#os.chdir(cwd)
 		# log the parameters and obfun to the database
 		self.LogParameters()     
