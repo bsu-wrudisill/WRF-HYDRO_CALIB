@@ -54,9 +54,9 @@ param = pd.read_sql(sql = param_cmd, con="sqlite:///{}/CALIBRATION.db".format(se
 lastState = param.loc[param.Iteration == param.Iteration.iloc[-1]]
 lastState.set_index('parameter', inplace=True)
 calib.df.update(lastState)
-
+calib.df.nextValue = calib.df.currentValue 
 # update the iteration 
-calib.iters = int(lastState.Iteration.iloc[0])
+calib.iters = int(lastState.Iteration.iloc[0])+1
 calib()
 
 # now run the calibration 
