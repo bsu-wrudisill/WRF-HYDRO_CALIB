@@ -32,6 +32,7 @@ class SetMeUp:
 		if type(setup) == dict:
 			yamlfile=setup
 		
+		self.userid = yamlfile['userid']
 		self.parameter_table = 'calib_params.tbl'	
 		self.setup = setup # name of the setup file. THIS MIGHT CHANGE LATER !!!!	
 		self.name_ext = yamlfile['name_ext']
@@ -49,7 +50,7 @@ class SetMeUp:
 		self.parmdirc = yamlfile['parameter_location'].format(self.usgs_code)
 		self.exedirc = yamlfile['executable_location']
 		self.forcdirc = yamlfile['forcing_location']
-		self.cwd = os.getcwd()
+		self.cwd = Path(os.getcwd())
 		# forcing files stuff goes here 
 		self.forcings_time_format = "%Y-%m-%d_%H:%M:%S" #!!! FOR WRF -- CHANGE ME LATER !!! 
 		self.forcings_format ="wrfout_d02_{}"  # !! FOR WRF -- CHANGE ME LATER !!! 
@@ -161,7 +162,8 @@ class SetMeUp:
 		shutil.copy('./{}'.format(self.setup), self.clbdirc) 
 		
 		# why am i copying model eval
-		shutil.copy('./lib/Python/modelEval.py', self.clbdirc) 
+		#shutil.copy('./lib/Python/modelEval.py', self.clbdirc) 
+		acc.GenericWrite('./lib/Python/modelEval.py',{"PATH_TO_PYTHON_EXECUTABLES": self.cwd.joinpath('lib/Python')}, self.clbdirc+'/modelEval.py')
 		shutil.copy('./lib/Python/viz/PlotQ.py', self.clbdirc) 
 		
 		# log success
@@ -501,13 +503,13 @@ class CalibrationMaster(SetMeUp):
 		time.sleep(1) # wait a second before checking for the job
 
 		# wait for the job to complete 
-		acc.WaitForJob(jobid, 'wrudisill')
+		acc.WaitForJob(jobid, self.userid)
 
 		# --- MODEL EVALUATION ---- # 
 		jobid, err = acc.Submit('submit_analysis.sh', self.catchid)   # THIS STEP LOGS THE MODEL FILES TO THE DB
 
 		## wait for the job to complete 
-		acc.WaitForJob(jobid, 'wrudisill')
+		acc.WaitForJob(jobid, self.userid)
 		# 	
 		obj,improvement = self.EvaluateIteration()  # check if the model improved 
 
@@ -527,13 +529,13 @@ class CalibrationMaster(SetMeUp):
 		time.sleep(1) # wait a second before checking for the job
 
 		# wait for the job to complete 
-		acc.WaitForJob(jobid, 'wrudisill')
+		acc.WaitForJob(jobid, self.userid)
 
 		# --- MODEL EVALUATION ---- # 
 		jobid, err = acc.Submit('submit_analysis.sh', self.catchid)   # THIS STEP LOGS THE MODEL FILES TO THE DB
 
 		## wait for the job to complete 
-		acc.WaitForJob(jobid, 'wrudisill')
+		acc.WaitForJob(jobid, self.userid)
 			
 		obj,improvement = self.EvaluateIteration()  # check if the model improved 
 		#os.chdir(cwd)
