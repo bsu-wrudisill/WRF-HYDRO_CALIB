@@ -1,9 +1,14 @@
 import sys 
-libPath = '/scratch/wrudisill/IDWR_Calibration/Boise_feather/WRF-HYDRO_CALIB/lib/Python'
+import logging 
+
+# a bit wonky... we need to pass in the path to the python exexutables 
+# since this script gets copied over to the running directory
+libPath = 'PATH_TO_PYTHON_EXECUTABLES'   #<<<< DANGER this literally gets rewritten by the adjustParameters setup script
 sys.path.insert(0,libPath)
+
 import dblogger as dbl
 import WaterBalance as WB 
-import logging 
+
 
 
 logfile = 'model_evalualtion.log'
