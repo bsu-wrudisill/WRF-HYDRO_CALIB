@@ -14,17 +14,21 @@ def adjustForcings(setup):
 	# requires an instance of 'setup' to gather the correct paths 
 	# MAKE THIS OPTIONAL-- add ability to pass in the forcing directory
 	clbdirc = setup.clbdirc
-
+	benefit_file = setup.benefit_file
 	logger.info('adjustForcings has been called')
+	logger.info('reading from file {}'.format(benefit_file))
+	# 	
+	benefit = 1 - xr.open_dataset(benefit_file)['benefit']/100.
+	mean_benefit = np.mean(benefit)
 	def ModifyVars(ds):
 		# ds is an opened xarray dataset 
 		# adjustmetn parameters --- make this more extensible later ---- 
 		VAR='RAINNC'
-		VALUE = .9
+		#VALUE = .9
 		# adjust 
-		ds[VAR][0,:,:] = ds[VAR][0,:,:]*VALUE
+		ds[VAR][0,:,:] = ds[VAR][0,:,:]*benefit
 		# log 
-		logger.info('___________ {} by * {}'.format(VAR,VALUE))
+		logger.info('___________ {} by * {}'.format(VAR,mean_benefit))
 		return ds
 	#
 	fdir =Path(clbdirc+"/FORCING")

@@ -32,6 +32,8 @@ class SetMeUp:
 		if type(setup) == dict:
 			yamlfile=setup
 		
+		
+
 		self.userid = yamlfile['userid']
 		self.parameter_table = 'calib_params.tbl'	
 		self.setup = setup # name of the setup file. THIS MIGHT CHANGE LATER !!!!	
@@ -79,7 +81,9 @@ class SetMeUp:
 		# LOG all of the things 
 		self.objfun = KGE
 		self.gauge_loc = None
-
+		## --- precipiation adustment --# 
+		self.adjust_forcings = yamlfile['adjust_forcings']
+		self.benefit_file = yamlfile['benefit_file']
 
 	def GatherForcings(self,**kwargs):
 		# find all of the forcings for the specified time period 	
