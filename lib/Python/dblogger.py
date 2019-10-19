@@ -8,6 +8,8 @@ import logging
 import xarray as xr
 
 
+logger = logging.getLogger(__name__)
+
 def logDataframe(df,table_name,clbdirc):
 	engine = create_engine('sqlite:///{}/CALIBRATION.db'.format(clbdirc), echo=False)
 	df.to_sql(table_name, con = engine, if_exists='append')
@@ -48,6 +50,17 @@ def logModelout(clbdirc, iteration):
 	obsQ.rename(index=str, columns={"Date":"time", "obs":"qObs"}, inplace=True)
 	obsQ.set_index('time',inplace=True)
 	obsQ.index = pd.to_datetime(obsQ.index)
+	idx = pd.date_range(obsQ.index[0], obsQ.index[-1])
+
+	# check if there are missing times from the observations ...
+	if len(idx) != len(obsQ.index):
+		missing_list = [str(i) for i in idx if i not in obsQ.index]
+		message = 'observations are missing the following dates: {}. Applying interpolation'.format(missing_list)    
+		logger.info(message)
+	# reindex and interpolate
+	obs = obsQ.reindex(idx)
+	obs_interpolate = obsQ.interpolate()
+	obs_interpolate['time'] = idx
 	lat = obsQ['lat'].iloc[0]
 	lon = obsQ['lon'].iloc[0]
 	# get the gauge location grid cell 
