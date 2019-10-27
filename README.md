@@ -20,7 +20,8 @@ another state variable such as soil moisture or SWE.
 
 
 WRF-Hydro must be compiled successfully before using. It is a good idea to double check the build with a test case before trying to calibrate.
-The calibration scripts use Python for almost everything, including logging, file moving, opening/closing netcdf files, and plotting. 
+The calibration scripts use Python for almost everything, including logging, file moving, opening/closing netcdf files, and plotting. The only requirement for R is the USGS data retrieval package, which is unfortunately the easiest way do download 
+USGS station data and metadata (http://usgs-r.github.io/dataRetrieval/). 
 
 
 # Setup
@@ -31,11 +32,9 @@ will automatically find the correct channel location point to use.
 2. Edit the namelist TEMPLATE files in the **namelists/**. Do not change the dates or the file paths -- these get edited by the run code. 
 
 3. Edit the **calib_params.tbl** file. Set the 'calib_flag' to 1 in to calibrate the parameter. Parameters in the table with a 
-zero value are not calibrated. Each parameter can be tuned by either an additive or a multiplicative factor. The ranges of which are 
-set by the 'min' and 'max columns.
+zero value are not calibrated. Each parameter can be tuned by either an additive or a multiplicative factor. The ranges of which are set by the 'min' and 'max columns.
 
-You are now ready to run. The code has some functions to check for obvious mistakes (such as incorrect filepaths), but not everything
-will be caught at the beginning. 
+You are now ready to run. The code has some functions to check for obvious mistakes (such as incorrect filepaths), but not everything will be caught at the beginning. 
 
 # Setup
 To run the calibration, do the following:
@@ -44,6 +43,9 @@ source env.sh
 conda activate WRFDev
 python calibrate.py 
 ```
+# Dealing with errors
+First, check the logfile. On issuing the calibration run, a logfile gets created with the current timestamp. Any errors that 
+have occurred will be in this file. 
 
 # References
 1. Tolson, Bryan A., and Christine A. Shoemaker. "Dynamically dimensioned search algorithm for computationally efficient 
