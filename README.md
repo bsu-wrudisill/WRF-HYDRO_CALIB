@@ -47,6 +47,9 @@ The python requirements are described in the 'conda_env.txt' file. If you are us
 conda create --name <nameofenv> --file conda_env.txt
 ```
 To build the identical set of libraries on your machine. This is not guarenteed two work everytime since it may depend on your operating system. Everyting has been built and run on CentOS Linux. Setting up miniconda is fairly straight forwrad (found here https://docs.conda.io/en/latest/miniconda.html) 
+# Preprocessing
+Acquiring forcing data, compiling the WRF-Hydro model code, and constructing the geographic and routing domain parameters are beyond the scope of this set of codes. However, a 'regridding' script is included in the **/util** directory that may be of some use. Consuls the WRF-Hydro V5 documentation about how to gather setup the proper model domains. 
+
 
 # Setup
 1. Edit the **setup.yaml** in the parent directory. The variable names should be explanatory. They include pointers to where the wrf hdyro executable lives, the parameter files, the name to append to the calibration directory, and the USGS gauge ID to calibrate to. The code will automatically find the correct channel location point to use. For multiple basins, I would reccomend naming the setup.yaml something else (such as setup.yaml.basin_name, and then creating a symlink to that file. 
