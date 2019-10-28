@@ -29,10 +29,24 @@ This code is designed to work on HPC systmes that use the SLURM job scheduling s
 
 
 WRF-Hydro must be compiled successfully before using. It is a good idea to double check the build with a test case before trying to calibrate.
-The calibration scripts use Python for almost everything, including logging, file moving, opening/closing netcdf files, and plotting. The only requirement for R is the USGS data retrieval package, which is unfortunately the easiest way do download 
-USGS station data and metadata (http://usgs-r.github.io/dataRetrieval/). 
+The calibration scripts use Python for almost everything, including logging, file moving, opening/closing netcdf files, and plotting. There are only two R package requirements: 1) the USGS data retrieval package, which is unfortunately the easiest way do download USGS station data and metadata (http://usgs-r.github.io/dataRetrieval/), and 2) the data.table package. 
 ### Building the required software
-You are 'on your own' for building the r libraries, but it probably shouldn't be that hard. To verify that everything is working, try submitting the 
+#### R dependencies 
+As of now, you are 'on your own' for building R and the required packages. Consult R documentation for information on how to install R and download packages. To guarentee that the R requirements have been met, you can run the **/lib/R/fetchUSGSobs.R** script in the following way:
+```bash
+cd ./WRF-HYDRO_CALIB/lib/R/
+Rscript fetchUSGSobs.R 13185000 2000-01-01 2000-01-03 rtest.csv
+```
+If this creates a file called 'rtest.csv' with data in it, then you are good to go! The calibration routines will call this script with the appropriate input parameters without you needing to worry about it. 
+
+#### Python dependencies 
+
+The python requirements are described in the 'conda_env.txt' file. If you are using miniconda, you can issue:
+
+```bash 
+conda create --name <nameofenv> --file conda_env.txt
+```
+To build the identical set of libraries on your machine. This is not guarenteed two work everytime since it may depend on your operating system. Everyting has been built and run on CentOS Linux. Setting up miniconda is fairly straight forwrad (found here https://docs.conda.io/en/latest/miniconda.html) 
 
 # Setup
 1. Edit the **setup.yaml** in the parent directory. The variable names should be explanatory. They include pointers to where the wrf hdyro executable lives, the parameter files, the name to append to the calibration directory, and the USGS gauge ID to calibrate to. The code will automatically find the correct channel location point to use. For multiple basins, I would reccomend naming the setup.yaml something else (such as setup.yaml.basin_name, and then creating a symlink to that file. 
@@ -53,9 +67,15 @@ You are now ready to run. The code has some functions to check for obvious mista
 To run the calibration, do the following:
 ```bash
 source env.sh
-conda activate WRFDev
 python calibrate.py 
 ```
+If you have created a conda environment for your python modules (reccomended), then activate the environment before running: 
+```bash
+source env.sh
+conda activate <nameofenv>
+python calibrate.py 
+```
+The model will calibrate for the number of iterations specified in the **setup.yaml** file 
 
 ### Post Processing
 There are a number of visualization scripts found in the **/lib/python/viz directory**. All of the relevant information for plotting the model performance is contained in the database directory (the model outputs for each iteration, the objective function value for that iteration, and the model parameters). The python pandas library can easily read data from the CALIBRATION.db file. Additionally, there are a number of applications that can examine sql databases, such as https://sqlitebrowser.org/. Sqlite browser also offers basic plotting capablities whcih are handy for getting a quick view of the data. 
@@ -74,7 +94,6 @@ If model files are not being generated, then verify that the model run settings 
 # Restarting Failed Runs 
 By default, the calibration routing will quit after three errors are raised in a row. This could happen for a variety of reasons. If you are certain that the failures are caused by something on the HPC system, and not a bug in the calibration scripts or WRF-Hydro itself, then you can restart a failed run from where it left of.  Use the **restart.py** script:
 ```bash
-conda activate WRFDev
 python restart.py
 ```
 The script will read the setup.yaml file to find the run directory and the calibration database file. Restarting the run requires that the databse file and run directories exists and have not been modified. 
