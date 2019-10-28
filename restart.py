@@ -57,9 +57,9 @@ calib.df.update(lastState)
 calib.df.nextValue = calib.df.currentValue 
 # update the iteration 
 calib.iters = int(lastState.Iteration.iloc[0])+1
-calib()
 
 # now run the calibration 
+calib()
 
 ## clean up 
 logger.info('----- Calibration Complete -----')
