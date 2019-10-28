@@ -8,12 +8,9 @@ Email: williamrudisill@u.boisestate.edu
 WRF-HYDRO_CALIB employs the **'Dynamic Dimensional Search' (DDS)** (1) automatic parameter optimization algorithm the WRF-Hydro hydrologic model. 
 One of the goals was to keep the directory structure as simple and transparent as possible,
 so that it's easier to debug should things go wrong. The user is responsible for editing only two additional config files 
-(described below) beyond the normal *namelist* files. Currently the code tunes land surface and routing paramters to match observed
-discharge using the kling-gupta-efficiencty objective function. It would be relatively easy to implement a different calibration for 
-another state variable such as soil moisture or SWE. 
+(described below) beyond the normal *namelist* files. Currently the code tunes land surface and routing paramters to match observed discharge using the kling-gupta-efficiencty objective function. It would be relatively easy to implement a different calibration for another state variable such as soil moisture or SWE. 
 
-This code is designed to work on HPC systmes that use the SLURM job scheduling system (It would be relatively trivial to port
-to another job scheduler system). The heavy compute tasks are submitted to the job scheduler. Here is a general overview of what the code does, in order:
+This code is designed to work on HPC systmes that use the SLURM job scheduling system. The heavy compute tasks are submitted to the job scheduler. Here is a general overview of what the code does, in order:
 
 1. Create a run directory (copy executables, forcing files, etc.) using paths supplied in the config file
 2. Download USGS streamflow data for the correct gauge station and time period 
@@ -34,7 +31,8 @@ to another job scheduler system). The heavy compute tasks are submitted to the j
 WRF-Hydro must be compiled successfully before using. It is a good idea to double check the build with a test case before trying to calibrate.
 The calibration scripts use Python for almost everything, including logging, file moving, opening/closing netcdf files, and plotting. The only requirement for R is the USGS data retrieval package, which is unfortunately the easiest way do download 
 USGS station data and metadata (http://usgs-r.github.io/dataRetrieval/). 
-
+### Building the required software
+You are 'on your own' for building the r libraries, but it probably shouldn't be that hard. To verify that everything is working, try submitting the 
 
 # Setup
 1. Edit the **setup.yaml** in the parent directory. The variable names should be explanatory. They include pointers to where the wrf hdyro executable lives, the parameter files, the name to append to the calibration directory, and the USGS gauge ID to calibrate to. The code will automatically find the correct channel location point to use. For multiple basins, I would reccomend naming the setup.yaml something else (such as setup.yaml.basin_name, and then creating a symlink to that file. 
@@ -69,7 +67,7 @@ Once the calibration is sufficiently 'finished', use the **createCalibratedParam
 
 # Dealing with errors
 First, check the logfile. On issuing the calibration run, a logfile gets created with the current timestamp. Any errors that 
-have occurred will be in this file. If there is something wrong with the model configuration that causes results in model outputs not being generated, the python process will not necessarily catch this error (but it will stop after a maximum of three model failures). Navigate to the model run directory and read the slurm log files that. These will contain debug information from the **wrf_hydro.exe** execution. 
+have occurred will be in this file. If there is something wrong with the model configuration that causes results in model outputs not being generated, the python process will not necessarily catch this error (but it will stop after a maximum of three model failures). Navigate to the model run directory and read the slurm log files. These will contain debug information from the **wrf_hydro.exe** execution. 
 
 If model files are not being generated, then verify that the model run settings are working. The calibration run directory is self-contained with everything needed to run the model. This provides a nice way to debug -- simply navigate to this directory, modify namelist parameters as needed to fix whatever setting is 'off', and re-run the model by issuing 'sbatch submit.sh'. 
 
