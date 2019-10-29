@@ -5,12 +5,7 @@ Email: williamrudisill@u.boisestate.edu
 
 
 # Description
-WRF-HYDRO_CALIB employs the **'Dynamic Dimensional Search' (DDS)** (1) automatic parameter optimization algorithm the WRF-Hydro hydrologic model. 
-One of the goals was to keep the directory structure as simple and transparent as possible,
-so that it's easier to debug should things go wrong. The user is responsible for editing only two additional config files 
-(described below) beyond the normal *namelist* files. Currently the code tunes land surface and routing paramters to match observed discharge using the kling-gupta-efficiencty objective function. It would be relatively easy to implement a different calibration for another state variable such as soil moisture or SWE. 
-
-This code is designed to work on HPC systmes that use the SLURM job scheduling system. The heavy compute tasks are submitted to the job scheduler. Here is a general overview of what the code does, in order:
+WRF-HYDRO_CALIB employs the **'Dynamic Dimensional Search' (DDS)** (1) automatic parameter optimization algorithm the WRF-Hydro hydrologic model (https://ral.ucar.edu/projects/wrf_hydro/overview) One of the goals was to keep the directory structure as simple and transparent as possible, so that it's easier to debug should things go wrong. The user is responsible for editing only two additional config files (described below) beyond the normal *namelist* files. Currently the code tunes land surface and routing paramters to match observed discharge using the kling-gupta-efficiencty objective function. It would be relatively easy to implement a different calibration for another state variable such as soil moisture or SWE. The code is designed to work on HPC systmes that use the SLURM job scheduling system. The heavy compute tasks are submitted to the job scheduler. Here is a general overview of what the code does, in order:
 
 1. Create a run directory (copy executables, forcing files, etc.) using paths supplied in the config file
 2. Download USGS streamflow data for the correct gauge station and time period 
@@ -20,7 +15,6 @@ This code is designed to work on HPC systmes that use the SLURM job scheduling s
 6. Update model parameters according to DDS methodology 
 7. Log parameter updates, model output time series, and objective function value to a database file. 
 8. Repeat steps 4-7 *n* times; the more the better
-`
 
 # Software Requirements 
 1) WRF-Hydro V5
@@ -99,8 +93,7 @@ By default, the calibration routing will quit after three errors are raised in a
 ```bash
 python restart.py
 ```
-The script will read the setup.yaml file to find the run directory and the calibration database file. Restarting the run requires that the databse file and run directories exists and have not been modified. 
-
+**The script will read the setup.yaml file to find the run directory and the calibration database file.** So make sure that the setup.yaml file points to the run that you want to restart. Restarting the run requires that the databse file exists, and that all of the model requirements (executables, forcings, etc.) still live in the run directory (which they should, unless you moved/deleted them for some reason).
 
 
 # Bugs/Feature Requests
