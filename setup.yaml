@@ -10,7 +10,7 @@ name_ext: "_adjusttest"
 # Specify directories 
 executable_location: /home/wrudisill/scratch/NewHydroBuilt/WRF_HYDRO-R2/wrf_hydro_nwm_public/trunk/NDHMS/Run
 forcing_location: /home/wrudisill/leaf/WRF-Hydro_Forcing/BOISE_TWIN/
-calib_location: /scratch/wrudisill/IDWR_Calibration/FinalRuns/WRF-HYDRO_CALIB/
+calib_location: /scratch/wrudisill/WRF-HYDRO_CALIB/
 parameter_location: /scratch/leaf/share/WRF_hydro_subsets_201810/{}
 
 # Specify restart file locations. both are required if doing a restart run. 
@@ -36,5 +36,5 @@ eval_date:
 
 
 # WARNING:  PRECIPITATION ADJUSTMET BELOW HERE #
-adjust_forcings: True
+adjust_forcings: False
 benefit_file: /home/wrudisill/scratch/IDWR_Calibration/seedingfiles/BoiseTwin_13185000/benefit.nc
