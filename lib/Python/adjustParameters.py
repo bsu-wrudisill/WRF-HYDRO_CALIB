@@ -40,7 +40,7 @@ class SetMeUp:
 		self.name_ext = yamlfile['name_ext']
 		self.usgs_code = str(yamlfile['usgs_code'])
 		self.max_iters = yamlfile['dds_iter']
-		self.clbdirc = yamlfile['calib_location'] + self.usgs_code + self.name_ext
+		self.clbdirc = yamlfile['calib_location'] + self.name_ext
 		self.obsFileName='obsStrData.csv' # this gets created
 		
 		# ---- restart file logic -- a bit ugly  ---- 
