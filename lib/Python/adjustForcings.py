@@ -18,7 +18,7 @@ def adjustForcings(setup):
 	logger.info('adjustForcings has been called')
 	logger.info('reading from file {}'.format(benefit_file))
 	# 	
-	benefit = 1 - xr.open_dataset(benefit_file)['benefit']/100.
+	benefit = 1 + xr.open_dataset(benefit_file)['benefit']/100.
 	mean_benefit = np.mean(benefit)
 	def ModifyVars(ds):
 		# ds is an opened xarray dataset 
