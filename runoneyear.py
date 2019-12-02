@@ -1,11 +1,11 @@
-#import pandas as pd 
-#import json
 import shutil
 import os 
 import time 
 import sys 
 import datetime 
 import logging
+import argparse 
+
 libPathList = ['./lib/Python', './util']
 for libPath in libPathList:
 	sys.path.insert(0,libPath)
@@ -14,10 +14,17 @@ from adjustForcings import adjustForcings
 from sanityPreCheck import RunPreCheck, RunCalibCheck, RunPreSubmitTest
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--logname", default='logname', type=str, help="name of log file")
+
+args = parser.parse_args()
+
+
 # setup the log file --- this will get passed to all of the imported modules!!!
 
+
 suffix = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
-logfile= 'logfile_{}.log'.format(suffix)
+logfile= '{}_{}.log'.format(args.logname, suffix)
 
 file_handler = logging.FileHandler(filename=logfile)
 stdout_handler = logging.StreamHandler(sys.stdout)
@@ -56,7 +63,6 @@ if setup.adjust_forcings:
 if not RunPreSubmitTest(setupfile).run_all(): sys.exit()
 calib = CalibrationMaster(setupfile)
 calib.ForwardModel()  # run just one timeperiod 
-calib()
 
 
 ## clean up 
