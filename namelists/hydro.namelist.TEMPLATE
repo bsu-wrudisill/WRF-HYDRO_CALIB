@@ -20,7 +20,7 @@ HYDROTBL_F = "./DOMAIN/hydro2dtbl.nc"
 LAND_SPATIAL_META_FLNM = "./DOMAIN/GEOGRID_LDASOUT_Spatial_Metadata.nc"
 
 ! Specify the name of the restart file if starting from restart...comment out with '!' if not...
-RESTART_FILE 
+RESTART_FILE
 
 !!!! --------------------- MODEL SETUP OPTIONS -------------------- !!!!
 
@@ -29,7 +29,7 @@ IGRID = 2
 
 ! Specify the restart file write frequency...(minutes)
 ! A value of -99999 will output restarts on the first day of the month only.
-rst_dt = -99999
+rst_dt = -99999 
 
 ! Reset the LSM soil states from the high-res routing restart file (1=overwrite, 0=no overwrite)
 ! NOTE: Only turn this option on if overland or subsurface rotuing is active!
@@ -45,7 +45,7 @@ rst_bi_out = 0      !0: use netcdf output restart file (default)
 RSTRT_SWC = 0
 
 ! Specify baseflow/bucket model initialization...(0=cold start from table, 1=restart file)
-GW_RESTART = 1 
+GW_RESTART = 1
 
 !!!! -------------------- MODEL OUTPUT CONTROL -------------------- !!!!
 
@@ -69,7 +69,7 @@ io_form_outputs = 1
 ! Realtime run configuration option:
 ! 0=all (default), 1=analysis, 2=short-range, 3=medium-range, 4=long-range, 5=retrospective,
 ! 6=diagnostic (includes all of 1-4 outputs combined)
-io_config_outputs = 0
+io_config_outputs = 1
 
 ! Option to write output files at time 0 (restart cold start time): 0=no, 1=yes (default)
 t0OutputFlag = 1
@@ -79,7 +79,7 @@ t0OutputFlag = 1
 ! 0=None (default), 1=channel influxes (qSfcLatRunoff, qBucket)
 ! 2=channel+bucket fluxes    (qSfcLatRunoff, qBucket, qBtmVertRunoff_toBucket)
 ! 3=channel accumulations    (accSfcLatRunoff, accBucket) *** NOT TESTED ***
-output_channelBucket_influx = 2
+output_channelBucket_influx = 0
 
 ! Output netcdf file control
 CHRTOUT_DOMAIN = 1           ! Netcdf point timeseries output at all channel points (1d)
@@ -94,7 +94,7 @@ LSMOUT_DOMAIN = 1            ! Netcdf grid of variables passed between LSM and r
                              !      NOTE: No scale_factor/add_offset available
 RTOUT_DOMAIN = 0             ! Netcdf grid of terrain routing variables on routing grid (2d)
                              !      0 = no output, 1 = output
-output_gw = 1                ! Netcdf GW output
+output_gw = 0                ! Netcdf GW output
                              !      0 = no output, 1 = output
 outlake  = 0                 ! Netcdf grid of lake values (1d)
                              !      0 = no output, 1 = output
@@ -116,7 +116,7 @@ ZSOIL8(4) = -2.00
 DXRT = 250.0
 
 ! Specify the integer multiple between the land model grid and the terrain routing grid...(integer)
-AGGFACTRT = 4 
+AGGFACTRT = 4
 
 ! Specify the channel routing model timestep...(seconds)
 DTRT_CH = 300
@@ -143,9 +143,6 @@ channel_option = 2
 ! Specify the reach file for reach-based routing options (e.g.: "Route_Link.nc")
 route_link_f = "./DOMAIN/Route_Link.nc"
 
-! If using channel_option=2, activate the compound channel formulation? (Default=.FALSE.)
-compound_channel = .FALSE.
-
 ! Specify the lake parameter file (e.g.: "LAKEPARM.nc").
 ! Note REQUIRED if lakes are on.
 ! route_lake_f = "./DOMAIN/LAKEPARM.nc"
@@ -155,7 +152,7 @@ GWBASESWCRT = 1
 
 ! Groundwater/baseflow 2d mask specified on land surface model grid (e.g.: "GWBASINS.nc")
 !Note: Only required if baseflow  model is active (1 or 2) and UDMP_OPT=0.
-!gwbasmskfil = "./DOMAIN/GWBASINS.nc"
+gwbasmskfil = "./DOMAIN/GWBASINS.nc"
 
 ! Groundwater bucket parameter file (e.g.: "GWBUCKPARM.nc")
 GWBUCKPARM_file = "./DOMAIN/GWBUCKPARM.nc"
