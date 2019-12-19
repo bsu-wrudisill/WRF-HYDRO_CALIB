@@ -12,7 +12,7 @@ for libPath in libPathList:
 from adjustParameters import *
 from adjustForcings import adjustForcings
 from sanityPreCheck import RunPreCheck, RunCalibCheck, RunPreSubmitTest
-
+from util import RegridWRFHydro as rwh
 
 # setup the log file --- this will get passed to all of the imported modules!!!
 suffix = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
@@ -42,11 +42,16 @@ if not RunCalibCheck(setupfile).run_all(): sys.exit()
 
 # create the setup instance 
 setup = SetMeUp(setupfile)
+
+# regrid files ...
+rwh.regridFiles(setup)
 setup()   # gather forcing files, create directories, etc.
+
 #
-## check that setup() was successful 
+# check that setup() was successful 
 if not RunPreSubmitTest(setupfile).run_all(): sys.exit()
 calib = CalibrationMaster(setupfile)
+
 #calib.ForwardModel() # run once, no updating parameters 
 calib()
 #
