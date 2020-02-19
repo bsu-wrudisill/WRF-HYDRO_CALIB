@@ -12,7 +12,7 @@ import pandas as pd
 #import netCDF4 as nc
 import numpy as np
 import dblogger as dbl
-from ObjectiveFunctions import KGE, RMSE 
+import ObjectiveFunctions as OF
 from pathlib import Path
 import time 
 
@@ -79,7 +79,6 @@ class SetMeUp:
 		self.eval_start_date = pd.to_datetime(eval_date['start_date'])
 		self.eval_end_date = pd.to_datetime(eval_date['end_date'])
 		# LOG all of the things 
-		self.objfun = KGE
 		self.gauge_loc = None
 		## --- precipiation adustment --# 
 		self.adjust_forcings = yamlfile['adjust_forcings']
@@ -131,8 +130,11 @@ class SetMeUp:
 			os.system(cmdEmpty.format(self.usgs_code, startString, endString, self.clbdirc, self.obsFileName))	
 		except:
 			logger.error('unable to execute command {}'.format(cmdEmpty))
+			sys.exit()
 			# if it is a calibrate command ... then maybe sys.exit. since we need this  
-
+		
+		# now we check the observations to make sure there are none missing... 
+                
 
 	def CreateRunDir(self, **kwargs):
 		"""
@@ -251,7 +253,6 @@ class CalibrationMaster(SetMeUp):
 		super(self.__class__, self).__init__(setup)
 		self.iters = 0 # keep track of the iterations of calib.ation 
 		self.bestObj = 1e16
-		self.objFun = KGE   # !!!!!  make this dynamic later  !!!! 
 		self.dbcon = self.clbdirc+'/CALIBRATION.db'
 		self.paramDir = "{}/DOMAIN".format(self.clbdirc)
 
@@ -307,8 +308,10 @@ class CalibrationMaster(SetMeUp):
 		# dataframe --> sql database 
 		paramDic = {'Iteration': [str(self.iters)], 
 			    'Objective':  [self.obj], 
-			    'Improvement': [self.improvement],
-			    'Function': [str(self.objfun)]}   # CHANGE ME! make __repr__ instead. obfun needs to be class thoguh
+			    'Improvement': [self.improvement]}
+
+		paramDic.update(self.performance)
+		print(paramDic)
 		pdf = pd.DataFrame(paramDic)
 		pdf.set_index('Iteration', inplace=True)
 		dbl.logDataframe(pdf, 'CALIBRATION', self.clbdirc)
@@ -321,21 +324,45 @@ class CalibrationMaster(SetMeUp):
 	
 	def EvaluateIteration(self):
 		merged = dbl.getDischarge(self.iters, self.clbdirc)
+		print(merged)
 		# only evaluate during the evaluation period
 		eval_period = merged.loc[self.eval_start_date : self.eval_end_date]
-		# compute the objective function
-		obj, corrcoef, mn, std = self.objFun(eval_period.qMod, eval_period.qObs) #CHANGE ME --- BAD IDEA 
-		self.obj = obj
-
+		
+		# compute the objective function(s)
+		kge, corrcoef, mn, std = OF.KGE(eval_period.qMod, eval_period.qObs) #CHANGE ME --- BAD IDEA 
+		modmin = OF.minn(eval_period.qMod, eval_period.qObs) #CHANGE ME --- BAD IDEA 
+		modmax = OF.maxx(eval_period.qMod, eval_period.qObs) #CHANGE ME --- BAD IDEA 
+		modrmse = OF.RMSE(eval_period.qMod, eval_period.qObs) #CHANGE ME --- BAD IDEA 
+		modtq = OF.tq(eval_period.qMod, eval_period.qObs) #CHANGE ME --- BAD IDEA 
+		modnse = OF.NSE(eval_period.qMod, eval_period.qObs) #CHANGE ME --- BAD IDEA 
+		kendal = OF.kendal(eval_period.qMod, eval_period.qObs) #CHANGE ME --- BAD IDEA 
+		spearman = OF.spear(eval_period.qMod, eval_period.qObs) #CHANGE ME --- BAD IDEA 
+		# compute some more stuff 
+		
+		self.performance = {'kge':[str(kge)],
+				    'rmse':[str(modrmse)],
+				    'nse': [str(modnse)], 
+				    'spearman-rho': [str(spearman)], 
+				    'kendal-tau': [str(kendal)], 
+				    'corrcoef':[str(corrcoef)],
+				    'min_difference':[str(modmin)],
+				    'max_difference':[str(modmax)],
+				    'total_q_difference':[str(modtq)]}
+		print(self.performance)	
 		# if the performance of the last parameter set us better, then update the 
 		# calib.data frame 
 		improvement = 0  
-		# check if the new parameters improved the objective function 
+	        
+		obj = kge        # THIS IS DUMB PLEASE FIX ME
+		self.obj = kge   # HERE WE DECIDE THTA THE KGE IS THE OBJECTIVE FUNC
+
+		# check if the new parameters improved the objective function
+		
 		if self.iters == 0:
 			print('ON ITER O')
 			# this is the first iteration; we have just tested 
 			# the 'stock' parameters 
-			self.bestObj = obj
+			self.bestObj = kge 
 			improvement = 0 	
 			
 			# update the active params 
@@ -370,7 +397,7 @@ class CalibrationMaster(SetMeUp):
 		# these get updated by the DDS ( or whatever alg. we chose...)
 		self.improvement = improvement
 		self.df['nextValue'] = self.df['ini'] 
-		return obj,improvement
+		return kge,improvement
 	
 	def DDS(self):
 		"""
@@ -516,6 +543,7 @@ class CalibrationMaster(SetMeUp):
 		acc.WaitForJob(jobid, self.userid)
 		# 	
 		obj,improvement = self.EvaluateIteration()  # check if the model improved 
+		self.LogPerformance()
 
 	@acc.passfail
 	def OneLoop(self):
@@ -569,7 +597,7 @@ class CalibrationMaster(SetMeUp):
 		# allow 3 failures in a row-- this probably means something is wrong 
 		threeFailureMax = 0 
 		for loop in range(self.max_iters):
-			while threeFailureMax <= 3:
+			while threeFailureMax <= 0:
 				success,status = self.OneLoop()
 				if success: 
 					logger.info(status) 

@@ -9,8 +9,6 @@ sys.path.insert(0,libPath)
 import dblogger as dbl
 import WaterBalance as WB 
 
-
-
 logfile = 'model_evalualtion.log'
 file_handler = logging.FileHandler(filename=logfile)
 stdout_handler = logging.StreamHandler(sys.stdout)

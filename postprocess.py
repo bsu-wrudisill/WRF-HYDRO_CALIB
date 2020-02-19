@@ -1,3 +1,9 @@
+# After the DDS calibration is complete, perform cross-validation statistics
+# on the calibrated parameters. Reads in the same namelist as the normal 
+# calibration script
+#
+
+
 import shutil
 import os 
 import time 
@@ -12,16 +18,16 @@ for libPath in libPathList:
 from adjustParameters import *
 from adjustForcings import adjustForcings
 from sanityPreCheck import RunPreCheck, RunCalibCheck, RunPreSubmitTest
-#from util import RegridWRFHydro as rwh
+from util import RegridWRFHydro as rwh
 
 # setup the log file --- this will get passed to all of the imported modules!!!
 suffix = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
-logfile= 'logfile_{}.log'.format(suffix)
+logfile= 'POSTPROCESS_logfile_{}.log'.format(suffix)
 
 file_handler = logging.FileHandler(filename=logfile)
 stdout_handler = logging.StreamHandler(sys.stdout)
 logging.basicConfig(level=logging.INFO, 
-		    format='%(asctime)s %(name)15s %(levelname)-8s %(message)s',
+		    format='%(asctime)s %(name)14s %(levelname)-8s %(message)s',
 		    datefmt='%a, %d %b %Y %H:%M:%S',
 		    handlers=[file_handler, stdout_handler]
 		    )
@@ -36,29 +42,7 @@ calibrationfile = 'calib_params.tbl'
 logger.info('starting {}. using {} setup parameters and {}' .format(__name__, setupfile, calibrationfile))
 logger.info('Logging to file: {}/{}'.format(os.getcwd(), logfile))
 
-# ---- run 'sanity checks' -----  
-if not RunPreCheck(setupfile).run_all(): sys.exit()
-if not RunCalibCheck(setupfile).run_all(): sys.exit()
 
-# create the setup instance 
+# check that the calibration database exists in the correct location; otherwise exit
 setup = SetMeUp(setupfile)
 
-# regrid files ...
-#rwh.regridFiles(setup)
-setup()   # gather forcing files, create directories, etc.
-
-#
-# check that setup() was successful 
-if not RunPreSubmitTest(setupfile).run_all(): sys.exit()
-calib = CalibrationMaster(setupfile)
-
-#calib.ForwardModel() # run once, no updating parameters 
-calib()
-#
-#
-## clean up 
-logger.info('----- Calibration Complete -----')
-logger.info('moving logfile {} to directory {}'.format(logfile, clbdirc))
-shutil.move(logfile, setup.clbdirc+'/'+logfile)  # move the log file to the directory 
-# make some plots or something ....
-#

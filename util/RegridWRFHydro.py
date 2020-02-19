@@ -35,13 +35,13 @@ def regridFiles(setup):
 
         # input (forcing files) directory 
         domain = 'd02'
-        wrfout_base_dir = Path("/home/wrudisill/leaf/WRF-Hydro_Forcing/WRFSUB")
+        wrfout_base_dir = Path("/home/wrudisill/leaf/WRF-Hydro_Forcing/WRFSUB/d02")
         filebasename = 'wrfout*'
         targetfilename = 'wrfinput_d01.nc'
 
         # target grid directory and 'output' directory 
-        output_dir_base = wrfout_base_dir.parent.joinpath(basin)
-
+        output_dir_base = clbdirc
+        output_dir_base.mkdir()
         # create the sub directory for the output files if it does not exist yet
 
 
@@ -66,6 +66,7 @@ def regridFiles(setup):
                 # create the output directory --- no real need to do this every time...
                 dst_folder.mkdir(parents=True, exist_ok=True) # permission denied... 
                 src = src_folder.joinpath(wrfout_file) 
+                print(src)
                 if src.is_file():
                         ds = xr.open_dataset(src, engine='netcdf4')
                         ds.rename({'XLONG': 'lon', 'XLAT': 'lat'}, inplace=True)

@@ -69,7 +69,6 @@ class RunPreCheck(SetMeUp):
 		else:	
 			return True
 
-
 class RunCalibCheck(SetMeUp):
 	# verify that the calib_params makes sense
 	def __init__(self, setup):
@@ -198,6 +197,39 @@ class RunPreSubmitTest(SetMeUp):
 	def test_observations(self):
 		observation_file = self.clbdirc+'/'+self.obsFileName
 		assert os.path.isfile(observation_file), "{} not found".format(observation_file)
+
+	def run_all(self):
+		# emulate behavior of the unittesting module 
+		testList = [method for method in dir(self.__class__) if method.startswith('test_')]	
+		numTests = len(testList)
+		numPassedTests = 0 
+		logger.info("========================   {}     ===================".format(self.__class__.__name__))
+		for test in testList:
+			testFunction = getattr(self.__class__, test)
+			success,status = testFunction(self)
+			if success: logger.info(status) 
+			if not success: logger.error(status)
+			numPassedTests += success # zero or one 
+		logger.info("{} out of {} tests passed".format(numPassedTests, numTests))
+		if numPassedTests != numTests:
+			return False 
+		else:	
+			return True
+
+
+
+class RunCrossCheck(SetMeUp):
+	# Check that everything is in order for the cross validation...
+	def __init__(self, setup):
+		# This is an incredibly handy function all of the self.X attrs. from SetMeUP 
+		# instance get put into the "self" of this object
+		# same as super(RunPreCheck, self).__init__(setup)
+		super(self.__class__, self).__init__(setup)  
+        
+	@passfail
+	def test_calibration_output(self):
+		db = self.calib_location.joinpath('CALIBRATION.db')
+		assert db.is_file(), 'No db found: {}'.format(db)
 
 	def run_all(self):
 		# emulate behavior of the unittesting module 
