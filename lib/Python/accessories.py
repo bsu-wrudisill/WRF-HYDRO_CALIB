@@ -12,6 +12,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+
+def checkFile(pathtofile):
+	# assert that a file exists. otherwise return false
+	return pathtofile.is_file()
+
+
+
 # function decorators 
 def passfail(func):
 	def wrapped_func(*args, **kwargs):

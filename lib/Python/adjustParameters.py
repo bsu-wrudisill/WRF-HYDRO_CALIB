@@ -84,6 +84,13 @@ class SetMeUp:
 		self.adjust_forcings = yamlfile['adjust_forcings']
 		self.benefit_file = yamlfile['benefit_file']
 
+		# Final Output File Name...
+		chrtfmt = "{}{}{}{}00.CHRTOUT_DOMAIN2"
+		self.final_chrtfile = Path(chrtfmt.format(self.end_date.strftime("%Y"),
+							self.end_date.strftime("%m"),
+							self.end_date.strftime("%d"),
+							self.end_date.strftime("%H")))
+		print(self.final_chrtfile)
 	def GatherForcings(self,**kwargs):
 		# find all of the forcings for the specified time period 	
 		# this recursively searches all directories 
@@ -169,7 +176,10 @@ class SetMeUp:
 		
 		# why am i copying model eval
 		#shutil.copy('./lib/Python/modelEval.py', self.clbdirc) 
-		acc.GenericWrite('./lib/Python/modelEval.py',{"PATH_TO_PYTHON_EXECUTABLES": self.cwd.joinpath('lib/Python')}, self.clbdirc+'/modelEval.py')
+		acc.GenericWrite('./lib/Python/modelEval.py',
+				 {"PATH_TO_PYTHON_EXECUTABLES": self.cwd.joinpath('lib/Python')}, 
+				 self.clbdirc+'/modelEval.py')
+
 		shutil.copy('./lib/Python/viz/PlotQ.py', self.clbdirc) 
 		
 		# log success
@@ -568,7 +578,19 @@ class CalibrationMaster(SetMeUp):
 
 		## wait for the job to complete 
 		acc.WaitForJob(jobid, self.userid)
-			
+		
+		# look for the last output file ....
+		# CHECK ME HERE
+		
+		success = acc.checkFile(self.final_chrtfile)
+		if success:
+			logger.info('found last chrt file--assume the model finished successfully')
+		else:
+			logger.info('{} not found. assume model run failed. exiting'.format(self.final_chrtfile))
+			sys.exit()
+
+
+
 		obj,improvement = self.EvaluateIteration()  # check if the model improved 
 		#os.chdir(cwd)
 		# log the parameters and obfun to the database
