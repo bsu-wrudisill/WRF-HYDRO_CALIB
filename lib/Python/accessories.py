@@ -47,6 +47,7 @@ def AddOrMult(factor):
 		return lambda a,b: a+b
 	else:
 		return None
+
 def CleanUp(path):
 	# remove files from the run directory 
 	cwd = os.getcwd()
@@ -61,11 +62,9 @@ def CleanUp(path):
 	
 	logger.info('cleaning up model run directory ({})'.format(path)) 
 	for removeMe in removeList:
-		for singleFile in glob.glob(removeMe):
-			try:
-				os.remove(singleFile)
-			except:
-				pass
+		cmd = 'rm -rf ./{}'.format(removeMe)
+		out,err = SystemCmd(cmd)
+		
 	# move back to o.g. dir
 	os.chdir(cwd)
 
