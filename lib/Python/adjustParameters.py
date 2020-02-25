@@ -585,7 +585,13 @@ class CalibrationMaster(SetMeUp):
 
 		# move the iternal iteration state one forward 
 		self.MoveForward()
-	
+		
+		# return 
+		#< check that all of the output files are here...>
+		return True
+
+
+
 	def PlotRunner(self):
 		#to do when the iterations are complete; or otherwise  
 			
@@ -597,11 +603,11 @@ class CalibrationMaster(SetMeUp):
 		# allow 3 failures in a row-- this probably means something is wrong 
 		threeFailureMax = 0 
 		for loop in range(self.max_iters):
-			while threeFailureMax <= 0:
+			while threeFailureMax <= 3:
 				success,status = self.OneLoop()
 				if success: 
 					logger.info(status) 
-					threeFailureMax = 1 
+					threeFailureMax = 0 
 				if not success: 
 					logger.error(status)
 					threeFailureMax += 1 		
