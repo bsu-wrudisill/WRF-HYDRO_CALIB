@@ -71,6 +71,7 @@ def spear(mod,obs):
 	# that two datasets are monotonically 
 	# moving in the same directions 
 	coef, p = spearmanr(mod,obs)
+	return coef
 
 def kendal(mod,obs):
 	# from scipy...
@@ -78,5 +79,5 @@ def kendal(mod,obs):
 	# nonparametric method for computing
 	# correlation between 2 datasets 
 	coef, p = kendalltau(mod,obs) 
-
+	return coef
 
