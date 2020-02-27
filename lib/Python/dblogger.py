@@ -6,8 +6,12 @@ import glob
 import accessories as acc 
 import logging
 import xarray as xr
-
-
+libPath = '/home/wrudisill/scratch/WRF-HYDRO_CALIB/lib/fortran'
+sys.path.insert(0,libPath)
+from fastread import test
+from pathlib import Path
+from datetime import datetime
+import numpy as np 
 logger = logging.getLogger(__name__)
 
 def logDataframe(df,table_name,clbdirc):
@@ -66,24 +70,60 @@ def logModelout(clbdirc, iteration):
 	lat = obsQ['lat'].iloc[0]
 	lon = obsQ['lon'].iloc[0]
 	# get the gauge location grid cell 
-	chrtFiles = glob.glob(clbdirc+'/*CHRTOUT_DOMAIN2*')
-	gauge_loc = acc.GaugeToGrid(chrtFiles[0], lat, lon) # pick the first chrt file 
-	logging.info('gauge_loc is ... {}'.format(gauge_loc))
-	modQfiles = xr.open_mfdataset(chrtFiles)
-	# do some slicing and dicing... 	
-	qDf = pd.DataFrame(
-			{'qMod':modQfiles['streamflow'][:,gauge_loc].values,
-			 'time':modQfiles['time'].values}
-			)
-	qDf.set_index('time', inplace=True)
+	clbdirc = Path(clbdirc)
+	chrtFiles = list(clbdirc.glob('*CHRTOUT_DOMAIN2*'))
+	if iteration == '0':
+		gauge_loc = acc.GaugeToGrid(chrtFiles[0], lat, lon) # pick the first chrt file 
+		logger.info('gauge_loc is ... {}'.format(gauge_loc))
+		with open('gauge_loc.txt', 'w') as f:
+			f.write(str(gauge_loc))
+		f.close()
+	else:
+		logger.info('reading gauge loc from txt file...')
+		with open('gauge_loc.txt', 'r') as f:
+			gauge_loc = int(f.readline())
+			print(gauge_loc)
+		f.close()
+	
+	# run the fortan script ....
+	outputfile = '{}/modelstreamflow_{}.txt'.format(clbdirc, iteration)
+	n = 752 # CHANGE ME 
+	timelist = []
+	logger.info('read data from output files...')
+	for f in chrtFiles:
+		test.readnc(f, gauge_loc, n, outputfile)
+		time = f.name.split('.')[0]
+		time_raw = datetime.strptime(time, "%Y%m%d%H%M") 
+		timelist.append(time_raw)
+
+	# ----- OLD W AY --- use xarray to read in data 
+	#modQfiles = xr.open_mfdataset(chrtFiles)
+	
+	# NEW WAY--- read csv fil
+	qDf = pd.read_csv(outputfile, sep=',', names=['fname','qMod'])
+	qDf['time'] = pd.to_datetime(timelist)
+	qDf = qDf.set_index('time')
+	print(qDf)
+	
+	#qDf['qMod'] = qDf['qMod']))
+	del qDf['fname']
+
+	# ------ OLD WAY ----------_# 
+#	# do some slicing and dicing... 	
+#	qDf = pd.DataFrame(
+#			{'qMod':modQfiles['streamflow'][:,gauge_loc].values,
+#			 'time':modQfiles['time'].values}
+#			)
+#	qDf.set_index('time', inplace=True)
+
+	#----- NEW WAY 
 	modQdly = pd.DataFrame(qDf.resample('D').mean())
 	# log the output to a database for keeping 
 	# add iteration count to the df.
 	modQdly['Iterations'] = str(iteration)
 	logDataframe(modQdly, 'MODOUT',clbdirc)
-	# log the observations only once 
+#	# log the observations only once 
 	if iteration == str(0):
 		logDataframe(obsQ, 'Observations', clbdirc)
-	# close files ... (not that it does anything...)
-	modQfiles.close()
-
+#	# close files ... (not that it does anything...)
+#	modQfiles.close()

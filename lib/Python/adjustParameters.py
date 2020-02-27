@@ -90,8 +90,34 @@ class SetMeUp:
 							self.end_date.strftime("%m"),
 							self.end_date.strftime("%d"),
 							self.end_date.strftime("%H")))
-		print(self.final_chrtfile)
-	def GatherForcings(self,**kwargs):
+
+	def GatherForcings(self, **kwargs):
+		logger.info('searching for forcing data...')
+		# get the forcing data... but don't glob. just 
+		# try to greedily grab them from the given directory
+		dRange = pd.date_range(self.start_date, self.end_date, freq='H').strftime("%Y-%m-%d_%H:%M:%S") 
+		reqForcingList = [self.forcings_format.format(x) for x in dRange]
+		linkForcingPath = []
+		failureFlag = 0
+		missing_list = []
+		for f in reqForcingList:
+			src = Path(self.forcdirc).joinpath(f) 
+			if (not src.is_symlink() or not src.is_file()):
+				failureFlag += 1 
+				missing_list.append(str(src))
+			else: 
+				linkForcingPath.append(src)
+		
+		if failureFlag != 0:
+			lreq = len(reqForcingList)
+			lmis = len(missing_list)
+			logger.error('missing {}/{} forcing files'.format(lmis,lreq))
+			sys.exit()
+		else:
+			logger.info('found req forcing files')
+			self.linkForcingPath = linkForcingPath 
+
+	def GatherForcingsSlow(self,**kwargs):
 		# find all of the forcings for the specified time period 	
 		# this recursively searches all directories 
 		# date range of calibration period 
@@ -181,6 +207,7 @@ class SetMeUp:
 				 self.clbdirc+'/modelEval.py')
 
 		shutil.copy('./lib/Python/viz/PlotQ.py', self.clbdirc) 
+		shutil.copy('./lib/fortran/fastread.py', self.clbdirc) 
 		
 		# log success
 		logger.info('created run directory {}'.format(self.clbdirc))
@@ -223,7 +250,7 @@ class SetMeUp:
 		"""
 		namelistHolder = self.clbdirc+'/{}'
 		taskX = 16 
-		runTime = "03:00:00"   # THIS IS A DEFAULT-- CHANGE ME LATER 
+		runTime = "06:00:00"   # THIS IS A DEFAULT-- CHANGE ME LATER 
 		slurmDic = {"QUEUE":self.queue, 
 			    "NODES":self.nodes, 
 			    "TASKS":int(self.nodes)*taskX,
@@ -546,6 +573,17 @@ class CalibrationMaster(SetMeUp):
 		# wait for the job to complete 
 		acc.WaitForJob(jobid, self.userid)
 
+		# verify that the model worked... 
+		logger.info('done waiting...')
+		# check that the output is created
+		success = acc.checkFile(self.final_chrtfile)
+		if success:
+			logger.info('found last chrt file--assume the model finished successfully')
+		else:
+			logger.info('{} not found. assume model run failed. exiting'.format(self.final_chrtfile))
+			sys.exit()
+		
+		
 		# --- MODEL EVALUATION ---- # 
 		jobid, err = acc.Submit('submit_analysis.sh', self.catchid)   # THIS STEP LOGS THE MODEL FILES TO THE DB
 
@@ -564,6 +602,7 @@ class CalibrationMaster(SetMeUp):
 		# switch to the selfdirectory 
 		os.chdir(self.clbdirc)
 
+		# ------ FORWARD MODEL RUN ------# 
 		# submit the job 
 		jobid, err = acc.Submit('submit.sh', self.catchid)
 
@@ -572,30 +611,31 @@ class CalibrationMaster(SetMeUp):
 
 		# wait for the job to complete 
 		acc.WaitForJob(jobid, self.userid)
-
-		# --- MODEL EVALUATION ---- # 
-		jobid, err = acc.Submit('submit_analysis.sh', self.catchid)   # THIS STEP LOGS THE MODEL FILES TO THE DB
-
-		## wait for the job to complete 
-		acc.WaitForJob(jobid, self.userid)
-		
-		# look for the last output file ....
-		# CHECK ME HERE
-		
+		logger.info('done waiting...')
+		# check that the output is created
 		success = acc.checkFile(self.final_chrtfile)
 		if success:
 			logger.info('found last chrt file--assume the model finished successfully')
 		else:
 			logger.info('{} not found. assume model run failed. exiting'.format(self.final_chrtfile))
 			sys.exit()
+		
+		
+		# --- MODEL EVALUATION ---- # 
+		jobid, err = acc.Submit('submit_analysis.sh', self.catchid)   # THIS STEP LOGS THE MODEL FILES TO THE DB
 
-
+		## wait for the job to complete 
+		acc.WaitForJob(jobid, self.userid)
+		
 
 		obj,improvement = self.EvaluateIteration()  # check if the model improved 
 		#os.chdir(cwd)
 		# log the parameters and obfun to the database
 		self.LogParameters()     
 		self.LogPerformance() 
+		
+		
+		# --- MODEL CALIBRATION STEP ---#  
 		# generate new parameters 
 		self.DDS()          
 
