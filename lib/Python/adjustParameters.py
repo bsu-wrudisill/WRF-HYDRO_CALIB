@@ -32,8 +32,8 @@ class SetMeUp:
 		if type(setup) == dict:
 			yamlfile=setup
 		
-		
-
+		# General stuff 
+		# -------------
 		self.userid = yamlfile['userid']
 		self.parameter_table = 'calib_params.tbl'	
 		self.setup = setup # name of the setup file. THIS MIGHT CHANGE LATER !!!!	
@@ -43,44 +43,61 @@ class SetMeUp:
 		self.clbdirc = yamlfile['calib_location'] + self.name_ext
 		self.obsFileName='obsStrData.csv' # this gets created
 		
-		# ---- restart file logic -- a bit ugly  ---- 
+		# Restart file logic -- a bit ugly
+		# --------------------------------
 		self.hydrorestart = yamlfile['hydro_restart_file']
 		self.hrldasrestart = yamlfile['hrldas_restart_file']
-		# --- directories and run parameters 
+
+		# Directories and run parameters 
+		# ------------------------------
 		self.queue = yamlfile['QUEUE']
 		self.nodes = yamlfile['NODES']
 		self.parmdirc = yamlfile['parameter_location'].format(self.usgs_code)
 		self.exedirc = yamlfile['executable_location']
 		self.forcdirc = yamlfile['forcing_location']
 		self.cwd = Path(os.getcwd())
-		# forcing files stuff goes here 
+
+		# Forcing files stuff goes here 
+		# -----------------------------
 		self.forcings_time_format = "%Y-%m-%d_%H:%M:%S" #!!! FOR WRF -- CHANGE ME LATER !!! 
 		self.forcings_format ="wrfout_d02_{}"  # !! FOR WRF -- CHANGE ME LATER !!! 
 		self.files_to_copy = ["wrf_hydro.exe",
-			      	      "SOILPARM.TBL",
+			      	  "SOILPARM.TBL",
 				      "CHANPARM.TBL",
 				      "GENPARM.TBL",
 				      "HYDRO.TBL",
 				      "MPTABLE.TBL",
-				       "SOILPARM.TBL"]
+				      "SOILPARM.TBL"]
 		
 		self.calib_files_to_copy = ['hydro2dtbl.nc',
-			     		    'Route_Link.nc',
-			     		    'soil_properties.nc', 
-			     		    'GWBUCKPARM.nc']			     
+			     		            'Route_Link.nc',
+			     		    		'soil_properties.nc', 
+			     		   			'GWBUCKPARM.nc']			     
 		# create catch id file name 	
 		self.catchid = 'catch_{}'.format(self.usgs_code)
-		# get dates for start, end of spinup,eval period
+
+		# Start/End Dates for the different time periods
+		# ----------------------------------------------
+		# calibration date 
 		calib_date = yamlfile['calib_date']
 		self.start_date = pd.to_datetime(calib_date['start_date'])
 		self.end_date = pd.to_datetime(calib_date['end_date'])
+
 		# evaluation period 
 		eval_date = yamlfile['eval_date']
 		self.eval_start_date = pd.to_datetime(eval_date['start_date'])
 		self.eval_end_date = pd.to_datetime(eval_date['end_date'])
+
+		# validataion period 
+		val_date = yamlfile['validation_date']
+		self.val_start_date = pd.to_datetime(validation_date['start_date'])
+		self.val_end_date = pd.to_datetime(validation_date['end_date'])
+
 		# LOG all of the things 
 		self.gauge_loc = None
-		## --- precipiation adustment --# 
+
+		# Precipition adustment
+		# ---------------------
 		self.adjust_forcings = yamlfile['adjust_forcings']
 		self.benefit_file = yamlfile['benefit_file']
 
@@ -90,6 +107,12 @@ class SetMeUp:
 							self.end_date.strftime("%m"),
 							self.end_date.strftime("%d"),
 							self.end_date.strftime("%H")))
+
+		self.final_val_chrtfile = Path(chrtfmt.format(self.val_date.strftime("%Y"),
+							self.val_date.strftime("%m"),
+							self.val_date.strftime("%d"),
+							self.val_date.strftime("%H")))
+
 
 	def GatherForcings(self, **kwargs):
 		logger.info('searching for forcing data...')
@@ -111,10 +134,10 @@ class SetMeUp:
 		if failureFlag != 0:
 			lreq = len(reqForcingList)
 			lmis = len(missing_list)
-			logger.error('missing {}/{} forcing files'.format(lmis,lreq))
+			logger.error('Missing {}/{} forcing files'.format(lmis,lreq))
 			sys.exit()
 		else:
-			logger.info('found req forcing files')
+			logger.info('Found req forcing files')
 			self.linkForcingPath = linkForcingPath 
 
 	def GatherForcingsSlow(self,**kwargs):
@@ -138,7 +161,7 @@ class SetMeUp:
 				linkForcingPath.append(globDic[f])
 			else:
 				failureFlag += 1  
-				logger.info('cannot locate: \n {}'.format(f))
+				logger.info('Cannot locate: \n {}'.format(f))
 		# check if things failed 
 		if failureFlag!=0:
 			logger.error('Unable to locate {} of {} forcing files'.format(failureFlag, forcingNumber))
@@ -154,7 +177,9 @@ class SetMeUp:
 	def GatherObs(self, **kwargs):
 		# run the rscripts to download the USGS observations for the correct 
 		# time period and gauge 
-		
+		start_date = kwargs.get('start_date', self.start_date)
+		end_date = kwargs.get('start_date', self.end_date)
+
 		cmdEmpty = 'Rscript ./lib/R/fetchUSGSobs.R {} {} {} {}/{}'
 		#
 		startString = str(self.start_date.strftime("%Y-%m-%d"))
@@ -162,7 +187,7 @@ class SetMeUp:
 		try:
 			os.system(cmdEmpty.format(self.usgs_code, startString, endString, self.clbdirc, self.obsFileName))	
 		except:
-			logger.error('unable to execute command {}'.format(cmdEmpty))
+			logger.error('Unable to execute command {}'.format(cmdEmpty))
 			sys.exit()
 			# if it is a calibrate command ... then maybe sys.exit. since we need this  
 		
@@ -198,6 +223,8 @@ class SetMeUp:
 		shutil.copy('./namelists/hydro.namelist.TEMPLATE', self.clbdirc+'/hydro.namelist') 
 		shutil.copy('./namelists/namelist.hrldas.TEMPLATE', self.clbdirc) 
 		shutil.copy('./env_nwm_r2.sh', self.clbdirc) 
+		shutil.copy(self.parameter_table, self.clbdirc) 
+
 		shutil.copy('./{}'.format(self.setup), self.clbdirc) 
 		
 		# why am i copying model eval
@@ -213,6 +240,8 @@ class SetMeUp:
 		logger.info('created run directory {}'.format(self.clbdirc))
 
 	def CreateNamelist(self, **kwargs):
+		start_date = kwargs.get('start_date', self.start_date)
+		end_date = kwargs.get('start_date', self.end_date)
 		if self.hrldasrestart == "None":
 			hrldasrestart = "!RESTART_FILENAME_REQUESTED"
 		else:
@@ -248,16 +277,19 @@ class SetMeUp:
 		Read the  the submit script template and modify the correct lines
 		to run the desired job
 		"""
+		start_date = kwargs.get('start_date', self.start_date)
+		end_date = kwargs.get('start_date', self.end_date)
+
 		namelistHolder = self.clbdirc+'/{}'
 		taskX = 16 
 		runTime = "06:00:00"   # THIS IS A DEFAULT-- CHANGE ME LATER 
 		slurmDic = {"QUEUE":self.queue, 
-			    "NODES":self.nodes, 
-			    "TASKS":int(self.nodes)*taskX,
-			    "RUN_TIME":runTime,
-			    "CATCHID":"catch_{}".format(self.usgs_code)
-			    }
-		# create the submission script 	
+			        "NODES":self.nodes, 
+      			    "TASKS":int(self.nodes)*taskX,
+	    		    "RUN_TIME":runTime,
+		    	    "CATCHID":"catch_{}".format(self.usgs_code)
+			        }
+		# Create the submission script 	
 		acc.GenericWrite('{}/namelists/submit.TEMPLATE.sh'.format(self.cwd), slurmDic, namelistHolder.format('submit.sh'))
 		logger.info('created job submission script')
 
@@ -319,6 +351,7 @@ class CalibrationMaster(SetMeUp):
 		so memory leaks in the python netcdf library don't accumulate
 		"""
 		# remove previous analysis submit script 
+		database = kwargs.get('database', 'CALIBRATION')
 		submit_analysis = 'rm {}/submit_analysis.sh'.format(self.clbdirc)
 		if os.path.isfile(submit_analysis):
 			os.remove(submit_analysis)
@@ -326,7 +359,9 @@ class CalibrationMaster(SetMeUp):
 		
 		namelistHolder = self.clbdirc+'/{}'	
 		insert = {"CLBDIRC":self.clbdirc, 
-		          "ITERATION":self.iters} 
+		          "ITERATION":self.iters
+		          "DATABASE":database
+		          } 
 		# 	
 		# create the job submit template. 
 		acc.GenericWrite('{}/namelists/submit_analysis.TEMPLATE.sh'.format(self.cwd), insert,  \
@@ -344,8 +379,8 @@ class CalibrationMaster(SetMeUp):
 	def LogPerformance(self):
 		# dataframe --> sql database 
 		paramDic = {'Iteration': [str(self.iters)], 
-			    'Objective':  [self.obj], 
-			    'Improvement': [self.improvement]}
+			        'Objective':  [self.obj], 
+			        'Improvement': [self.improvement]}
 
 		paramDic.update(self.performance)
 		print(paramDic)
@@ -561,7 +596,12 @@ class CalibrationMaster(SetMeUp):
 		# create analysis script 
 		self.CreateAnalScript()
 		
-		# switch to the selfdirectory 
+
+
+	@acc.passfail
+	def OneLoop(self):
+		logger.info('Calling OneLoop for iteration {}'.format(self.iters))
+			# switch to the selfdirectory 
 		os.chdir(self.clbdirc)
 
 		# submit the job 
@@ -582,21 +622,13 @@ class CalibrationMaster(SetMeUp):
 		else:
 			logger.info('{} not found. assume model run failed. exiting'.format(self.final_chrtfile))
 			sys.exit()
-		
-		
+
 		# --- MODEL EVALUATION ---- # 
 		jobid, err = acc.Submit('submit_analysis.sh', self.catchid)   # THIS STEP LOGS THE MODEL FILES TO THE DB
-
-		## wait for the job to complete 
+		# wait for the job to complete 
 		acc.WaitForJob(jobid, self.userid)
-		# 	
 		obj,improvement = self.EvaluateIteration()  # check if the model improved 
-		self.LogPerformance()
-
-	@acc.passfail
-	def OneLoop(self):
-		logger.info('Calling OneLoop for iteration {}'.format(self.iters))
-		# create analysis script 
+		self.LogPerformance()	# create analysis script 
 		self.CreateAnalScript()
 		
 		# switch to the selfdirectory 
@@ -620,21 +652,17 @@ class CalibrationMaster(SetMeUp):
 			logger.info('{} not found. assume model run failed. exiting'.format(self.final_chrtfile))
 			sys.exit()
 		
-		
 		# --- MODEL EVALUATION ---- # 
 		jobid, err = acc.Submit('submit_analysis.sh', self.catchid)   # THIS STEP LOGS THE MODEL FILES TO THE DB
 
 		## wait for the job to complete 
 		acc.WaitForJob(jobid, self.userid)
-		
-
-		obj,improvement = self.EvaluateIteration()  # check if the model improved 
+ 		obj,improvement = self.EvaluateIteration()  # check if the model improved 
 		#os.chdir(cwd)
 		# log the parameters and obfun to the database
 		self.LogParameters()     
 		self.LogPerformance() 
-		
-		
+				
 		# --- MODEL CALIBRATION STEP ---#  
 		# generate new parameters 
 		self.DDS()          
@@ -678,6 +706,121 @@ class CalibrationMaster(SetMeUp):
 				       	 Exiting"
 				logger.error(message)
 				sys.exit()
+
+def Validation(setup):
+	def __init__(self, setup):
+		# get all of the methods from SetMeUp... 
+		super(self.__class__, self).__init__(setup)
+
+    # Database parsing functions
+	def getParameters(dbcon):
+		# returns a pandas dataframe of parameters that have been actively 
+		# calibrated
+	    param_cmd = "SELECT * FROM PARAMETERS WHERE calib_flag = 1"
+	    param = pd.read_sql(sql = param_cmd, con="sqlite:///{}".format(dbcon))
+	    return param
+
+	def getPerformance(dbcon):
+	    # returns a pandas dataframe of 
+	    perf_cmd = "SELECT * FROM CALIBRATION"
+	    perf = pd.read_sql(sql = perf_cmd, con="sqlite:///{}".format(dbcon))
+	    return perf 
+
+	def returnQmodOnly(dbcon):
+	    # only use this when there is just one iteration 
+	    mod_cmd = "SELECT * FROM MODOUT"
+	    mod = pd.read_sql(sql = mod_cmd, con="sqlite:///{}".format(dbcon))
+	    mod['time'] = pd.to_datetime(mod['time']) 
+	    mod['type'] = 'WRF_Hydro V5'
+	    return mod 
+
+	# Read the parameter sets.... 
+	def get_best_parameters(self):
+		# Read the calibration database and find the best parameter set
+		# create new netcdf files with those parameters. run the model for both cases
+		clbdirc = Path(clbdirc)
+		path_to_original_files = Path(self.parmdirc)
+		path_to_output_files = clbdirc.joinpath('DOMAIN')
+		path_to_output_files.mkdir(exist_ok=True)
+		calib_params = clbdirc.joinpath(self.parameter_table)
+		database = clbdirc.joinpath('CALIBRATION.db')
+		
+		# Begin....
+		param = getParameters(database)
+		param.Iteration = list(map(int, param.Iteration))
+		performance = getPerformance(database) 
+		best_row = performance.loc[(performance.Objective == performance['Objective'].min()) & (performance.Improvement ==1)]
+		best_parameters = param.loc[param.Iteration == int(best_row.Iteration)]
+		best_parameters.set_index('parameter', inplace=True)
+
+		# Read the calibration table 
+		clb = pd.read_csv(calib_params, delimiter=' *, *', engine='python')
+		clb.set_index('parameter', inplace=True)
+		grouped = clb.groupby('file')
+		ncList = grouped.groups.keys()
+	 
+		# Open each file once and adjust the paremater values 
+		for ncSingle in ncList:
+			UpdateMe = xr.open_dataset(path_to_original_files.joinpath(ncSingle))
+			os.remove(path_to_output_files.joinpath(ncSingle)) # This is kinda dumb.... we can't overwrite the file
+
+			# But we only want to deletete the ones that get updated
+			for param in grouped.groups[ncSingle]:
+				if param in list(best_parameters.index):
+					updateFun = acc.AddOrMult(clb.loc[param].factor)
+					dims = clb.loc[param].dims
+					updateVal = best_parameters.loc[param].currentValue 
+					# apply logic to update w/ the correct dims
+					if dims == 1:
+						UpdateMe[param][:] = updateFun(UpdateMe[param][:], updateVal)
+					if dims == 2:
+						UpdateMe[param][:,:] = updateFun(UpdateMe[param][:,:], updateVal)
+					if dims == 3:
+						UpdateMe[param][:,:,:] = updateFun(UpdateMe[param][:,:,:], updateVal)
+			UpdateMe.to_netcdf(path_to_output_files.joinpath(ncSingle))
+			UpdateMe.close()
+
+
+	def run_validation(self):
+		# Do the run ...
+		os.chdir(self.clbdirc)
+
+		self.CreateSubmitScript(start_date = self.val_start_date,
+								end_date = self.val_end_date)
+
+		self.CreateNamelist(start_date = self.val_start_date,
+							end_date = self.val_end_date)
+
+		# change the name of the observation data...
+		shutil.move('obsStrData.csv', 'obsStrData_cperiod.csv')
+		self.GatherObs(start_date = self.val_start_date,
+					   end_date = self.val_end_date)
+		# 
+		self.CreateAnalScript(database='Validation.db')
+
+		# now do the run .... 
+		logger.info('Calling Model Validation Run')
+		# switch to the selfdirectory 
+		# submit the job 
+		jobid, err = acc.Submit('submit.sh', self.catchid)
+
+		# sleep 
+		time.sleep(1) # wait a second before checking for the job
+
+		# wait for the job to complete 
+		acc.WaitForJob(jobid, self.userid)
+
+		# verify that the model worked... 
+		logger.info('done waiting...')
+		# check that the output is created
+		success = acc.checkFile(self.final_chrtfile)
+		if success:
+			logger.info('found last chrt file--assume the model finished successfully')
+		else:
+			logger.info('{} not found. assume model run failed. exiting'.format(self.final_chrtfile))
+			sys.exit()
+
+		# Now perform the analysis...
 
 if __name__ == '__main__':
 	pass

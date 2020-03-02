@@ -14,21 +14,21 @@ from datetime import datetime
 import numpy as np 
 logger = logging.getLogger(__name__)
 
-def logDataframe(df,table_name,clbdirc):
-	engine = create_engine('sqlite:///{}/CALIBRATION.db'.format(clbdirc), echo=False)
+def logDataframe(df,table_name,clbdirc,database):
+	engine = create_engine('sqlite:///{}/{}'.format(clbdirc,database), echo=False)
 	df.to_sql(table_name, con = engine, if_exists='append')
 
-def getDischarge(iteration,clbdirc):
+def getDischarge(iteration,clbdirc,database):
 	'''
 	Description: creates a pandas dataframe from observations in the SQL database
 	<calibration_directory>/CALIBRATION.db ---> [model_output_i, observations]_dataframe                                         
 	'''
 	# select data from the table 
 	mod_cmd = "SELECT * FROM MODOUT WHERE ITERATIONS = {}".format(iteration)
-	mod = pd.read_sql(sql = mod_cmd, con="sqlite:///{}/CALIBRATION.db".format(clbdirc))
+	mod = pd.read_sql(sql = mod_cmd, con="sqlite:///{}/{}".format(clbdirc,database))
 	mod['time'] = pd.to_datetime(mod['time']) 
 	# read obs 	
-	obs = pd.read_sql(sql="SELECT * FROM OBSERVATIONS", con="sqlite:///{}/CALIBRATION.db".format(clbdirc))
+	obs = pd.read_sql(sql="SELECT * FROM OBSERVATIONS", con="sqlite:///{}/{}".format(clbdirc,database))
 	obs['time'] = pd.to_datetime(obs['time'])
 	obs.drop(columns=['site_no'], inplace=True)
 	# merge things  
@@ -48,7 +48,7 @@ def logModelout(clbdirc, iteration):
 	ModelOutput_i  ------> <calibration_directory>/CALIBRATION.db
 	USGS Observations ------^
 	'''
-	# read usgs obs 
+	# Read USGS observations
 	obsQ = pd.read_csv(clbdirc+'/obsStrData.csv')
 	obsQ.drop(columns=['Unnamed: 0', 'POSIXct', "agency_cd"], inplace=True)
 	obsQ.rename(index=str, columns={"Date":"time", "obs":"qObs"}, inplace=True)
@@ -71,7 +71,7 @@ def logModelout(clbdirc, iteration):
 	lon = obsQ['lon'].iloc[0]
 	# get the gauge location grid cell 
 	clbdirc = Path(clbdirc)
-	chrtFiles = list(clbdirc.glob('*CHRTOUT_DOMAIN2*'))
+	chrtFiles = list(clbdirc.glob('*CHRTOUT_DOMAIN*'))
 	if iteration == '0':
 		gauge_loc = acc.GaugeToGrid(chrtFiles[0], lat, lon) # pick the first chrt file 
 		logger.info('gauge_loc is ... {}'.format(gauge_loc))
@@ -98,16 +98,12 @@ def logModelout(clbdirc, iteration):
 
 	# ----- OLD W AY --- use xarray to read in data 
 	#modQfiles = xr.open_mfdataset(chrtFiles)
-	
 	# NEW WAY--- read csv fil
 	qDf = pd.read_csv(outputfile, sep=',', names=['fname','qMod'])
 	qDf['time'] = pd.to_datetime(timelist)
 	qDf = qDf.set_index('time')
-	print(qDf)
-	
 	#qDf['qMod'] = qDf['qMod']))
 	del qDf['fname']
-
 	# ------ OLD WAY ----------_# 
 #	# do some slicing and dicing... 	
 #	qDf = pd.DataFrame(
@@ -115,7 +111,6 @@ def logModelout(clbdirc, iteration):
 #			 'time':modQfiles['time'].values}
 #			)
 #	qDf.set_index('time', inplace=True)
-
 	#----- NEW WAY 
 	modQdly = pd.DataFrame(qDf.resample('D').mean())
 	# log the output to a database for keeping 

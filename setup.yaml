@@ -33,6 +33,9 @@ calib_date:
 eval_date: 
         start_date: 2013-09-01 
         end_date: 2013-10-03
+validation_date:
+        start_date: 2013-09-01 
+        end_date: 2013-10-03
 
 
 # WARNING:  PRECIPITATION ADJUSTMET BELOW HERE #

@@ -20,8 +20,9 @@ logger.setLevel(logging.DEBUG)
 if __name__ == "__main__":
 	clbdirc = sys.argv[1]
 	iteration = sys.argv[2]
+	database = sys.argv[3]
 	# log the performance 
-	dbl.logModelout(clbdirc, iteration) 
+	dbl.logModelout(clbdirc, iteration, database) 
 	
 	# log some water balance stuff 
 	#WB.ChannelRouting('setup.yaml').logRouting(iteration)
