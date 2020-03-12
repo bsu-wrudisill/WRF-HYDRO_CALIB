@@ -29,7 +29,7 @@ IGRID = 2
 
 ! Specify the restart file write frequency...(minutes)
 ! A value of -99999 will output restarts on the first day of the month only.
-rst_dt = -99999 
+rst_dt = -99999
 
 ! Reset the LSM soil states from the high-res routing restart file (1=overwrite, 0=no overwrite)
 ! NOTE: Only turn this option on if overland or subsurface rotuing is active!
@@ -62,7 +62,7 @@ SPLIT_OUTPUT_COUNT = 1
 order_to_write = 4
 
 ! Flag to turn on/off new I/O routines: 0 = deprecated output routines (use when running with Noah LSM),
-! 1 = with scale/offset/compression, ! 2 = with scale/offset/NO compression, 
+! 1 = with scale/offset/compression, ! 2 = with scale/offset/NO compression,
 ! 3 = compression only, 4 = no scale/offset/compression (default)
 io_form_outputs = 1
 
@@ -183,20 +183,20 @@ readTimesliceParallel = .TRUE.
 ! temporalPersistence defaults to true, only runs if necessary params present.
 temporalPersistence = .FALSE.
 
-! The total number of last (obs, modeled) pairs to save in nudgingLastObs for 
+! The total number of last (obs, modeled) pairs to save in nudgingLastObs for
 ! removal of bias. This is the maximum array length. (This option is active when persistBias=FALSE)
 ! (Default=960=10days @15min obs resolution, if all the obs are present and longer if not.)
 nLastObs = 960
 
-! If using temporalPersistence the last observation persists by default. 
-! This option instead persists the bias after the last observation. 
+! If using temporalPersistence the last observation persists by default.
+! This option instead persists the bias after the last observation.
 persistBias = .FALSE.
 
 ! AnA (FALSE)  vs Forecast (TRUE) bias persistence.
-! If persistBias: Does the window for calculating the bias end at 
+! If persistBias: Does the window for calculating the bias end at
 ! model init time (=t0)?
-! FALSE = window ends at model time (moving), 
-! TRUE = window ends at init=t0(fcst) time. 
+! FALSE = window ends at model time (moving),
+! TRUE = window ends at init=t0(fcst) time.
 ! (If commented out, Default=FALSE)
 ! Note: Perfect restart tests require this option to be .FALSE.
 biasWindowBeforeT0 = .FALSE.

@@ -5,16 +5,16 @@
  SPATIAL_FILENAME = "./DOMAIN/soil_properties.nc"
  OUTDIR = "./"
 
- START_YEAR  = YYYY 
+ START_YEAR  = YYYY
  START_MONTH = MM
- START_DAY   = DD 
- START_HOUR  = HH 
+ START_DAY   = DD
+ START_HOUR  = HH
  START_MIN   = 00
 
- RESTART_FILENAME_REQUESTED 
+ RESTART_FILENAME_REQUESTED
 
  ! Specification of simulation length in days OR hours
- KDAY = NDAYS 
+ KDAY = NDAYS
  ! KHOUR = 8
 
  ! Physics options (see the documentation for details)
@@ -34,9 +34,9 @@
  SURFACE_RESISTANCE_OPTION         = 4
 
  ! Timesteps in units of seconds
- FORCING_TIMESTEP = 3600 
- NOAH_TIMESTEP    = 3600 
- OUTPUT_TIMESTEP  = 3600 
+ FORCING_TIMESTEP = 3600
+ NOAH_TIMESTEP    = 3600
+ OUTPUT_TIMESTEP  = 3600
 
  ! Land surface model restart file write frequency
  ! A value of -99999 will output restarts on the first day of the month only.
@@ -64,9 +64,9 @@
 
 &WRF_HYDRO_OFFLINE
 
- ! Specification of forcing data:  1=HRLDAS-hr format, 2=HRLDAS-min format, 3=WRF, 
- !                                 4=Idealized, 5=Ideal w/ spec. precip, 
+ ! Specification of forcing data:  1=HRLDAS-hr format, 2=HRLDAS-min format, 3=WRF,
+ !                                 4=Idealized, 5=Ideal w/ spec. precip,
  !                                 6=HRLDAS-hr format w/ spec. precip,
- !                                 7=WRF w/ spec. precip 
+ !                                 7=WRF w/ spec. precip
  FORC_TYP = 3
 /

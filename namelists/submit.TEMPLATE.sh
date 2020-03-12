@@ -8,10 +8,10 @@
 
 
 #~~~~~~~~ Source Module Files ~~~~~~~~~~~~~~~~~~~~~
-module purge 
+module purge
 source ./env_nwm_r2.sh
 
 #~~~~~~~~~~~~ RUN EXECUTABLE ~~~~~~~~~~~~~~~~
-mpirun -np TASKS ./wrf_hydro.exe &> CATCHID # !!!!!!  CHANGE ME !!!!!!! 
+mpirun -np TASKS ./wrf_hydro.exe &> CATCHID # !!!!!!  CHANGE ME !!!!!!!
 
-exit 
+exit
