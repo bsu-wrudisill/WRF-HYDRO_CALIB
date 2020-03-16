@@ -31,7 +31,7 @@ class Validation(SetMeUp):
                                                        vd.strftime("%m"),
                                                        vd.strftime("%d"),
                                                        vd.strftime("%H")))
-	# link to the correct database name
+        # link to the correct database name
         self.database_name = 'Validation.db'
         self.database = self.valdirc.joinpath(self.database_name)
 
@@ -41,19 +41,23 @@ class Validation(SetMeUp):
         """
         logger.info('~~~~ Prepare Validation directory ~~~~')
         print(self.valdirc)
-        self.GatherForcings(self.val_start_date, 
+        linkForcings = self.GatherForcings(self.val_start_date,
+                                           self.val_end_date)
+
+        # provide the directory path and the forcings to link
+        self.CreateRunDir(self.valdirc, linkForcings)
+
+        # create the ...
+        self.CreateNamelist(self.valdirc,
+                            self.val_start_date,
                             self.val_end_date)
 
-        self.CreateRunDir(self.valdirc)
-        self.CreateNamelist(self.valdirc,
-			    self.val_start_date,
-			    self.val_end_date)
-        
         self.CreateSubmitScript(self.valdirc)
         self.GatherObs(self.valdirc,
-		       self.val_start_date,
-		       self.val_end_date)
-        self.CreateAnalScript('Validation.db', self.valdirc)
+                       self.val_start_date,
+                       self.val_end_date)
+
+        # self.CreateAnalScript(self.valdirc, 'Validation.db')
 
         # Log the USGS observations to the database...
         obsQ, lat, lon = dbl.readObsFiles(self.valdirc)
@@ -61,8 +65,8 @@ class Validation(SetMeUp):
         dbl.logDataframe(obsQ,
                          table_name,
                          self.database)
-    
-	# Database parsing functions
+
+        # Database parsing functions
     def getParameters(self, dbcon):
         """Summary
         Returns a pandas da`taframe of parameters that have been actively
@@ -232,5 +236,3 @@ class Validation(SetMeUp):
 
         if not success:
             sys.exit('Model run fail. check {}'.format(base))
-
-

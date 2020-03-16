@@ -288,6 +288,7 @@ class SetMeUp:
         if type(runpath) != pathlib.PosixPath:
             runpath = pathlib.Path(runpath)
 
+        # TODO: figure out root path thing....
         cmdEmpty = 'Rscript ./lib/R/fetchUSGSobs.R {} {} {} {}/{}'
 
         # Format the datetime in the format that R wants...
@@ -305,7 +306,7 @@ class SetMeUp:
 
         # now we check the observations to make sure there are none missing...
 
-    def CreateRunDir(self, runpath, **kwargs):
+    def CreateRunDir(self, runpath, linkForcings, **kwargs):
         """
         Create run directory for WRF-hdyro calib.ation runs.
         Copies files from the "directory_location" to the
@@ -313,12 +314,10 @@ class SetMeUp:
 
         Args:
             runpath (posix.Path): Description
-            **kwargs:
-                linkForcing ([pathlib.Path]): paths of the req. forcing
+            linkForcings (TYPE): List of posix.Path to forcing files
+            **kwargs: linkForcing ([pathlib.Path]): paths of the req. forcing
                                                   files
         """
-        linkForcingPath = kwargs.get('linkForcing', self.linkForcingPath)
-
         # Check if the runpath exists...
         if type(runpath) != pathlib.PosixPath:
             runpath = pathlib.Path(runpath)
@@ -348,7 +347,7 @@ class SetMeUp:
         # Create the Forcing Directory and Link forcings
         forcing_directory = runpath.joinpath('FORCING')
         forcing_directory.mkdir(exist_ok=True)
-        for src in linkForcingPath:
+        for src in linkForcings:
             dst = forcing_directory.joinpath(src.name)
             os.symlink(src, dst)
 
@@ -373,15 +372,14 @@ class SetMeUp:
 
         Args:
             runpath (posix.Path): script destination
-	    start_date (datetime): 
-	    end_date (datetime):
-	    **kwargs: Description
+            start_date (datetime):
+            end_date (datetime):
+        **kwargs: Description
 
         """
-# Check if the runpath exists...
+        # Check if the runpath exists...
         if type(runpath) != pathlib.PosixPath:
             runpath = pathlib.Path(runpath)
-	
 
         if self.hrldasrestart == "None":
             hrldasrestart = "!RESTART_FILENAME_REQUESTED"
