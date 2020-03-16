@@ -12,7 +12,7 @@ import ObjectiveFunctions as OF
 import accessories as acc
 
 logger = logging.getLogger(__name__)
-
+test1 = 'fffff'
 
 class Calibration(SetMeUp):
     """
@@ -83,23 +83,23 @@ class Calibration(SetMeUp):
         Create run directory for the calibration run
         """
         logger.info('~~~~ Prepare Calibration directory ~~~~')
-        self.GatherForcings(self.calib_start_date, 
+        self.GatherForcings(self.calib_start_date,
 			    self.calib_end_date)
-        
+
 	# Create the run directory...
         self.CreateRunDir(self.clbdirc)
         self.CreateNamelist(self.clbdirc,
                             self.calib_start_date,
 			    self.calib_end_date)
-       	
+
 	# create submit script..
         self.CreateSubmitScript(self.clbdirc)
-       	
-	# Get the USGS gauge observations... 
-        self.GatherObs(self.clbdirc, 
+
+	# Get the USGS gauge observations...
+        self.GatherObs(self.clbdirc,
 		       self.calib_start_date,
 		       self.calib_end_date)
-        
+
         self.CreateAnalScript('Calibration.db', self.clbdirc)
 
         # Log the USGS observations to the database...
