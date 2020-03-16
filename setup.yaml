@@ -5,18 +5,19 @@ JOBTYPE: calib   # either 'calib' or 'spinup'
 userid : wrudisill
 # USGS gauge to calibrate to
 usgs_code: 13185000
-name_ext: "_adjusttest"
+name_ext: "test"
 
 # Specify directories
 executable_location: /home/wrudisill/scratch/NewHydroBuilt/WRF_HYDRO-R2/wrf_hydro_nwm_public/trunk/NDHMS/Run
-parameter_location: /scratch/leaf/share/WRF_hydro_subsets_201810/{}
-forcing_location: /home/wrudisill/leaf/WRF-Hydro_Forcing/BOISE_TWIN/
-calib_location: /scratch/wrudisill/WRF-HYDRO_CALIB/
+parameter_location: /scratch/leaf/share/WRF_hydro_subsets_201810/13185000
+forcing_location: /home/wrudisill/leaf/WRF-Hydro_Forcing/13185000_boiseTwin
+calib_location: /home/wrudisill/scratch/WRF-HYDRO_CALIB/
+
 
 # Specify restart file locations. both are required if doing a restart run.
 # Put None for a 'cold-start' run
-hydro_restart_file: /home/wrudisill/scratch/CompletedCalib/13185000_SPINUP/RESTARTS/HYDRO_RST.2011-09-01_00:00_DOMAIN2
-hrldas_restart_file: /home/wrudisill/scratch/CompletedCalib/13185000_SPINUP/RESTARTS/RESTART.2011090100_DOMAIN1
+hydro_restart_file: None 
+hrldas_restart_file: None 
 
 # Job submit criteria. More to be added later
 QUEUE: leaf    # name of the queue
@@ -47,4 +48,4 @@ val_eval_date:
 
 # WARNING:  PRECIPITATION ADJUSTMET BELOW HERE #
 adjust_forcings: False
-benefit_file: /home/wrudisill/scratch/IDWR_Calibration/seedingfiles/BoiseTwin_13185000/benefit.nc
+benefit_file: None #/home/wrudisill/scratch/IDWR_Calibration/seedingfiles/BoiseTwin_13185000/benefit.nc

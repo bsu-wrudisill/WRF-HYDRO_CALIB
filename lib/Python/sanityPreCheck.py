@@ -4,8 +4,11 @@ import pandas as pd
 import os
 import xarray as xr
 import glob
-from adjustParameters import *
 from accessories import passfail
+from SetMeUp import SetMeUp
+from Calibration import Calibration
+from Validation import Validation
+
 
 '''
 Checks that the necessary files, folders, and environments are setup before starting the calibration procedure

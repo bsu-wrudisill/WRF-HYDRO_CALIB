@@ -105,7 +105,7 @@ class SetMeUp:
         self.parmdirc = Path(yamlfile['parameter_location'])
         self.exedirc = Path(yamlfile['executable_location'])
         self.forcdirc = Path(yamlfile['forcing_location'])
-        self.parent_directory = Path(yamlfile['calib_location'] + name_ext)
+        self.parent_directory = Path(yamlfile['calib_location']).joinpath(name_ext)
         self.clbdirc = self.parent_directory.joinpath('Calibration')
         self.valdirc = self.parent_directory.joinpath('Validation')
 
@@ -212,7 +212,7 @@ class SetMeUp:
         # Return a full list of forcing files necessary for the start/date
         return linkForcingPath
 
-    def GatherForcingsSlow(self, start_date, end_date, **kwargs):
+    def GatherForcings(self, start_date, end_date, **kwargs):
         """
         Find all of the forcings for the specified time period
         this recursively searches all directories date range of
@@ -272,7 +272,7 @@ class SetMeUp:
         # Return a full list of forcing files necessary for the start/date
         return linkForcingPath
 
-    def GatherObs(self, runpath, **kwargs):
+    def GatherObs(self, runpath, start_date, end_date, **kwargs):
         """Summary
         Run the rscripts to download the USGS observations
         for the correct time period and gauge.
@@ -281,16 +281,13 @@ class SetMeUp:
 
         Args:
             runpath (posix.Path): directory of download destination
-            **kwargs:
-                start_date (str) :: parsable by pandas daterange
-                end_date (str) :: "   "
+            start_date (str) :: parsable by pandas daterange
+            end_date (str) :: "   "
         """
 
         if type(runpath) != pathlib.PosixPath:
             runpath = pathlib.Path(runpath)
 
-        start_date = kwargs.get('start_date', self.start_date)
-        end_date = kwargs.get('start_date', self.end_date)
         cmdEmpty = 'Rscript ./lib/R/fetchUSGSobs.R {} {} {} {}/{}'
 
         # Format the datetime in the format that R wants...
@@ -330,10 +327,10 @@ class SetMeUp:
             sys.exit()
 
         # Now, lets create the directory to perform the calibration
-        shutil.copytree(self.parmdirc, self.runpath.joinpath('DOMAIN'))
+        shutil.copytree(self.parmdirc, runpath.joinpath('DOMAIN'))
 
         # Create a directory to store the original domain files in.
-        startingParamDir = self.runpath.joinpath('ORIG_PARM')
+        startingParamDir = runpath.joinpath('ORIG_PARM')
         startingParamDir.mkdir(exist_ok=True)
 
         # Make copies of the domain parameters that we will later calibrate
@@ -345,11 +342,11 @@ class SetMeUp:
         # Copy files in the 'files_to_copy list' to the run directory
         for cf in self.files_to_copy:
             src = self.exedirc.joinpath(cf)
-            dst = self.runpath.joinpath(cf)
+            dst = runpath.joinpath(cf)
             shutil.copy(src, dst)
 
         # Create the Forcing Directory and Link forcings
-        forcing_directory = self.runpath.joinpath('FORCING')
+        forcing_directory = runpath.joinpath('FORCING')
         forcing_directory.mkdir(exist_ok=True)
         for src in linkForcingPath:
             dst = forcing_directory.joinpath(src.name)
@@ -357,30 +354,34 @@ class SetMeUp:
 
         # Copy namelists and other text files...
         shutil.copy('./namelists/hydro.namelist.TEMPLATE',
-                    self.runpath.joinpath('hydro.namelist'))
-        shutil.copy('./namelists/namelist.hrldas.TEMPLATE', self.runpath)
-        shutil.copy('./env_nwm_r2.sh', self.runpath)
-        shutil.copy(self.parameter_table, self.runpath)
-        shutil.copy('./{}'.format(self.setup), self.runpath)
+                    runpath.joinpath('hydro.namelist'))
+        shutil.copy('./namelists/namelist.hrldas.TEMPLATE', runpath)
+        shutil.copy('./env_nwm_r2.sh', runpath)
+        shutil.copy(self.parameter_table, runpath)
+        shutil.copy('./{}'.format(self.setup), runpath)
 
         # Copy more scripts
-        shutil.copy('./lib/Python/viz/PlotQ.py', self.runpath)
-        shutil.copy('./lib/fortran/fastread.py', self.runpath)
+        shutil.copy('./lib/Python/viz/PlotQ.py', runpath)
+        shutil.copy('./lib/fortran/fastread.py', runpath)
 
         # log success
-        logger.info('created run directory {}'.format(self.runpath))
+        logger.info('created run directory {}'.format(runpath))
 
-    def CreateNamelist(self, runpath, **kwargs):
+    def CreateNamelist(self, runpath, start_date, end_date, **kwargs):
         """Summary
         Write in text into the namelist script templates
 
         Args:
             runpath (posix.Path): script destination
-            **kwargs: Description
+	    start_date (datetime): 
+	    end_date (datetime):
+	    **kwargs: Description
 
         """
-        start_date = kwargs.get('start_date', self.start_date)
-        end_date = kwargs.get('start_date', self.end_date)
+# Check if the runpath exists...
+        if type(runpath) != pathlib.PosixPath:
+            runpath = pathlib.Path(runpath)
+	
 
         if self.hrldasrestart == "None":
             hrldasrestart = "!RESTART_FILENAME_REQUESTED"
@@ -405,13 +406,13 @@ class SetMeUp:
         # Modify namelist.hrldas
         acc.GenericWrite('./namelists/namelist.hrldas.TEMPLATE',
                          nlistDic,
-                         self.clbdirc.joinpath('namelist.hrldas'))
+                         runpath.joinpath('namelist.hrldas'))
 
         # Modify the hydro.namelist
         hydDic = {"RESTART_FILE": hydrorestart}
         acc.GenericWrite('./namelists/hydro.namelist.TEMPLATE',
                          hydDic,
-                         self.clbdirc.joinpath('hydro.namelist'))
+                         runpath.joinpath('hydro.namelist'))
         # Done
         logger.info('Created Namelist files')
 

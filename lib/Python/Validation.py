@@ -4,7 +4,7 @@ import logging
 import pandas as pd
 import xarray as xr
 import time
-import Path
+from pathlib import Path
 import dblogger as dbl
 from SetMeUp import SetMeUp
 import accessories as acc
@@ -26,14 +26,43 @@ class Validation(SetMeUp):
         """
         # get all of the methods from SetMeUp...
         super(self.__class__, self).__init__(setup)
-
-        vd = self.val_date
+        vd = self.val_end_date
         self.final_val_file = Path(self.chrtfmt.format(vd.strftime("%Y"),
                                                        vd.strftime("%m"),
                                                        vd.strftime("%d"),
                                                        vd.strftime("%H")))
+	# link to the correct database name
+        self.database_name = 'Validation.db'
+        self.database = self.valdirc.joinpath(self.database_name)
 
-    # Database parsing functions
+    def PrepareValidation(self):
+        """Summary
+        Create run directory for the calibration run
+        """
+        logger.info('~~~~ Prepare Validation directory ~~~~')
+        print(self.valdirc)
+        self.GatherForcings(self.val_start_date, 
+                            self.val_end_date)
+
+        self.CreateRunDir(self.valdirc)
+        self.CreateNamelist(self.valdirc,
+			    self.val_start_date,
+			    self.val_end_date)
+        
+        self.CreateSubmitScript(self.valdirc)
+        self.GatherObs(self.valdirc,
+		       self.val_start_date,
+		       self.val_end_date)
+        self.CreateAnalScript('Validation.db', self.valdirc)
+
+        # Log the USGS observations to the database...
+        obsQ, lat, lon = dbl.readObsFiles(self.valdirc)
+        table_name = 'qObserved'
+        dbl.logDataframe(obsQ,
+                         table_name,
+                         self.database)
+    
+	# Database parsing functions
     def getParameters(self, dbcon):
         """Summary
         Returns a pandas da`taframe of parameters that have been actively

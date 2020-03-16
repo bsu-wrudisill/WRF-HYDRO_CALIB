@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 import pandas as pd
 import accessories as acc
 import logging
-from fastread import test
+#from fastread import test
 import pathlib
 from datetime import datetime
 import xarray as xr

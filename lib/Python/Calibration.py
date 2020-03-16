@@ -6,7 +6,7 @@ import dblogger as dbl
 import numpy as np
 import xarray as xr
 import datetime
-import Path
+from pathlib import Path
 from SetMeUp import SetMeUp
 import ObjectiveFunctions as OF
 import accessories as acc
@@ -14,7 +14,7 @@ import accessories as acc
 logger = logging.getLogger(__name__)
 
 
-class CalibrationMaster(SetMeUp):
+class Calibration(SetMeUp):
     """
     The "Calibration" class. This requires a "setup" object
     (created above) to be passed in. This object will 1) submit
@@ -71,9 +71,8 @@ class CalibrationMaster(SetMeUp):
         self.df = df
 
         # Database file
-
         # Temporary variable... makes following lines shorter...
-        ed = self.end_date
+        ed = self.calib_end_date
         self.final_chrtfile = Path(self.chrtfmt.format(ed.strftime("%Y"),
                                                        ed.strftime("%m"),
                                                        ed.strftime("%d"),
@@ -84,11 +83,23 @@ class CalibrationMaster(SetMeUp):
         Create run directory for the calibration run
         """
         logger.info('~~~~ Prepare Calibration directory ~~~~')
-        self.GatherForcings(self.calib_start_date, self.calib_end_date)
+        self.GatherForcings(self.calib_start_date, 
+			    self.calib_end_date)
+        
+	# Create the run directory...
         self.CreateRunDir(self.clbdirc)
-        self.CreateNamelist(self.clbdirc)
+        self.CreateNamelist(self.clbdirc,
+                            self.calib_start_date,
+			    self.calib_end_date)
+       	
+	# create submit script..
         self.CreateSubmitScript(self.clbdirc)
-        self.GatherObs(self.clbdirc)
+       	
+	# Get the USGS gauge observations... 
+        self.GatherObs(self.clbdirc, 
+		       self.calib_start_date,
+		       self.calib_end_date)
+        
         self.CreateAnalScript('Calibration.db', self.clbdirc)
 
         # Log the USGS observations to the database...
@@ -130,7 +141,6 @@ class CalibrationMaster(SetMeUp):
                     'improvement': [self.improvement]}
 
         paramDic.update(self.performance)
-        print(paramDic)
         pdf = pd.DataFrame(paramDic)
         pdf.set_index('iteration', inplace=True)
 
