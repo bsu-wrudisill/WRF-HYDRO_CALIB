@@ -82,11 +82,13 @@ class Calibration(SetMeUp):
         Create run directory for the calibration run
         """
         logger.info('~~~~ Prepare Calibration directory ~~~~')
-        self.GatherForcings(self.calib_start_date,
-                            self.calib_end_date)
+        linkForcings = self.GatherForcings(self.calib_start_date,
+                                           self.calib_end_date)
 
-    # Create the run directory...
-        self.CreateRunDir(self.clbdirc)
+        # Create the run directory...
+        self.CreateRunDir(self.clbdirc,
+                          linkForcings)
+
         self.CreateNamelist(self.clbdirc,
                             self.calib_start_date,
                             self.calib_end_date)
