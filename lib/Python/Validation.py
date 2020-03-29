@@ -34,13 +34,12 @@ class Validation(SetMeUp):
         # link to the correct database name
         self.database_name = 'Validation.db'
         self.database = self.valdirc.joinpath(self.database_name)
-
+    
     def PrepareValidation(self):
         """Summary
         Create run directory for the calibration run
         """
         logger.info('~~~~ Prepare Validation directory ~~~~')
-        print(self.valdirc)
         linkForcings = self.GatherForcings(self.val_start_date,
                                            self.val_end_date)
 
@@ -91,7 +90,7 @@ class Validation(SetMeUp):
         Returns:
             perf (pandas.dataFrame): Description
         """
-        perf_cmd = "SELECT * FROM CALIBRATION"
+        perf_cmd = "SELECT * FROM Calibration"
         perf = pd.read_sql(sql=perf_cmd, con="sqlite:///{}".format(dbcon))
         return perf
 
@@ -105,7 +104,7 @@ class Validation(SetMeUp):
         Returns:
             mod (pandas.dataFrame): Description
         """
-        mod_cmd = "SELECT * FROM MODOUT"
+        mod_cmd = "SELECT * FROM Modout"
         mod = pd.read_sql(sql=mod_cmd, con="sqlite:///{}".format(dbcon))
         mod['time'] = pd.to_datetime(mod['time'])
         mod['type'] = 'WRF_Hydro V5'
@@ -133,7 +132,7 @@ class Validation(SetMeUp):
         path_to_original_files = self.parmdirc
         path_to_output_files = self.valdirc.joinpath('DOMAIN')
         calib_params = self.clbdirc.joinpath(self.parameter_table)
-        database = self.clbdirc.joinpath('CALIBRATION.db')
+        database = self.clbdirc.joinpath('Calibration.db')
 
         # Begin....
         param = self.getParameters(database)
@@ -185,7 +184,6 @@ class Validation(SetMeUp):
         if not self.valdirc.exists():
             self.valdirc.mkdir()
 
-        database_file = self.valdirc.joinpath('Validation.db')
 
         # Part 1: Run the std. parameters for the val period
         # --------------------------------------------------
@@ -194,13 +192,13 @@ class Validation(SetMeUp):
         linkForcings = self.GatherForcings(self.val_start_date,
                                            self.val_end_date)
 
-        self.CreateRunDir(base, linkForcing=linkForcings)
-        self.CreateNamelist(base)
+        self.CreateRunDir(base, linkForcings)
+        self.CreateNamelist(base, self.val_start_date, self.val_end_date)
         self.CreateSubmitScript(base)
-        self.GatherObs(base, start_date=self.val_start_date,
-                       end_date=self.val_end_date)
+        self.GatherObs(base, self.val_start_date,
+                       self.val_end_date)
 
-        self.CreateAnalScript(base, 'Validation.db')
+        self.CreateAnalScript(base, 'Validation.db', 0)
 
         # Move to the directory and call the run
         success = acc.ForwardModel(base,
@@ -220,19 +218,19 @@ class Validation(SetMeUp):
         linkForcings = self.GatherForcings(self.val_start_date,
                                            self.val_end_date)
 
-        self.CreateRunDir(base, linkForcing=linkForcings)
+        self.CreateRunDir(base, linkForcings)
         self.CreateNamelist(base)
         self.CreateSubmitScript(base)
         self.GatherObs(base, start_date=self.val_start_date,
                        end_date=self.val_end_date)
 
-        self.CreateAnalScript(base, 'Validation.db')
+        self.CreateAnalScript(base, 'Validation.db', 0)
 
         # Move to the directory and call the run
         success = acc.ForwardModel(base,
                                    self.userid,
                                    self.catchid,
                                    self.final_val_file)
-
+        
         if not success:
             sys.exit('Model run fail. check {}'.format(base))

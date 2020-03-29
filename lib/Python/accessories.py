@@ -105,7 +105,7 @@ def CleanUp(path):
     cwd = os.getcwd()
     os.chdir(path)
     removeList = ["*LDASOUT*", "*CHRTOUT*", "*RTOUT*", "*LSMOUT*", "*diag_hydro*", "*HYDRO_RST*"
-                  "log_wrf_hydro*"]
+                  "log_wrf_*", "analysis_*"]
 
     logger.info('cleaning up model run directory ({})'.format(path))
     for removeMe in removeList:
@@ -222,15 +222,19 @@ def WaitForJob(jobid, user, scheduler='SLURM'):
         qout_raw, qerr = SystemCmd(qcmd)
 
         qout = [i.decode("utf-8") for i in qout_raw]
-        error = qerr.decode("utf-8")
-
-        # Check QSTAT Error
-        if error != '':  # the error string is non-empty
-            qstat_error = True
-            logger.error("Error encountered in qstat:\n    {}".format(error))
-            # set the qstat error to true; we cant exit if it is
-        else:
-            qstat_error = False
+        if qerr:
+            error = qerr.decode("utf-8")
+            # Check QSTAT Error
+            if error != '':  # the error string is non-empty
+                qstat_error = True
+                logger.error("Error encountered in qstat:\n    {}".format(error))
+                # set the qstat error to true; we cant exit if it is
+            else:
+                qstat_error = False
+        
+        # no error thrown at all..
+        else: 
+                qstat_error = False 
 
         # Check if the job is still running
         if jobid in qout:
@@ -327,7 +331,11 @@ def GenericWrite(readpath, replacedata, writepath):
         file.write(filedata)
     # done
 
+def test():
+    logger.info('log')
+    print('here i am')
 
+@passfail
 def ForwardModel(directory,
                  userid,
                  catchid,
@@ -345,6 +353,8 @@ def ForwardModel(directory,
         Bool : True if check_file is found, false otherwise
 
     """
+    cwd = os.getcwd()
+    logger.info('Calling Forward Model')
 
     # Move directories and submit the job...
     os.chdir(directory)
@@ -355,15 +365,18 @@ def ForwardModel(directory,
     WaitForJob(jobid, userid)
 
     # Verify that the model worked...
-    logger.info('done waiting...')
+    logger.info('Done waiting...')
     success = checkFile(check_file)
+    
+    # Move back to the parent directory...
+    os.chdir(cwd)
 
-    # Verify that the model worked...
+    # Check success message ... 
     if success:
         logger.info(
             'Found last chrt file--assume the model finished successfully')
         return True
     else:
         logger.info('{} not found. assume model run \
-                    failed. exiting'.format(check_file))
+                     failed. exiting'.format(check_file))
         return False

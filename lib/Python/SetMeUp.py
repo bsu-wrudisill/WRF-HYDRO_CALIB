@@ -81,10 +81,11 @@ class SetMeUp:
 
         # General stuff
         # -------------
+        self.userid = 'wrudisill'
         self.parameter_table = 'calib_params.tbl'
         self.setup = setup
         self.usgs_code = str(yamlfile['usgs_code'])
-        self.max_iters = yamlfile['dds_iter']
+        self.max_iteration = yamlfile['dds_iter']
         self.obsFileName = 'obsStrData.csv'  # this gets created
         name_ext = yamlfile['name_ext']
 
@@ -287,20 +288,24 @@ class SetMeUp:
 
         if type(runpath) != pathlib.PosixPath:
             runpath = pathlib.Path(runpath)
-
+        
+        datapath = runpath.joinpath(self.obsFileName)
         # TODO: figure out root path thing....
-        cmdEmpty = 'Rscript ./lib/R/fetchUSGSobs.R {} {} {} {}/{}'
+        cmdEmpty = 'Rscript ./lib/R/fetchUSGSobs.R {} {} {} {}'
 
         # Format the datetime in the format that R wants...
         startString = str(start_date.strftime("%Y-%m-%d"))
         endString = str(end_date.strftime("%Y-%m-%d"))
-        try:
-            os.system(cmdEmpty.format(self.usgs_code,
+        cmd = cmdEmpty.format(self.usgs_code,
                                       startString,
                                       endString,
-                                      self.clbdirc,
-                                      self.obsFileName))
-        except: # WHAT IS THE EXCEPTION!!!!
+                                      datapath)
+        logger.debug(cmd)
+        try:
+            os.system(cmd)
+        
+        except Error as e: # WHAT IS THE EXCEPTION!!!!
+            logger.error(e)
             logger.error('Unable to execute command {}'.format(cmdEmpty))
             sys.exit()
 
@@ -352,9 +357,10 @@ class SetMeUp:
             os.symlink(src, dst)
 
         # Copy namelists and other text files...
-        shutil.copy('./namelists/hydro.namelist.TEMPLATE',
-                    runpath.joinpath('hydro.namelist'))
-        shutil.copy('./namelists/namelist.hrldas.TEMPLATE', runpath)
+        #shutil.copy('./namelists/hydro.namelist.TEMPLATE',
+        #            runpath.joinpath('hydro.namelist'))
+        #shutil.copy('./namelists/namelist.hrldas.TEMPLATE', runpath)
+        
         shutil.copy('./env_nwm_r2.sh', runpath)
         shutil.copy(self.parameter_table, runpath)
         shutil.copy('./{}'.format(self.setup), runpath)
@@ -419,6 +425,9 @@ class SetMeUp:
         Read the  the submit script template and modify the correct lines
         to run the desired job
         """
+        if type(runpath) != pathlib.PosixPath:
+            runpath = pathlib.Path(runpath)
+        
         taskX = 28
         runTime = "06:00:00"
         slurmDic = {"QUEUE": self.queue,
@@ -430,7 +439,7 @@ class SetMeUp:
         # Create the submission script
         acc.GenericWrite('{}/namelists/submit.TEMPLATE.sh'.format(self.cwd),
                          slurmDic,
-                         self.clbdirc.joinpath('submit.sh'))
+                         runpath.joinpath('submit.sh'))
         # Done
         logger.info('created job submission script')
 
@@ -448,7 +457,9 @@ class SetMeUp:
             **kwargs:
                 None
         """
-
+        if type(runpath) != pathlib.PosixPath:
+            runpath = pathlib.Path(runpath)
+        
         submit_analysis = runpath.joinpath('submit_analysis.sh')
 
         if os.path.isfile(submit_analysis):

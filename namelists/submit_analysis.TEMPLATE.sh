@@ -20,7 +20,6 @@ directory=DIRECTORY_PATH
 database=DATABASE_NAME
 libPath=PATH_TO_PYTHON
 
-sys.path.insert(0, libPath)
 python -c "
 
 import sys
@@ -31,14 +30,13 @@ sys.path.insert(0, '$libPath')
 import dblogger as dbl
 
 # read and aggregate model output
-modQ = dbl.getModelOut()
-
+modQ = dbl.readChRtFiles()
 # append the iteration count to the column
 modQ['iteration'] = str($iteration)
 
 # log the data to the sql database
-database = Path('$directory').joinpath('Calibration.db')
-table_name = 'Calibration'
+database = Path('$directory').joinpath('$database')
+table_name = 'qModeled'
 
 dbl.logDataframe(modQ, table_name, database)
 "

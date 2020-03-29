@@ -28,7 +28,7 @@ class Calibration(SetMeUp):
         dbcon (TYPE): Description
         df (TYPE): Description
         improvement (TYPE): Description
-        iters (int): Description
+        iteration (int): Description
         obj (TYPE): Description
         paramDir (TYPE): Description
         performance (TYPE): Description
@@ -47,8 +47,9 @@ class Calibration(SetMeUp):
         super(self.__class__, self).__init__(setup)
 
         # Parameters assosicated with the calibration
-        self.iters = 0  # keep track of the iterations of calib.ation
-        self.bestObj = 1e16
+        self.iteration = 0  # keep track of the iterations of calib.ation
+        self.bestObj = 1e16            # intialize the 'best ojective'
+        self.objective = self.bestObj  # initialize the obective function state
         self.paramDir = self.clbdirc.joinpath('DOMAIN')
         self.database_name = 'Calibration.db'
         self.database = self.clbdirc.joinpath(self.database_name)
@@ -93,16 +94,17 @@ class Calibration(SetMeUp):
                             self.calib_start_date,
                             self.calib_end_date)
 
-    # create submit script..
+        # create submit script..
         self.CreateSubmitScript(self.clbdirc)
 
-    # Get the USGS gauge observations...
+        # Get the USGS gauge observations...
         self.GatherObs(self.clbdirc,
                        self.calib_start_date,
                        self.calib_end_date)
 
-        self.CreateAnalScript('Calibration.db', self.clbdirc)
+        self.CreateAnalScript('Calibration.db', self.clbdirc, self.iteration)
 
+        logger.info(self.clbdirc)
         # Log the USGS observations to the database...
         obsQ, lat, lon = dbl.readObsFiles(self.clbdirc)
         table_name = 'qObserved'
@@ -110,45 +112,6 @@ class Calibration(SetMeUp):
                          table_name,
                          self.database)
 
-    def LogParameters(self):
-        """
-        Summary:
-        Log the parameter values to the dataframe... so we
-        know which are being calibtrated, and their value,
-        for each iteration
-        """
-
-        # Build the dataframe...
-        table_name = 'parameters'
-        params = self.df.copy()
-        params['iteration'] = str(self.iters)
-        params.drop(columns=['file', 'dims', 'nextValue'], inplace=True)
-
-        # Log the data frame to the Calib. sql database
-        dbl.logDataframe(params,
-                         table_name,
-                         self.database)
-
-    def LogPerformance(self):
-        """Summary
-        """
-
-        # SQL table name
-        table_name = 'Calibration'
-
-        # Build the dataframe ...
-        paramDic = {'iteration': [str(self.iters)],
-                    'objective': [self.obj],
-                    'improvement': [self.improvement]}
-
-        paramDic.update(self.performance)
-        pdf = pd.DataFrame(paramDic)
-        pdf.set_index('iteration', inplace=True)
-
-        # Log the dataframe to the Calib.. sql database
-        acc.logDataframe(pdf,
-                         table_name,
-                         self.database)
 
     def EvaluateIteration(self):
         """Summary
@@ -164,15 +127,13 @@ class Calibration(SetMeUp):
 
         # Read the model and the observed discharge
         # from SQL db into a pandas dataframe
-        merged = dbl.getDischarge(self.iters,
-                                  self.clbdirc,
-                                  self.database)
-
+        merged = dbl.readSqlDischarge(self.database, self.iteration)
+ 
         # Only evaluate during the evaluation period
         eval_period = merged.loc[self.ceval_start_date: self.ceval_end_date]
 
         # Compute the objective function(s)
-        OBJECTIVE, corrcoef, mn, std = OF.KGE(eval_period.qMod,
+        objective, corrcoef, mn, std = OF.KGE(eval_period.qMod,
                                               eval_period.qObs)
         modmin = OF.minn(eval_period.qMod, eval_period.qObs)
         modmax = OF.maxx(eval_period.qMod, eval_period.qObs)
@@ -182,7 +143,7 @@ class Calibration(SetMeUp):
         kendal = OF.kendal(eval_period.qMod, eval_period.qObs)
         spearman = OF.spear(eval_period.qMod, eval_period.qObs)
 
-        self.performance = {'kge': [str(OBJECTIVE)],
+        self.performance = {'kge': [str(objective)],
                             'rmse': [str(modrmse)],
                             'nse': [str(modnse)],
                             'spearman-rho': [str(spearman)],
@@ -200,11 +161,11 @@ class Calibration(SetMeUp):
 
         # Case 1: First Iteration
         # -----------------------
-        if self.iters == 0:
+        if self.iteration == 0:
             logger.info('On the first iteration')
             # this is the first iteration; we have just tested
             # the 'stock' parameters
-            self.bestObj = OBJECTIVE
+            self.bestObj = objective
             improvement = 0
 
             # update the active params
@@ -222,17 +183,17 @@ class Calibration(SetMeUp):
         # Case 2: All further iterations
         # ------------------------------
         else:
-            if OBJECTIVE < self.bestObj:
+            if objective < self.bestObj:
                 # Parameter improvement.
                 # The 'next value' is the parameter set that
                 # we just tested, so thus we assign it to the
                 # 'best value' column
                 improvement = 1
-                self.bestObj = OBJECTIVE
+                self.bestObj = objective
                 self.df['bestValue'] = self.df['nextValue']
 
                 message = 'the objective fx improved \
-                           on iteration {}'.format(self.iters)
+                           on iteration {}'.format(self.iteration)
                 logger.info(message)
 
             else:
@@ -240,7 +201,7 @@ class Calibration(SetMeUp):
                 # log and move on to the next step.
                 improvement = 0
                 message = 'no obj. improvement on \
-                           iteration {}'.format(self.iters)
+                           iteration {}'.format(self.iteration)
                 logger.info(message)
 
         # Finish....
@@ -248,9 +209,10 @@ class Calibration(SetMeUp):
         # Clean the nextvalue and onOff switches.
         # These get updated by the DDS ( or whatever alg. we chose...)
         self.improvement = improvement
+        self.objective = objective
         self.df['nextValue'] = self.df['ini']
 
-        return OBJECTIVE, improvement
+        return objective, improvement
 
     def DDS(self, r=.2):
         """Summary
@@ -272,7 +234,7 @@ class Calibration(SetMeUp):
         activeParams = list(self.df.groupby('calib_flag').groups[1])
 
         # Randomly select parameters to update
-        prob = 1 - np.log(self.iters + 1) / np.log(self.max_iters)
+        prob = 1 - np.log(self.iteration+1) / np.log(self.max_iteration + 1)
 
         # Determine the 'active set'
         for param in activeParams:
@@ -353,7 +315,7 @@ class Calibration(SetMeUp):
 
         # DDS iteration complete
         # ----------------------
-        logger.info('Performed DDS update for iteration {}'.format(self.iters))
+        logger.info('Performed DDS update for iteration {}'.format(self.iteration))
 
     def UpdateParamFiles(self):
         """Summary
@@ -409,27 +371,70 @@ class Calibration(SetMeUp):
         # 'next param' values have been inserted into the current params
         self.df['currentValue'] = self.df['nextValue']
 
+    def LogParameters(self):
+        """
+        Summary:
+        Log the parameter values to the dataframe... so we
+        know which are being calibtrated, and their value,
+        for each iteration
+        """
+
+        # Build the dataframe...
+        table_name = 'parameters'
+        params = self.df.copy()
+        params['iteration'] = str(self.iteration)
+        params.drop(columns=['file', 'dims', 'nextValue'], inplace=True)
+
+        # Log the data frame to the Calib. sql database
+        dbl.logDataframe(params,
+                         table_name,
+                         self.database)
+
+    def LogPerformance(self):
+        """Summary
+        """
+
+        # SQL table name
+        table_name = 'Calibration'
+
+        # Build the dataframe ...
+        paramDic = {'iteration': [str(self.iteration)],
+                    'objective': [self.objective],
+                    'improvement': [self.improvement]}
+
+        paramDic.update(self.performance)
+        pdf = pd.DataFrame(paramDic)
+        pdf.set_index('iteration', inplace=True)
+
+        # Log the dataframe to the Calib.. sql database
+        dbl.logDataframe(pdf,
+                         table_name,
+                         self.database)
     @acc.passfail
     def OneLoop(self):
         """Summary
         Run one forward model, evaluate, DDS loop.
         """
+        logger.info('Calling one loop..')
         os.chdir(self.clbdirc)
-
+        
+        acc.test()
         # Run the model once
         success = acc.ForwardModel(self.clbdirc,
                                    self.userid,
                                    self.catchid,
                                    self.final_chrtfile)
         if not success:
-            logger.error('Model run fail')
+            logger.info('Model run fail')
             sys.exit('Model run fail. Exiting')
-
+        
+        logger.info('success')
         # Model Evaluation
         # -----------------
         # This step will log the model outputs to the database
         self.CreateAnalScript(self.clbdirc,
-                              self.database)
+                              self.database,
+                              self.iteration)
 
         jobid, err = acc.Submit('submit_analysis.sh', self.catchid)
         # wait for the job to complete
@@ -449,21 +454,21 @@ class Calibration(SetMeUp):
         acc.CleanUp(self.clbdirc)
 
         # move the iternal iteration state one forward
-        logger.info('Completed OneLoop for iteration {}/{}'.format(self.iters, self.max_iters))
-        self.iters += 1
+        logger.info('Completed OneLoop for iteration {}/{}'.format(self.iteration, self.max_iteration))
+        self.iteration += 1
 
     def __call__(self):
         # usage: calib = CalibrationMaster(); calib()
         # allow 3 failures in a row-- this probably means something is wrong
         threeFailureMax = 0
-        for loop in range(self.max_iters):
+        for loop in range(self.max_iteration-1):
             while threeFailureMax <= 3:
                 # Run the model and time it...
                 t1 = datetime.datetime.now()
                 success, status = self.OneLoop()
                 t2 = datetime.datetime.now()
                 dt = (t2 - t1).total_seconds() / 60  # Time in mintes..
-                logger.info("Iteration {} took {} minutes".format(self.iters, dt))
+                logger.info("Iteration {} took {} minutes".format(self.iteration, dt))
 
                 if success:
                     logger.info(status)
@@ -476,3 +481,6 @@ class Calibration(SetMeUp):
                          Exiting"
                 logger.error(message)
                 sys.exit()
+         
+        # done with max_iters...
+        logger.info('reached max iterations')

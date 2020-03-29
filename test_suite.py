@@ -1,6 +1,8 @@
 import sys
 import datetime
 import logging
+import os
+import shutil
 libPathList = ['./lib/Python', './util']
 for libPath in libPathList:
     sys.path.insert(0, libPath)
@@ -8,7 +10,7 @@ from SetMeUp import SetMeUp
 from Calibration import Calibration
 from Validation import Validation
 from sanityPreCheck import RunPreCheck, RunCalibCheck, RunPreSubmitTest
-
+import accessories as acc
 
 # ----- log -----
 suffix = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
@@ -25,6 +27,7 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 # -----  main ------
 setupfile = 'setup.yaml'
 calibrationfile = 'calib_params.tbl'
@@ -32,10 +35,17 @@ calibrationfile = 'calib_params.tbl'
 # create the setup instance
 setup = SetMeUp(setupfile)
 
-# Calirate
-calib = Calibration(setupfile)
-calib.PrepareCalibration()
+
+# remove dir if it exists...
+#if setup.parent_directory.exists():
+#    shutil.rmtree(setup.parent_directory, ignore_errors=True)
+
+# Calibrate
+#calib = Calibration(setupfile)
+#calib.PrepareCalibration()
+#calib()
 
 # Validate
+#---------
 valid = Validation(setupfile)
-valid.PrepareValidation()
+valid.run_validation()

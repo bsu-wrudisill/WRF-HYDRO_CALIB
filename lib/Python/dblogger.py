@@ -23,7 +23,7 @@ def readObsFiles(directory, filename='obsStrData.csv'):
             filename (str, optional): Description
         """
         # Read USGS observations
-        obsQ = pd.read_csv(directory.joinpath('/obsStrData.csv'))
+        obsQ = pd.read_csv(directory.joinpath('obsStrData.csv'))
         obsQ.drop(columns=['Unnamed: 0', 'POSIXct', "agency_cd"], inplace=True)
         obsQ.rename(index=str, columns={
                     "Date": "time", "obs": "qObs"}, inplace=True)
@@ -51,7 +51,7 @@ def readObsFiles(directory, filename='obsStrData.csv'):
         return obs_interpolate, lat, lon
 
 
-def readChRtFiles(directory, use_xarray=True):
+def readChRtFiles(directory='./', use_xarray=True):
     """Summary
 
     Logs obs/modelout to the calibration sql database
@@ -59,7 +59,7 @@ def readChRtFiles(directory, use_xarray=True):
     Ideally this gets run on a compute node, not head
 
     Args:
-        directory (pathlib.Path): Directory where model files live
+        directory (str or pathlib.Path): Directory where model files live
         use_xarray (bool, optional): Determines which method to use  for t
                                      the read step. If false, uses a fortran
                                      script and writes a .txt output file...
@@ -76,6 +76,9 @@ def readChRtFiles(directory, use_xarray=True):
             gauge_loc.txt file
     """
 
+    if type(directory) != pathlib.PosixPath:
+        directory = pathlib.Path(directory)
+    
     # Look for gauge location file
     chrtFiles = list(directory.glob('*CHRTOUT_DOMAIN*'))
 
@@ -110,6 +113,9 @@ def readChRtFiles(directory, use_xarray=True):
         qDf = pd.DataFrame(data_dict)
         qDf.set_index('time', inplace=True)
 
+        # Now resample the data to a daily timestep...
+        modQdly = pd.DataFrame(qDf.resample('D').mean())
+    
     # Option 2: Use fortran function to write discharge as a .txt file
     # ----------------------------------------------------------------
     else:
@@ -166,7 +172,8 @@ def logDataframe(df, table_name, database):
     """
 
     # Path to database file; a little wonky...
-    _dbengine = 'sqlite:///{}'.format(database),
+    logger.info('database location: {}'.format(database))
+    _dbengine = 'sqlite:///{}'.format(database._str)
     engine = create_engine(_dbengine, echo=False)
 
     # Log the dataframe
@@ -175,7 +182,7 @@ def logDataframe(df, table_name, database):
               if_exists='append')
 
 
-def readSqlDischarge(iteration, database):
+def readSqlDischarge(database, iteration):
     '''
     Description: Creates a pandas dataframe of merged
                  model and observed states from the
@@ -191,8 +198,8 @@ def readSqlDischarge(iteration, database):
 
     '''
     # convert
-    if type(database) == pathlib.PosixPath:
-        database = database._str
+    #if type(database) == pathlib.PosixPath:
+    #    database = database._str
 
     _dbengine = "sqlite:///{}".format(database)
 
@@ -202,7 +209,7 @@ def readSqlDischarge(iteration, database):
     mod['time'] = pd.to_datetime(mod['time'])
 
     # Read observation stattes
-    obs_cmd = "SELECT * FROM qObserved",
+    obs_cmd = "SELECT * FROM qObserved"
     obs = pd.read_sql(sql=obs_cmd, con=_dbengine)
     obs['time'] = pd.to_datetime(obs['time'])
     obs.drop(columns=['site_no'], inplace=True)
