@@ -128,7 +128,7 @@ class Calibration(SetMeUp):
         # Read the model and the observed discharge
         # from SQL db into a pandas dataframe
         merged = dbl.readSqlDischarge(self.database, self.iteration)
- 
+
         # Only evaluate during the evaluation period
         eval_period = merged.loc[self.ceval_start_date: self.ceval_end_date]
 
@@ -417,7 +417,7 @@ class Calibration(SetMeUp):
         """
         logger.info('Calling one loop..')
         os.chdir(self.clbdirc)
-        
+
         acc.test()
         # Run the model once
         success = acc.ForwardModel(self.clbdirc,
@@ -427,7 +427,7 @@ class Calibration(SetMeUp):
         if not success:
             logger.info('Model run fail')
             sys.exit('Model run fail. Exiting')
-        
+
         logger.info('success')
         # Model Evaluation
         # -----------------
@@ -481,6 +481,6 @@ class Calibration(SetMeUp):
                          Exiting"
                 logger.error(message)
                 sys.exit()
-         
+
         # done with max_iters...
         logger.info('reached max iterations')

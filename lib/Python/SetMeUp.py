@@ -288,7 +288,7 @@ class SetMeUp:
 
         if type(runpath) != pathlib.PosixPath:
             runpath = pathlib.Path(runpath)
-        
+
         datapath = runpath.joinpath(self.obsFileName)
         # TODO: figure out root path thing....
         cmdEmpty = 'Rscript ./lib/R/fetchUSGSobs.R {} {} {} {}'
@@ -303,7 +303,7 @@ class SetMeUp:
         logger.debug(cmd)
         try:
             os.system(cmd)
-        
+
         except Error as e: # WHAT IS THE EXCEPTION!!!!
             logger.error(e)
             logger.error('Unable to execute command {}'.format(cmdEmpty))
@@ -360,7 +360,7 @@ class SetMeUp:
         #shutil.copy('./namelists/hydro.namelist.TEMPLATE',
         #            runpath.joinpath('hydro.namelist'))
         #shutil.copy('./namelists/namelist.hrldas.TEMPLATE', runpath)
-        
+
         shutil.copy('./env_nwm_r2.sh', runpath)
         shutil.copy(self.parameter_table, runpath)
         shutil.copy('./{}'.format(self.setup), runpath)
@@ -427,7 +427,7 @@ class SetMeUp:
         """
         if type(runpath) != pathlib.PosixPath:
             runpath = pathlib.Path(runpath)
-        
+
         taskX = 28
         runTime = "06:00:00"
         slurmDic = {"QUEUE": self.queue,
@@ -459,7 +459,7 @@ class SetMeUp:
         """
         if type(runpath) != pathlib.PosixPath:
             runpath = pathlib.Path(runpath)
-        
+
         submit_analysis = runpath.joinpath('submit_analysis.sh')
 
         if os.path.isfile(submit_analysis):
@@ -471,7 +471,7 @@ class SetMeUp:
         namelist_template = self.cwd.joinpath('namelists',
                                               'submit_analysis.TEMPLATE.sh')
 
-        namelist_replace = self.clbdirc.joinpath('submit_analysis.sh')
+        namelist_replace = runpath.joinpath('submit_analysis.sh')
         # Determine submit parameters...
         taskX = 28
         runTime = "06:00:00"  # make this dynamic...
@@ -479,8 +479,7 @@ class SetMeUp:
         aTasks = aNodes * taskX
 
         # update dictionary...
-        insert = {"DIRECTORY_PATH": runpath,
-                  "DATABASE_NAME": database,
+        insert = {"DATABASE_NAME": database,
                   "ITERATION_COUNT": iteration,
                   "PATH_TO_PYTHON": self.libdirc,
                   "ANALYSIS_TASKS": aTasks,

@@ -34,38 +34,71 @@ class Validation(SetMeUp):
         # link to the correct database name
         self.database_name = 'Validation.db'
         self.database = self.valdirc.joinpath(self.database_name)
-    
+        self.baseline = self.valdirc.joinpath('baseline')
+        self.calibrated = self.valdirc.joinpath('calibrated')
+
+
     def PrepareValidation(self):
         """Summary
         Create run directory for the calibration run
+
+        /Validation
+            |__ baseline/
+            |__ calibrated/
+
         """
-        logger.info('~~~~ Prepare Validation directory ~~~~')
+
+        # Create the 'Baseline' directory
+        # -------------------------------
+        logger.info('~~~~ Prepare Validation/baseline directory ~~~~')
+
         linkForcings = self.GatherForcings(self.val_start_date,
                                            self.val_end_date)
 
-        # provide the directory path and the forcings to link
-        self.CreateRunDir(self.valdirc, linkForcings)
-
-        # create the ...
-        self.CreateNamelist(self.valdirc,
+        self.CreateRunDir(self.baseline, linkForcings)
+        self.CreateNamelist(self.baseline,
                             self.val_start_date,
                             self.val_end_date)
 
-        self.CreateSubmitScript(self.valdirc)
-        self.GatherObs(self.valdirc,
+        self.CreateSubmitScript(self.baseline)
+        self.GatherObs(self.baseline,
                        self.val_start_date,
                        self.val_end_date)
 
-        # self.CreateAnalScript(self.valdirc, 'Validation.db')
-
-        # Log the USGS observations to the database...
-        obsQ, lat, lon = dbl.readObsFiles(self.valdirc)
+        self.CreateAnalScript(self.baseline, self.database, 0)
+        obsQ, lat, lon = dbl.readObsFiles(self.baseline)
         table_name = 'qObserved'
         dbl.logDataframe(obsQ,
                          table_name,
                          self.database)
 
-        # Database parsing functions
+        # Create the 'Calibrated' directory
+        # -------------------------------
+        logger.info('~~~~ Prepare Validation/calibrated directory ~~~~')
+
+        linkForcings = self.GatherForcings(self.val_start_date,
+                                           self.val_end_date)
+
+        self.CreateRunDir(self.calibrated, linkForcings)
+        self.CreateNamelist(self.calibrated,
+                            self.val_start_date,
+                            self.val_end_date)
+
+        self.CreateSubmitScript(self.calibrated)
+        self.GatherObs(self.calibrated,
+                       self.val_start_date,
+                       self.val_end_date)
+
+        self.CreateAnalScript(self.calibrated, self.database, 1)
+        obsQ, lat, lon = dbl.readObsFiles(self.calibrated)
+        table_name = 'qObserved'
+        dbl.logDataframe(obsQ,
+                         table_name,
+                         self.database)
+
+
+
+
     def getParameters(self, dbcon):
         """Summary
         Returns a pandas da`taframe of parameters that have been actively
@@ -231,6 +264,6 @@ class Validation(SetMeUp):
                                    self.userid,
                                    self.catchid,
                                    self.final_val_file)
-        
+
         if not success:
             sys.exit('Model run fail. check {}'.format(base))
