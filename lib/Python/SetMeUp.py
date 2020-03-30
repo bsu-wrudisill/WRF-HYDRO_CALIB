@@ -300,7 +300,7 @@ class SetMeUp:
                               startString,
                               endString,
                               datapath)
-        logger.debug(cmd)
+        logger.info(cmd)
         try:
             os.system(cmd)
 

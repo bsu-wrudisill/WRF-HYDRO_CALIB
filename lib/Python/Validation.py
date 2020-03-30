@@ -87,11 +87,12 @@ class Validation(SetMeUp):
                        self.val_end_date)
 
         self.CreateAnalScript(self.calibrated, self.database, 1)
-        obsQ, lat, lon = dbl.readObsFiles(self.calibrated)
-        table_name = 'qObserved'
-        dbl.logDataframe(obsQ,
-                         table_name,
-                         self.database)
+        # Done setting up.... no need to download obs twice
+
+        # get the best parameter files... append them to the domain files in
+        # the 'calibrated' directory
+        self.get_best_parameters()
+
 
     def getParameters(self, dbcon):
         """Summary
@@ -155,9 +156,9 @@ class Validation(SetMeUp):
         Read the calibration database and find the best parameter set
         create new netcdf files with those parameters
         """
-
+        logger.info('find the optimal parameters from calibration run...')
         path_to_original_files = self.parmdirc
-        path_to_output_files = self.valdirc.joinpath('DOMAIN')
+        path_to_output_files = self.calibrated.joinpath('DOMAIN')
         calib_params = self.clbdirc.joinpath(self.parameter_table)
         database = self.clbdirc.joinpath('Calibration.db')
 
@@ -207,57 +208,25 @@ class Validation(SetMeUp):
         Perform the 'Validation' experiment
         """
 
-        # Create the val directory if it doesn't exist...
-        if not self.valdirc.exists():
-            self.valdirc.mkdir()
-
-
         # Part 1: Run the std. parameters for the val period
         # --------------------------------------------------
-        logger.info('Calling Model Validation Run-- Baseline')
-        base = self.valdirc.joinpath('baseline')
-        linkForcings = self.GatherForcings(self.val_start_date,
-                                           self.val_end_date)
-
-        self.CreateRunDir(base, linkForcings)
-        self.CreateNamelist(base, self.val_start_date, self.val_end_date)
-        self.CreateSubmitScript(base)
-        self.GatherObs(base, self.val_start_date,
-                       self.val_end_date)
-
-        self.CreateAnalScript(base, 'Validation.db', 0)
-
         # Move to the directory and call the run
-        success = acc.ForwardModel(base,
+        success = acc.ForwardModel(self.baseline,
                                    self.userid,
                                    self.catchid,
                                    self.final_val_file)
-
         if not success:
-            logger.error('Model run fail. check {}'.format(base))
+            logger.error('Model run fail. check {}'.format(self.baseline))
             sys.exit()
 
         # Part 2: Run the calibrated parameters
-        # for the val period
         # -------------------------------------
         logger.info('Calling Model Validation Run-- Calibrated')
-        base = self.valdirc.joinpath('calibrated')
-        linkForcings = self.GatherForcings(self.val_start_date,
-                                           self.val_end_date)
-
-        self.CreateRunDir(base, linkForcings)
-        self.CreateNamelist(base)
-        self.CreateSubmitScript(base)
-        self.GatherObs(base, start_date=self.val_start_date,
-                       end_date=self.val_end_date)
-
-        self.CreateAnalScript(base, 'Validation.db', 0)
 
         # Move to the directory and call the run
-        success = acc.ForwardModel(base,
+        success = acc.ForwardModel(self.calibrated,
                                    self.userid,
                                    self.catchid,
                                    self.final_val_file)
-
         if not success:
-            sys.exit('Model run fail. check {}'.format(base))
+            sys.exit('Model run fail. check {}'.format(self.calibrated))
