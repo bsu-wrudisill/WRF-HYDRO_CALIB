@@ -297,14 +297,14 @@ class SetMeUp:
         startString = str(start_date.strftime("%Y-%m-%d"))
         endString = str(end_date.strftime("%Y-%m-%d"))
         cmd = cmdEmpty.format(self.usgs_code,
-                                      startString,
-                                      endString,
-                                      datapath)
+                              startString,
+                              endString,
+                              datapath)
         logger.debug(cmd)
         try:
             os.system(cmd)
 
-        except Error as e: # WHAT IS THE EXCEPTION!!!!
+        except Exception as e:  # WHAT IS THE EXCEPTION!!!!
             logger.error(e)
             logger.error('Unable to execute command {}'.format(cmdEmpty))
             sys.exit()

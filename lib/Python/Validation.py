@@ -37,7 +37,6 @@ class Validation(SetMeUp):
         self.baseline = self.valdirc.joinpath('baseline')
         self.calibrated = self.valdirc.joinpath('calibrated')
 
-
     def PrepareValidation(self):
         """Summary
         Create run directory for the calibration run
@@ -47,14 +46,15 @@ class Validation(SetMeUp):
             |__ calibrated/
 
         """
-
-        # Create the 'Baseline' directory
-        # -------------------------------
         logger.info('~~~~ Prepare Validation/baseline directory ~~~~')
+        self.valdirc.mkdir(exist_ok=True)
 
+        # get the correct forcings...
         linkForcings = self.GatherForcings(self.val_start_date,
                                            self.val_end_date)
 
+        # Create the 'Baseline' directory
+        # -------------------------------
         self.CreateRunDir(self.baseline, linkForcings)
         self.CreateNamelist(self.baseline,
                             self.val_start_date,
@@ -76,9 +76,6 @@ class Validation(SetMeUp):
         # -------------------------------
         logger.info('~~~~ Prepare Validation/calibrated directory ~~~~')
 
-        linkForcings = self.GatherForcings(self.val_start_date,
-                                           self.val_end_date)
-
         self.CreateRunDir(self.calibrated, linkForcings)
         self.CreateNamelist(self.calibrated,
                             self.val_start_date,
@@ -95,9 +92,6 @@ class Validation(SetMeUp):
         dbl.logDataframe(obsQ,
                          table_name,
                          self.database)
-
-
-
 
     def getParameters(self, dbcon):
         """Summary
