@@ -357,9 +357,9 @@ class SetMeUp:
             os.symlink(src, dst)
 
         # Copy namelists and other text files...
-        #shutil.copy('./namelists/hydro.namelist.TEMPLATE',
+        # shutil.copy('./namelists/hydro.namelist.TEMPLATE',
         #            runpath.joinpath('hydro.namelist'))
-        #shutil.copy('./namelists/namelist.hrldas.TEMPLATE', runpath)
+        # shutil.copy('./namelists/namelist.hrldas.TEMPLATE', runpath)
 
         shutil.copy('./env_nwm_r2.sh', runpath)
         shutil.copy(self.parameter_table, runpath)

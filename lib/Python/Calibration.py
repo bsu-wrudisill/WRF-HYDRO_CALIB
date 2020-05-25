@@ -102,7 +102,7 @@ class Calibration(SetMeUp):
                        self.calib_start_date,
                        self.calib_end_date)
 
-        self.CreateAnalScript('Calibration.db', self.clbdirc, self.iteration)
+        self.CreateAnalScript(self.clbdirc, 'Calibration.db', self.iteration)
 
         logger.info(self.clbdirc)
         # Log the USGS observations to the database...
