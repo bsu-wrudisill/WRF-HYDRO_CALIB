@@ -1,64 +1,55 @@
-import shutil
-import os 
-import time 
-import sys 
-import datetime 
+import sys
+import datetime
 import logging
-import yaml 
-
+import os
+import shutil
 libPathList = ['./lib/Python', './util']
 for libPath in libPathList:
-	sys.path.insert(0,libPath)
-from adjustParameters import *
-from adjustForcings import adjustForcings
+    sys.path.insert(0, libPath)
+from SetMeUp import SetMeUp
+from Calibration import Calibration
+from Validation import Validation
 from sanityPreCheck import RunPreCheck, RunCalibCheck, RunPreSubmitTest
-#from util import RegridWRFHydro as rwh
+import accessories as acc
 
-# setup the log file --- this will get passed to all of the imported modules!!!
+# ----- log -----
 suffix = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
-logfile= 'logfile_{}.log'.format(suffix)
+logfile = 'testing.log'
 
 file_handler = logging.FileHandler(filename=logfile)
 stdout_handler = logging.StreamHandler(sys.stdout)
-logging.basicConfig(level=logging.INFO, 
-		    format='%(asctime)s %(name)15s %(levelname)-8s %(message)s',
-		    datefmt='%a, %d %b %Y %H:%M:%S',
-		    handlers=[file_handler, stdout_handler]
-		    )
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s %(name)15s %(levelname)-8s %(message)s',
+                    datefmt='%a, %d %b %Y %H:%M:%S',
+                    handlers=[file_handler, stdout_handler]
+                    )
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-# -----  main ------ 
+
+# -----  main ------
 setupfile = 'setup.yaml'
-calibrationfile = 'calib_params.tbl' 
+calibrationfile = 'calib_params.tbl'
 
-# start the logging with some handy info
-logger.info('starting {}. using {} setup parameters and {}' .format(__name__, setupfile, calibrationfile))
-logger.info('Logging to file: {}/{}'.format(os.getcwd(), logfile))
-
-# ---- run 'sanity checks' -----  
 if not RunPreCheck(setupfile).run_all(): sys.exit()
 if not RunCalibCheck(setupfile).run_all(): sys.exit()
 
-# create the setup instance 
+# create the setup instance
 setup = SetMeUp(setupfile)
 
-# regrid files ...
-#rwh.regridFiles(setup)
-setup()   # gather forcing files, create directories, etc.
 
-#
-# check that setup() was successful 
-if not RunPreSubmitTest(setupfile).run_all(): sys.exit()
-calib = CalibrationMaster(setupfile)
+# remove dir if it exists...
+#if setup.parent_directory.exists():
+#    shutil.rmtree(setup.parent_directory, ignore_errors=True)
 
-#calib.ForwardModel() # run once, no updating parameters 
-calib()
-#
-#
-## clean up 
-logger.info('----- Calibration Complete -----')
-logger.info('moving logfile {} to directory {}'.format(logfile, clbdirc))
-shutil.move(logfile, setup.clbdirc+'/'+logfile)  # move the log file to the directory 
-# make some plots or something ....
-#
+# Calibrate
+#calib = Calibration(setupfile)
+#calib.PrepareCalibration()
+#calib()
+
+# Validate
+#---------
+valid = Validation(setupfile)
+valid.PrepareValidation()
+valid.run_validation()

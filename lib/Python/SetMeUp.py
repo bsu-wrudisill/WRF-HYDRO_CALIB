@@ -45,7 +45,7 @@ class SetMeUp:
         hrldasrestart (TYPE): Description
         hydrorestart (TYPE): Description
         linkForcingPath (TYPE): Description
-        max_iters (TYPE): Description
+        max_iteration (TYPE): Description
         nodes (TYPE): Description
         obsFileName (str): Description
         parameter_table (str): Description

@@ -91,6 +91,7 @@ class Validation(SetMeUp):
 
         # get the best parameter files... append them to the domain files in
         # the 'calibrated' directory
+        logger.info('calling get_best_parameters')
         self.get_best_parameters()
 
 
@@ -140,7 +141,7 @@ class Validation(SetMeUp):
 
     def LogData(self):
         # dataframe --> sql database
-        paramDic = {'Iteration': [str(self.iters)],
+        paramDic = {'Iteration': [str(self.iteration)],
                     'Objective': [self.obj],
                     'Improvement': [self.improvement]}
 
@@ -164,11 +165,14 @@ class Validation(SetMeUp):
 
         # Begin....
         param = self.getParameters(database)
-        param.Iteration = list(map(int, param.Iteration))
+        print(param)
+        param.Iteration = list(map(int, param.iteration))
         performance = self.getPerformance(database)
-        best_row = performance.loc[(performance.Objective == performance['Objective'].min()) & (
-            performance.Improvement == 1)]
-        best_parameters = param.loc[param.Iteration == int(best_row.Iteration)]
+        print(performance) 
+        
+        best_row = performance.loc[(performance['objective'] == performance['objective'].min()) & (
+            performance['improvement']== 1)]
+        best_parameters = param.loc[param['iteration'] == int(best_row['iteration'])]
         best_parameters.set_index('parameter', inplace=True)
 
         # Read the calibration table

@@ -102,7 +102,7 @@ class Calibration(SetMeUp):
                        self.calib_start_date,
                        self.calib_end_date)
 
-        self.CreateAnalScript('Calibration.db', self.clbdirc, self.iteration)
+        self.CreateAnalScript(self.clbdirc, 'Calibration.db', self.iteration)
 
         logger.info(self.clbdirc)
         # Log the USGS observations to the database...
@@ -461,26 +461,30 @@ class Calibration(SetMeUp):
         # usage: calib = CalibrationMaster(); calib()
         # allow 3 failures in a row-- this probably means something is wrong
         threeFailureMax = 0
-        for loop in range(self.max_iteration-1):
-            while threeFailureMax <= 3:
-                # Run the model and time it...
-                t1 = datetime.datetime.now()
-                success, status = self.OneLoop()
-                t2 = datetime.datetime.now()
-                dt = (t2 - t1).total_seconds() / 60  # Time in mintes..
-                logger.info("Iteration {} took {} minutes".format(self.iteration, dt))
+        while threeFailureMax <= 3:
+            # break the loop if we are at the final iter
+            if self.iteration == self.max_iteration:
+                break 
+            
+            # Run the model and time it...
+            t1 = datetime.datetime.now()
+            success, status = self.OneLoop()
+            t2 = datetime.datetime.now()
+            dt = (t2 - t1).total_seconds() / 60  # Time in mintes..
+            logger.info("Iteration {} took {} minutes".format(self.iteration, dt))
+            
+            if success:
+                logger.info(status)
+                threeFailureMax = 0
+            if not success:
+                logger.error(status)
+                threeFailureMax += 1
 
-                if success:
-                    logger.info(status)
-                    threeFailureMax = 0
-                if not success:
-                    logger.error(status)
-                    threeFailureMax += 1
-            else:
-                message = "Three failures in a row. \n Check logs for more details. \n \
-                         Exiting"
-                logger.error(message)
-                sys.exit()
-
+        else:
+            message = "Three failures in a row. \n Check logs for more details. \n \
+                                     Exiting"
+            logger.error(message)
+            sys.exit()
+            
         # done with max_iters...
         logger.info('reached max iterations')
