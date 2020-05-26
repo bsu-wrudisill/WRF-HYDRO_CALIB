@@ -261,7 +261,7 @@ class SetMeUp:
         if failureFlag != 0:
             logger.error('Unable to locate {} of {} forcing files'.format(
                 failureFlag, forcingNumber))
-            sys.exit()
+            # sys.exit()
         else:
             message = 'Found {} required forcing files, \
                        continuing'.format(forcingNumber)
@@ -310,7 +310,6 @@ class SetMeUp:
             sys.exit()
 
         # now we check the observations to make sure there are none missing...
-
     def CreateRunDir(self, runpath, linkForcings, **kwargs):
         """
         Create run directory for WRF-hdyro calib.ation runs.
@@ -492,4 +491,36 @@ class SetMeUp:
         acc.GenericWrite(namelist_template,
                          insert,
                          namelist_replace)
+
+    """
+    MOCK METHODS/OBJECTS BELOW HERE.
+    These exist for debugging purposes only
+    """
+    def _CreateRunDir_(self, runpath, linkForcings, **kwargs):
+        """Summary
+        Mock create run dir method
+        Args:
+            runpath (TYPE): Description
+            linkForcings (TYPE): Description
+            **kwargs: Description
+        """
+        logger.info("_CreateRunDir_")
+        logger.info(runpath)
+        logger.info(linkForcings)
+        os.makedirs(runpath, exist_ok=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
