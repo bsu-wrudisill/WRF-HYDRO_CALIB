@@ -7,6 +7,7 @@ import logging
 import pandas as pd
 import pathlib
 from pathlib import Path
+import pickle 
 
 logger = logging.getLogger(__name__)
 
@@ -120,8 +121,8 @@ class SetMeUp:
                               "CHANPARM.TBL",
                               "GENPARM.TBL",
                               "HYDRO.TBL",
-                              "MPTABLE.TBL",
-                              "SOILPARM.TBL"]
+                              "MPTABLE.TBL"]
+                              
 
         self.calib_files_to_copy = ['hydro2dtbl.nc',
                                     'Route_Link.nc',
@@ -270,6 +271,10 @@ class SetMeUp:
         # Assign list of forcing paths to link--- but do not link yet
         self.linkForcingPath = linkForcingPath
 
+        # ! PICKLE THE FILEPATH OBJECT !# 
+        pklname = ".forcinglist-{}-{}.pkl".format(start_date, end_date)
+        with open(pklname, "wb") as pkled:
+                pickle.dump(linkForcingPath, pkled) 
         # Return a full list of forcing files necessary for the start/date
         return linkForcingPath
 
@@ -330,7 +335,12 @@ class SetMeUp:
             sys.exit()
 
         # Now, lets create the directory to perform the calibration
-        shutil.copytree(self.parmdirc, runpath.joinpath('DOMAIN'))
+        #shutil.copytree(self.parmdirc, runpath.joinpath('DOMAIN'))
+        dst_domain = runpath.joinpath('DOMAIN')
+        dst_domain.mkdir(exist_ok=True, parents=True)
+
+        for src in self.parmdirc.glob('*'):
+            os.symlink(src, dst_domain.joinpath(src.name)) 
 
         # Create a directory to store the original domain files in.
         startingParamDir = runpath.joinpath('ORIG_PARM')
@@ -340,13 +350,15 @@ class SetMeUp:
         for cf in self.calib_files_to_copy:
             src = self.parmdirc.joinpath(cf)
             dst = startingParamDir.joinpath(cf)
-            shutil.copy(src, dst)
+            #shutil.copy(src, dst)
+            os.symlink(src,dst)
 
         # Copy files in the 'files_to_copy list' to the run directory
         for cf in self.files_to_copy:
             src = self.exedirc.joinpath(cf)
             dst = runpath.joinpath(cf)
-            shutil.copy(src, dst)
+            #shutil.copy(src, dst)
+            os.symlink(src, dst)
 
         # Create the Forcing Directory and Link forcings
         forcing_directory = runpath.joinpath('FORCING')
@@ -365,8 +377,8 @@ class SetMeUp:
         shutil.copy('./{}'.format(self.setup), runpath)
 
         # Copy more scripts
-        shutil.copy('./lib/Python/viz/PlotQ.py', runpath)
-        shutil.copy('./lib/fortran/fastread.py', runpath)
+        #shutil.copy('./lib/Python/viz/PlotQ.py', runpath)
+        #shutil.copy('./lib/fortran/fastread.py', runpath)
 
         # log success
         logger.info('created run directory {}'.format(runpath))

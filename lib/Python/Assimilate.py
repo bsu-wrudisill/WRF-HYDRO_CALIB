@@ -11,7 +11,7 @@ import accessories as acc
 import yaml
 import functools
 from math import ceil
-
+import pickle
 
 logger = logging.getLogger(__name__)
 
@@ -125,8 +125,14 @@ class Assimilate(SetMeUp):
         # Get the appropriate forcing files
         # TODO: do the timestepping
 
-        linkForcings = self.GatherForcings(self.calib_start_date,
-                                           self.calib_end_date)
+        # Check if there is a 'pickled' forcing list already hiding  
+        pklname = ".forcinglist-{}-{}.pkl".format(self.calib_start_date, self.calib_end_date)
+        if Path(pklname).exists():
+                with open(pklname, "rb") as pkled:
+                        linkForcings = pickle.load(pkled)
+        else:
+                linkForcings = self.GatherForcings(self.calib_start_date,
+                                                   self.calib_end_date)
 
         # Make the Parent Directory
         self.dadirc.mkdir(exist_ok = True, parents=True)
@@ -140,7 +146,7 @@ class Assimilate(SetMeUp):
         # -----------------
         #  Define a 'partial' function for mapping
         # reorder the arguments in the create run dir so we can use functools.partial ... ugh
-        reorder = lambda linkForcings, runpath: self._CreateRunDir_(runpath, linkForcings)
+        reorder = lambda linkForcings, runpath: self.CreateRunDir(runpath, linkForcings)
 
         # 'fixed' link forcings parameter, now we can use multithread
         CreateRunDir_Partial = functools.partial(reorder, linkForcings)
