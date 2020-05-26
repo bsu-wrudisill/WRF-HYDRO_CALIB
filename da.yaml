@@ -1,0 +1,22 @@
+# setup stuff for doing data assimilation
+
+# Which state variable is being observed?
+state_variables : ['SNEQV']
+
+
+# Assimilation Parameters
+n_ens: 7
+
+
+# Info about constructing the forcing ensemble
+forcing_perturbations :
+      RAINNC: 1.0
+      T2: 1.0
+      GLW: 1.0
+      SWDOWN: 1.0
+      U10: 1.0
+      V10: 1.0
+      PSFC: 1.0
+
+# Observational Interval, hours
+obs_interval : 24
