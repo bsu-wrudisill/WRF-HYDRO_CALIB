@@ -155,11 +155,11 @@ class Assimilate(SetMeUp):
         # Done
 
     @staticmethod
-    def _ForwardModel_(userid,
-                       catchid,
-                       check_file,
-                       directory,
-                       submit_script='submit.sh'):
+    def ForwardModel(userid,
+                     catchid,
+                     check_file,
+                     directory,
+                     submit_script='submit.sh'):
         """Summary
         Parameters:
             directory (TYPE): Description
@@ -177,16 +177,15 @@ class Assimilate(SetMeUp):
 
         # Move directories and submit the job...
         os.chdir(directory)
-    #    jobid, err = Submit('submit.sh', catchid)
+        jobid, err = Submit('submit.sh', catchid)
         time.sleep(1)
 
         # Wait for the job to complete
-    #    WaitForJob(jobid, userid)
-        acc.SystemCmd('touch foo.txt')
+        WaitForJob(jobid, userid)
 
         # Verify that the model worked...
         logger.info('Done waiting...')
-    #    success = acc.checkFile(check_file)
+        success = acc.checkFile(check_file)
 
         # Move back to the parent directory...
         os.chdir(cwd)
@@ -197,14 +196,26 @@ class Assimilate(SetMeUp):
         """Summary
         """
 
-        #Write  all of the submit scripts
+        # Write  all of the submit scripts
+        submit = acc.AssembleSubmitString(1,16,'shortq',"01:00:00")
+       
+        # Make a function of only one mappable 
+        WriteSubmit_Partial = functools.partial(acc.StringToText, submit) 
+        acc.multi_thread(WriteSubmit_Partial, [i.joinpath('submit.sh') for i in self.ensDirectories])
 
-        foo = acc.AssembleSubmitString(1,16,'leaf',"01:00:00")
-
-        ForwardModel_Partial = functools.partial(self._ForwardModel_, 'aaa','vvv','foo')
+        # Write out all of the namelist scripts 
+        # change the order so that we can partialize...
+        _reorder_CreateNamelist = lambda start_date, end_date, runpath: self.CreateNamelist(runpath, start_date, end_date)
+        
+        WriteNamelist_Partial = functools.partial(_reorder_CreateNamelist, self.calib_start_date, self.calib_end_date) 
+        
+        acc.multi_thread(WriteNamelist_Partial, self.ensDirectories)
+        
+        # Make a function of only one mappable...
+        #ForwardModel_Partial = functools.partial(self._ForwardModel_, 'aaa','vvv','foo')
 
         # apply the forward model function to all of the ensemble directories
-        acc.multi_thread(ForwardModel_Partial, self.ensDirectories, thread_chunk_size=self.n_ens)
+        #acc.multi_thread(ForwardModel_Partial, self.ensDirectories, thread_chunk_size=self.n_ens)
 
     def perturb_forcings(self):
         """Summary

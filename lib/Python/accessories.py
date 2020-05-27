@@ -282,7 +282,7 @@ def Submit(subname, catchid):
     return jobid.decode("utf-8").rstrip(), err
 
 
-def WaitForJob(jobid, user, scheduler='SLURM'):
+def WaitForJob(jobid, user, scheduler='SLURM', silent=False):
     """
     Queries the queue and finds all of the job ids that match the username.
     Create a list of those job ids (different than job names( nd tries to
@@ -361,19 +361,23 @@ def WaitForJob(jobid, user, scheduler='SLURM'):
         if still_running and (not qstat_error):
             keep_going = True
             if dt < 1.0:  # more than 1 minutes of logging..
-                logger.info('Found jobid {}. Continuing...'.format(jobid))
+                if not silent: 
+                    logger.info('Found jobid {}. Continuing...'.format(jobid))
             else:
-                _timelylog('Found jobid {}. Continuing...'.format(jobid))  # Only log every hour
+                if not silent:  
+                    _timelylog('Found jobid {}. Continuing...'.format(jobid))  # Only log every hour
 
         # !!!! KEEP GOING UNTIL QSTAT STARTS WORKING AGAIN !!!
         if qstat_error:
             keep_going = True
-            logger.info('Qstat encountered error. Continuing...')
+            if not silent:
+                logger.info('Qstat encountered error. Continuing...')
 
         # The only acceptable exit point. No jobs found, and qstat didn't return an error
         if (not still_running) and (not qstat_error):
             keep_going = False
-            logger.info('jobid {} is no longer in the queue'.format(jobid))
+            if not silent:
+                logger.info('jobid {} is no longer in the queue'.format(jobid))
 
         # sleep for thirty seconds
         time.sleep(30)
@@ -383,7 +387,8 @@ def WaitForJob(jobid, user, scheduler='SLURM'):
     dt = (final_time - start_time).total_seconds() / 60
 
     # Now log the time
-    logger.info('jobid {} completion time: {} min'.format(jobid, dt))
+    if not silent:
+        logger.info('jobid {} completion time: {} min'.format(jobid, dt))
 
 
 def string_gen(N):
@@ -468,11 +473,6 @@ def multi_thread(function, mappable, thread_chunk_size=5):
             thread.join()  #
 
 
-def test():
-    logger.info('log')
-    print('here i am')
-
-
 def AssembleSubmitString(nodes,
                          mpi_tasks,
                          queue,
@@ -511,6 +511,10 @@ def AssembleSubmitString(nodes,
     # Done
     return string
 
+def StringToText(string, filename):
+    with open(filename, 'w') as open_file:
+        open_file.write(string)
+    
 
 @passfail
 def ForwardModel(directory,
