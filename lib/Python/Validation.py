@@ -234,3 +234,32 @@ class Validation(SetMeUp):
                                    self.final_val_file)
         if not success:
             sys.exit('Model run fail. check {}'.format(self.calibrated))
+
+
+
+    def aggregate_results(self):
+        """
+        """
+        # Log the validation (baseline) run
+        cwd = os.getcwd()
+        self.CreateAnalScript(self.baseline,
+                              self.database,
+                              0,
+                              'baseline') 
+        os.chdir(self.baseline)
+        jobid, err = acc.Submit('submit_analysis.sh', self.catchid)
+
+
+        # Log the validation (calibrated) run
+        self.CreateAnalScript(self.calibrated,
+                              self.database,
+                              0,
+                              'calibrated') 
+        
+        os.chdir(self.calibrated)
+        jobid, err = acc.Submit('submit_analysis.sh', self.catchid)
+
+        #go back to orig directory
+        os.chdir(cwd)
+
+

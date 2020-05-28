@@ -19,7 +19,7 @@ iteration=ITERATION_COUNT
 directory=DIRECTORY_PATH
 database=DATABASE_NAME
 libPath=PATH_TO_PYTHON
-
+tableName=TABLE_NAME
 python -c "
 
 import sys
@@ -36,9 +36,9 @@ modQ['iteration'] = str($iteration)
 
 # log the data to the sql database
 database = Path('$directory').joinpath('$database')
-table_name = 'qModeled'
+tableName = '$tableName'
 
-dbl.logDataframe(modQ, table_name, database)
+dbl.logDataframe(modQ, tableName, database)
 "
 
 exit
