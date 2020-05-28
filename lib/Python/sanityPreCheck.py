@@ -39,13 +39,12 @@ class RunPreCheck(SetMeUp):
     def test_dates(self):
         # Purpose: test that the date ranges passed into the model
         # config (in the .yaml file) are reasonable
-        msg1 = '{} already exists'.format(self.clbdirc)
         msg2 = "Specified evaluation date is not \
                 within the range of the calibration \
                 date period. Fatal."
 
-        assert (self.end_date > self.start_date), msg1
-        assert (self.eval_end_date <= self.end_date) & (self.eval_start_date >= self.eval_start_date), msg2
+        assert (self.calib_end_date > self.calib_start_date), msg2
+        assert (self.eval_end_date <= self.calib_end_date) & (self.eval_start_date >= self.calib_start_date), msg2
 
     @passfail
     def test_filePaths(self):
