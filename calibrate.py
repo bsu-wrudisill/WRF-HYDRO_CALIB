@@ -40,16 +40,18 @@ setup = SetMeUp(setupfile)
 
 
 # remove dir if it exists...
-#if setup.parent_directory.exists():
-#    shutil.rmtree(setup.parent_directory, ignore_errors=True)
+if setup.parent_directory.exists():
+    shutil.rmtree(setup.parent_directory, ignore_errors=True)
 
 # Calibrate
-#calib = Calibration(setupfile)
-#calib.PrepareCalibration()
-#calib()
+calib = Calibration(setupfile)
+calib.PrepareCalibration()
+calib()
 
 # Validate
 #---------
 valid = Validation(setupfile)
 valid.PrepareValidation()
 valid.run_validation()
+
+valid.aggregate_results()

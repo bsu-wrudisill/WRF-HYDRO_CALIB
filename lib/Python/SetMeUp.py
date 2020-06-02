@@ -443,7 +443,7 @@ class SetMeUp:
         # Done
         logger.info('created job submission script')
 
-    def CreateAnalScript(self, runpath, database, iteration, **kwargs):
+    def CreateAnalScript(self, runpath, database, iteration, tableName='qModeled'):
         """
         Create the job submit script for the analysis step.
         Previous code did the analysis on the head node and
@@ -485,7 +485,8 @@ class SetMeUp:
                   "ANALYSIS_TASKS": aTasks,
                   "ANALYSIS_NODES": aNodes,
                   "ANALYSIS_QUEUE": self.queue,
-                  "ANALYSIS_TIME": runTime
+                  "ANALYSIS_TIME": runTime,
+                  "TABLE_NAME":tableName
                   }
 
         # Create/Update the job submit template into the directory
