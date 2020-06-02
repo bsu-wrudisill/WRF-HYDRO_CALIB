@@ -8,9 +8,15 @@ libPath = '/home/wrudisill/scratch/WRF-HYDRO_CALIB/lib/fortran'
 sys.path.insert(0,libPath)
 from fastread import test
 
+parser = argparse.ArgumentParser()
+parser.add_argument("channel_point", type=str, help="directory containing model files") 
+parser.add_argument("clbdirc", type=str, help="directory containing model files") 
 
-clbdirc = sys.argv[1]
-pathtofiles = Path(clbdirc)
+
+args = parser.parse_args()
+
+pathtofiles = Path(args.clbdirc)
+
 filelist = pathtofiles.glob('*CHRTOUT*')
 outputfile = 'modelstreamflow.txt'
 
