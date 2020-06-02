@@ -1,0 +1,139 @@
+parameters:
+    bexp:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 3
+        file: soil_properties.nc
+        description: ""
+
+    smcmax:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 3
+        file: soil_properties.nc
+        description: ""
+
+    dksat:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 3
+        file: soil_properties.nc
+        description: ""
+
+    refkdt:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 3
+        file: soil_properties.nc
+        description: ""
+
+    cwpvt:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 3
+        file: soil_properties.nc
+        description: ""
+
+    vcmx25:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 3
+        file: soil_properties.nc
+        description: ""
+
+    slope:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 3
+        file: soil_properties.nc
+        description: ""
+
+    mp:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 3
+        file: soil_properties.nc
+        description: ""
+
+    hvt:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 3
+        file: soil_properties.nc
+        description: ""
+
+    mfsno:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 3
+        file: soil_properties.nc
+        description: ""
+
+    Expon:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 1
+        file: GWBUCKPARM.nc
+        description: ""
+
+    Zmax:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 1
+        file: GWBUCKPARM.nc
+        description: ""
+
+    Zinit:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 1
+        file: GWBUCKPARM.nc
+        description: ""
+
+    Coeff:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 1
+        file: GWBUCKPARM.nc
+        description: ""
+
+    OV_ROUGH2D:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 1
+        file: hydro2dtbl.nc
+        description: ""
+
+    LKSAT:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 1
+        file: hydro2dtbl.nc
+        description: ""
+
+    Kchan:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 1
+        file: Route_Link.nc
+        description: ""
+
+    ChSlp:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 1
+        file: Route_Link.nc
+        description: ""
+
+    n:
+        min_value : 0.01
+        max_value : 1
+        dimensions: 1
+        file: Route_Link.nc
+        description: ""
+
+
+
+
+
+

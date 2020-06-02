@@ -1,3 +1,4 @@
+import yaml
 import os
 import sys
 import logging
@@ -63,10 +64,34 @@ class Calibration(SetMeUp):
         df.set_index('parameter', inplace=True)
 
         # Initialize the best value parameter
-        df["bestValue"] = df["ini"]
-        df["currentValue"] = df["ini"]
-        df["nextValue"] = None
+        df["bestValue"] = df["initialValue"]
+        df["currentValue"] = df["initialValue"]
         df["onOff"] = df["calib_flag"]
+        df["nextValue"] = None
+        df["file"] = None
+        df["maxValue"] = None
+        df["minValue"] = None
+
+        # read yaml
+        with open('calib_params.yaml') as y:
+            yamlfile = yaml.load(y, Loader=yaml.FullLoader)
+
+        keys = yamlfile['parameters'].keys()
+
+        # Group the files with the table ...
+        for param in df.index:
+            if param in keys:
+                df.at[param, 'file'] = yamlfile['parameters'][param]['file']
+                df.at[param, 'dims'] = yamlfile['parameters'][param]['dimensions']
+                df.at[param, 'maxValue'] = yamlfile['parameters'][param]['min_value']
+                df.at[param, 'minValue'] = yamlfile['parameters'][param]['max_value']
+
+            else:
+                print('did not find..', param)
+                # remove the parameter if it is not found in the yamlfile....
+                # since we don't know what to do with it...
+                df.drop(index=param, inplace=True)
+
         # assign the df to itself, so we can hold onto it in later fx
         self.df = df
 
@@ -112,6 +137,53 @@ class Calibration(SetMeUp):
                          table_name,
                          self.database)
 
+    def AdjustCalibTable(self):
+        """
+        Change the limits of the 'cali_params.tbl' so that the values do not exceed
+        predefined limits
+        """
+        grouped = self.df.groupby('file')
+        ncList = grouped.groups.keys()
+
+        # Loop through files
+        for ncSingle in ncList:
+            ncfile = self.parmdirc.joinpath(ncSingle)
+            print("Opening... ", ncfile)
+            readMe = xr.open_dataset(ncfile)
+
+            # loop through individual parameters
+            for param in grouped.groups[ncSingle]:
+
+                # determine the max value of the parameter file
+                real_param_max = ncfile.max()
+                real_param_min = ncfile.min()
+
+                # get the min/max delta values from the table
+                delta_max = self.df.at[param, 'maxDelta']
+                delta_min = self.df.at[param, 'minDelta']
+
+                # get the min/max ttoal values from df
+                value_min = self.df.at[param, 'minDelta']
+                value_max = self.df.at[param, 'minDelta']
+
+                if self.df.at[param, 'factor'] == 'mult':
+                    new_delta_max = value_max/real_param_max
+                    new_delta_min = value_min/real_param_min
+
+                if self.df.at[param, 'factor'] == 'add':
+                    new_delta_max = value_max - real_param_max
+                    new_delta_min = value_min - real_param_min
+
+                logger.info(delta_max '-->' new_delta_max)
+                logger.info(delta_min '-->' new_delta_min)
+
+                # now adjust the calib_params.tbl...
+                self.df.at[param, 'maxDelta'] = new_delta_max
+                self.df.at[param, 'minDelta'] = new_delta_min
+
+        logger.info(self.df)
+
+
 
     def EvaluateIteration(self):
         """Summary
@@ -124,7 +196,6 @@ class Calibration(SetMeUp):
         Returns:
             TYPE: Description
         """
-
         # Read the model and the observed discharge
         # from SQL db into a pandas dataframe
         merged = dbl.readSqlDischarge(self.database, self.iteration)
@@ -234,7 +305,7 @@ class Calibration(SetMeUp):
         activeParams = list(self.df.groupby('calib_flag').groups[1])
 
         # Randomly select parameters to update
-        prob = 1 - np.log(self.iteration+1) / np.log(self.max_iteration + 1)
+        prob = 1 - np.log(self.iteration + 1) / np.log(self.max_iteration + 1)
 
         # Determine the 'active set'
         for param in activeParams:
@@ -282,6 +353,7 @@ class Calibration(SetMeUp):
                 if x_new < xj_min:  # if it is less than min, reflect to middle
                     x_new = 10**(np.log10(xj_min) +
                                  (np.log10(xj_min) - np.log10(x_new)))
+
                 # If xnew is greater than the max, reflect to middle
                 if x_new > xj_max:
                     x_new = 10**(np.log10(xj_max) -
@@ -316,6 +388,8 @@ class Calibration(SetMeUp):
         # DDS iteration complete
         # ----------------------
         logger.info('Performed DDS update for iteration {}'.format(self.iteration))
+
+
 
     def UpdateParamFiles(self):
         """Summary
@@ -464,15 +538,15 @@ class Calibration(SetMeUp):
         while threeFailureMax <= 3:
             # break the loop if we are at the final iter
             if self.iteration == self.max_iteration:
-                break 
-            
+                break
+
             # Run the model and time it...
             t1 = datetime.datetime.now()
             success, status = self.OneLoop()
             t2 = datetime.datetime.now()
             dt = (t2 - t1).total_seconds() / 60  # Time in mintes..
             logger.info("Iteration {} took {} minutes".format(self.iteration, dt))
-            
+
             if success:
                 logger.info(status)
                 threeFailureMax = 0
@@ -485,6 +559,6 @@ class Calibration(SetMeUp):
                                      Exiting"
             logger.error(message)
             sys.exit()
-            
+
         # done with max_iters...
         logger.info('reached max iterations')
