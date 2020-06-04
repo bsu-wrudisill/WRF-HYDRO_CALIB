@@ -6,21 +6,22 @@
 
 JOBTYPE: forward   # either 'calib' or 'spinup'
 userid : wrudisill
-# USGS gauge to calibrate to 
-usgs_code: 13139510
+
+# USGS gauge station ID to calibrate to 
+usgs_code: <CHANGE ME>
 name_ext: "recalibrate"
 
 # Specify directories 
 executable_location: /home/wrudisill/scratch/NewHydroBuilt/WRF_HYDRO-R2/wrf_hydro_nwm_public/trunk/NDHMS/Run
-forcing_location: /home/wrudisill/leaf/WRF-Hydro_Forcing/13139510_bigWood/ 
-parameter_location: /scratch/leaf/share/WRF_hydro_subsets_201909/13139510_bigWood/
+forcing_location: <CHANGE ME> 
+parameter_location: <CHANGE ME> 
 
 # Put None for a 'cold-start' run
 hydro_restart_file: None 
 hrldas_restart_file: None
 
 # Place where the calibration happens
-calib_location: /home/wrudisill/scratch/IPC_BasinsPaper/13139510_bigWood/
+calib_location: <CHANGE ME> 
 
 
 # Specify restart file locations. both are required if doing a restart run. 
