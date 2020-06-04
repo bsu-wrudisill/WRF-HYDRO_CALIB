@@ -1,51 +1,50 @@
-# setup.yaml
+# setup.yaml 
 # purpose: set parameters for WRF-Hydro calibration, spinup, or run
 
-JOBTYPE: calib   # either 'calib' or 'spinup'
+# setup.yaml 
+# purpose: set parameters for WRF-Hydro calibration, spinup, or run
+
+JOBTYPE: forward   # either 'calib' or 'spinup'
 userid : wrudisill
-# USGS gauge to calibrate to
-usgs_code: 13185000
-name_ext: "test"
+# USGS gauge to calibrate to 
+usgs_code: 13139510
+name_ext: "recalibrate"
 
-# Specify directories
+# Specify directories 
 executable_location: /home/wrudisill/scratch/NewHydroBuilt/WRF_HYDRO-R2/wrf_hydro_nwm_public/trunk/NDHMS/Run
-parameter_location: /scratch/leaf/share/WRF_hydro_subsets_201810/13185000
-forcing_location: /home/wrudisill/leaf/WRF-Hydro_Forcing/13185000_boiseTwin
-calib_location: /home/wrudisill/scratch/WRF-HYDRO_CALIB/
+forcing_location: /home/wrudisill/leaf/WRF-Hydro_Forcing/13139510_bigWood/ 
+parameter_location: /scratch/leaf/share/WRF_hydro_subsets_201909/13139510_bigWood/
 
-
-# Specify restart file locations. both are required if doing a restart run.
 # Put None for a 'cold-start' run
 hydro_restart_file: None 
-hrldas_restart_file: None 
+hrldas_restart_file: None
 
-# Job submit criteria. More to be added later
-QUEUE: leaf    # name of the queue
+# Place where the calibration happens
+calib_location: /home/wrudisill/scratch/IPC_BasinsPaper/13139510_bigWood/
+
+
+# Specify restart file locations. both are required if doing a restart run. 
+
+# Job submit criteria. More to be added later  
+QUEUE: leafq    # name of the queue 
 NODES: 2       # number of desired nodes
 
-# Number of calibration iterations
-dds_iter: 250
+# Number of calibration iterations 
+dds_iter: 50 
+        
+# Specify the start and end dates for the 'calibration' and 'evaluation'
+# periods respectively.
+calib_date: 
+        start_date: 2012-10-01
+        end_date: 2013-10-01
+eval_date: 
+        start_date: 2012-01-01
+        end_date: 2013-10-01
 
-
-# The 'calibration' time period. The eval date allows for some spinup of the model before
-# computing the objective function.
-calib_date:
-        start_date: 2013-09-01
-        end_date: 2013-10-03
-calib_eval_date:
-        start_date: 2013-09-01
-        end_date: 2013-10-03
-
-# The 'validation run'. This should probably not encompass the same time as calibration
-# The best parameters are chosen from the calibration. The 'val_eval_date' allows for some
-# Spinup time in the validation period before computing the objective functions
-val_date:
-        start_date: 2013-09-01
-        end_date: 2013-10-03
-val_eval_date:
-        start_date: 2013-09-01
-        end_date: 2013-10-03
+validation_date:
+        start_date: 2005-10-01
+        end_date: 2008-10-01
 
 # WARNING:  PRECIPITATION ADJUSTMET BELOW HERE #
 adjust_forcings: False
-benefit_file: None #/home/wrudisill/scratch/IDWR_Calibration/seedingfiles/BoiseTwin_13185000/benefit.nc
+benefit_file: None 

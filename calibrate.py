@@ -32,21 +32,28 @@ logger.setLevel(logging.DEBUG)
 setupfile = 'setup.yaml'
 calibrationfile = 'calib_params.tbl'
 
-if not RunPreCheck(setupfile).run_all(): sys.exit()
-if not RunCalibCheck(setupfile).run_all(): sys.exit()
+#if not RunPreCheck(setupfile).run_all(): sys.exit()
+#if not RunCalibCheck(setupfile).run_all(): sys.exit()
 
 # create the setup instance
 setup = SetMeUp(setupfile)
-
 
 # remove dir if it exists...
 if setup.parent_directory.exists():
     shutil.rmtree(setup.parent_directory, ignore_errors=True)
 
+# get the current directory 
+cwd = os.getcwd()
+
 # Calibrate
 calib = Calibration(setupfile)
 calib.PrepareCalibration()
+calib.AdjustCalibTable()
 calib()
+
+print(self.failed_iterations)
+# make sure we are in the parent directory...
+os.chdir(cwd) 
 
 # Validate
 #---------

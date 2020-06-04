@@ -102,6 +102,8 @@ class Calibration(SetMeUp):
                                                        ed.strftime("%m"),
                                                        ed.strftime("%d"),
                                                        ed.strftime("%H")))
+        # 'failed iteration counter'
+        self.failed_iterations = 0
 
     def PrepareCalibration(self):
         """Summary
@@ -242,12 +244,12 @@ class Calibration(SetMeUp):
 
             # update the active params
             for param in self.df.groupby('calib_flag').groups[1]:
-                self.df.at[param, 'bestValue'] = self.df.loc[param, 'ini']
+                self.df.at[param, 'bestValue'] = self.df.loc[param, 'initialValue']
 
             # keep the inactive params at 0
             try:
                 for param in self.df.groupby('calib_flag').groups[0]:
-                    self.df.at[param, 'bestValue'] = self.df.loc[param, 'ini']
+                    self.df.at[param, 'bestValue'] = self.df.loc[param, 'initialValue']
                 logger.info('we are on the first iter')
             except KeyError:
                 logger.info('all parameters are active')
@@ -282,7 +284,7 @@ class Calibration(SetMeUp):
         # These get updated by the DDS ( or whatever alg. we chose...)
         self.improvement = improvement
         self.objective = objective
-        self.df['nextValue'] = self.df['ini']
+        self.df['nextValue'] = self.df['initialValue']
 
         return objective, improvement
 
@@ -419,7 +421,7 @@ class Calibration(SetMeUp):
                 dims = self.df.loc[param].dims
 
                 # Create the value for updating
-                # this will include the 'ini' value
+                # this will include the 'initialValue' value
                 updateVal = self.df.nextValue.loc[param]
 
                 # apply logic to update w/ the correct dims
@@ -500,10 +502,11 @@ class Calibration(SetMeUp):
                                    self.catchid,
                                    self.final_chrtfile)
         if not success:
-            logger.info('Model run fail')
-            sys.exit('Model run fail. Exiting')
-
-        logger.info('success')
+            logger.info('Model run fail. Returning...')
+            self.failed_iterations += 1 
+        else:
+            logger.info('success')
+        
         # Model Evaluation
         # -----------------
         # This step will log the model outputs to the database
