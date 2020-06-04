@@ -4,94 +4,96 @@ parameters:
         max_value : 1
         dimensions: 3
         file: soil_properties.nc
-        description: ""
+        description: "beta parameter (pore size distribution index). This exponent is used to calculate the
+                      unsaturated Ksat and matric potential values based on their equiavelent saturated value.
+                      the higher beta is, the smaller the unsat K value is, and the smalller the matric potential is)"
 
     smcmax:
-        min_value : 0.01
-        max_value : 1
+        min_value : 0.3
+        max_value : 0.8
         dimensions: 3
         file: soil_properties.nc
-        description: ""
+        description: "porosity"
 
     dksat:
-        min_value : 0.01
-        max_value : 1
+        min_value : 1E-6 
+        max_value :  
         dimensions: 3
         file: soil_properties.nc
-        description: ""
+        description: "saturated hydraulic conductivity"
 
     refkdt:
-        min_value : 0.01
-        max_value : 1
+        min_value : 0.1
+        max_value : 0.9
         dimensions: 3
-        file: soil_properties.nc
-        description: ""
-
+        file: soil_properties.nc 
+        description: "surface runoff parameterizzation"
+    
     cwpvt:
-        min_value : 0.01
-        max_value : 1
+        min_value : 0.1
+        max_value : 0.9
         dimensions: 3
-        file: soil_properties.nc
-        description: ""
+        file: soil_properties.nc 
+        description: "canopy wind parameter" 
 
     vcmx25:
-        min_value : 0.01
-        max_value : 1
+        min_value : 15.0
+        max_value : 50.0
         dimensions: 3
         file: soil_properties.nc
-        description: ""
+        description: "Max rate of plant carboxylation"
 
     slope:
-        min_value : 0.01
-        max_value : 1
+        min_value : .10
+        max_value : .75
         dimensions: 3
         file: soil_properties.nc
-        description: ""
+        description: "parameter relating to drainage out of soil column... can't find in code base"
 
     mp:
-        min_value : 0.01
-        max_value : 1
+        min_value : 2.0
+        max_value : 9.0
         dimensions: 3
         file: soil_properties.nc
-        description: ""
+        description: "plant parameter of some kidn..."
 
     hvt:
-        min_value : 0.01
-        max_value : 1
+        min_value : 1.0
+        max_value : 40.0
         dimensions: 3
         file: soil_properties.nc
         description: ""
 
     mfsno:
-        min_value : 0.01
-        max_value : 1
+        min_value : 0.1
+        max_value : 5.5
         dimensions: 3
         file: soil_properties.nc
         description: ""
 
     Expon:
-        min_value : 0.01
-        max_value : 1
+        min_value : 2.0 
+        max_value : 4.0
         dimensions: 1
         file: GWBUCKPARM.nc
         description: ""
 
     Zmax:
-        min_value : 0.01
-        max_value : 1
+        min_value : 80.0
+        max_value : 250.0 
         dimensions: 1
         file: GWBUCKPARM.nc
         description: ""
 
     Zinit:
-        min_value : 0.01
+        min_value : 20
         max_value : 1
         dimensions: 1
         file: GWBUCKPARM.nc
         description: ""
 
     Coeff:
-        min_value : 0.01
+        min_value : 1
         max_value : 1
         dimensions: 1
         file: GWBUCKPARM.nc
@@ -99,38 +101,45 @@ parameters:
 
     OV_ROUGH2D:
         min_value : 0.01
-        max_value : 1
+        max_value : .5
         dimensions: 1
         file: hydro2dtbl.nc
         description: ""
 
-    LKSAT:
-        min_value : 0.01
-        max_value : 1
-        dimensions: 1
-        file: hydro2dtbl.nc
-        description: ""
+    LKSATFAC:
+        min_value :   
+        max_value :  
+        dimensions: 2
+        file: Fulldom_hires.nc
+        description: "Lateral saturated hydraulic conductivity multiplier"
+    
+    RETDEPRTFAC:
+        min_value : 1.0
+        max_value : 300.0
+        dimensions: 2
+        file: Fulldom_hires.nc
+        description: "Retention depth multiplier"
 
     Kchan:
         min_value : 0.01
         max_value : 1
         dimensions: 1
         file: Route_Link.nc
-        description: ""
+        description: "Channel Conductivity"
 
     ChSlp:
         min_value : 0.01
-        max_value : 1
+        max_value : 0.10
         dimensions: 1
         file: Route_Link.nc
-        description: ""
+        description: "Channel Side Slope"
 
     n:
         min_value : 0.01
         max_value : 1
         dimensions: 1
         file: Route_Link.nc
-        description: ""
+        description: "Manning's n"
 
 
 
