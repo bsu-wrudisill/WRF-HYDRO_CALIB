@@ -54,7 +54,6 @@ class Calibration(SetMeUp):
         self.paramDir = self.clbdirc.joinpath('DOMAIN')
         self.database_name = 'Calibration.db'
         self.database = self.clbdirc.joinpath(self.database_name)
-        self.parameter_table = 'calib_params.tbl'
 
         # Create a dataframe w/ the parameter values
         # ------------------------------------------
@@ -73,7 +72,7 @@ class Calibration(SetMeUp):
         df["minValue"] = None
 
         # read yaml
-        with open('calib_params.yaml') as y:
+        with open(self.parameter_dictionary) as y:
             yamlfile = yaml.load(y, Loader=yaml.FullLoader)
 
         keys = yamlfile['parameters'].keys()
@@ -503,10 +502,10 @@ class Calibration(SetMeUp):
                                    self.final_chrtfile)
         if not success:
             logger.info('Model run fail. Returning...')
-            self.failed_iterations += 1 
+            self.failed_iterations += 1
         else:
             logger.info('success')
-        
+
         # Model Evaluation
         # -----------------
         # This step will log the model outputs to the database

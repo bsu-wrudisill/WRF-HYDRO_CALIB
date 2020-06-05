@@ -164,6 +164,10 @@ class SetMeUp:
         # Final Output File Name...
         self.chrtfmt = "{}{}{}{}00.CHRTOUT_DOMAIN2"
 
+        # get the calib parameters table
+        self.parameter_table = Path(yamlfile['parameter_table'])
+        self.parameter_dictionary = Path(yamlfile['parameter_dictionary'])
+
     def GatherForcingsFast(self, start_date, end_date, **kwargs):
         """
         Args:
