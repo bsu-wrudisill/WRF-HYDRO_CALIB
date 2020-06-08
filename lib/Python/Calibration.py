@@ -160,8 +160,6 @@ class Calibration(SetMeUp):
                 real_param_max = readMe[param].values.max()
                 real_param_min = readMe[param].values.min()
 
-                print(param, real_param_max)
-                print(param, real_param_min)
                 # get the min/max delta values from the table
                 delta_max = self.df.at[param, 'maxDelta']
                 delta_min = self.df.at[param, 'minDelta']
@@ -169,7 +167,7 @@ class Calibration(SetMeUp):
                 # get the min/max ttoal values from df
                 value_min = self.df.at[param, 'minDelta']
                 value_max = self.df.at[param, 'minDelta']
-
+                print(param, real_param_min, real_param_max)
                 if self.df.at[param, 'factor'] == 'mult':
                     new_delta_max = value_max/real_param_max
                     new_delta_min = value_min/real_param_min
@@ -178,13 +176,12 @@ class Calibration(SetMeUp):
                     new_delta_max = value_max - real_param_max
                     new_delta_min = value_min - real_param_min
 
-                logger.info(delta_max, '-->', new_delta_max)
-                logger.info(delta_min, '-->', new_delta_min)
-
+                logger.info('{} --> {}'.format(new_delta_min, new_delta_max))
+                logger.info('{} --> {}'.format(delta_min, new_delta_min))
+                
                 # now adjust the calib_params.tbl...
                 self.df.at[param, 'maxDelta'] = new_delta_max
                 self.df.at[param, 'minDelta'] = new_delta_min
-
 
 
 

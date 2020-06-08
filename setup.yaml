@@ -8,45 +8,44 @@ JOBTYPE: forward   # either 'calib' or 'spinup'
 userid : wrudisill
 
 # USGS gauge station ID to calibrate to 
-usgs_code: <CHANGE ME>
-name_ext: "recalibrate"
+usgs_code: 13185000
+name_ext: test 
 
-# Specify directories 
+# Specify directories
 executable_location: /home/wrudisill/scratch/NewHydroBuilt/WRF_HYDRO-R2/wrf_hydro_nwm_public/trunk/NDHMS/Run
-forcing_location: <CHANGE ME> 
-parameter_location: <CHANGE ME> 
+parameter_location: /scratch/leaf/share/WRF_hydro_subsets_201810/13185000
+forcing_location: /home/wrudisill/leaf/WRF-Hydro_Forcing/13185000_boiseTwin
+calib_location: /home/wrudisill/scratch/MasterBranch-WRF-HYDRO_CALIB/
 
 # Put None for a 'cold-start' run
 hydro_restart_file: None 
 hrldas_restart_file: None
 
-# Place where the calibration happens
-calib_location: <CHANGE ME> 
 
-
-# Specify restart file locations. both are required if doing a restart run. 
+# Number of calibration iterations
+dds_iter: 5
 
 # Job submit criteria. More to be added later  
-QUEUE: leaf    # name of the queue 
+QUEUE: shortq    # name of the queue 
 NODES: 2       # number of desired nodes
 
 # Number of calibration iterations 
-dds_iter: 50 
+dds_iter: 2 
         
 # Specify the start and end dates for the 'calibration' and 'evaluation'
 # periods respectively.
 calib_date: 
         start_date: 2012-10-01
-        end_date: 2013-10-01
+        end_date: 2012-10-02
 calib_eval_date:
-        start_date: 2013-01-01
-        end_date: 2013-10-01
+        start_date: 2012-10-01
+        end_date: 2012-10-02
 val_date: 
-        start_date: 2005-10-01
-        end_date: 2009-10-01
+        start_date: 2009-10-01
+        end_date: 2009-10-02
 val_eval_date:
-        start_date: 2006-10-01
-        end_date: 2009-10-01
+        start_date: 2009-10-01
+        end_date: 2009-10-02
 
 # WARNING:  PRECIPITATION ADJUSTMET BELOW HERE #
 adjust_forcings: False
