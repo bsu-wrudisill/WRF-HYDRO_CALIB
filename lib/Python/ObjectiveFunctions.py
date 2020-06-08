@@ -40,10 +40,18 @@ def KGE(mod, obs):
     Returns:
         TYPE: Description
     """
+    mobs = np.mean(obs)
+    if mobs == 0:
+        mobs = 1E-6
+    
+    sobs = np.std(obs)
+    if sobs == 0:
+        sobs == 1E-6
 
-    b = np.mean(mod) / np.mean(obs)
+    # mean ratio       
+    b = np.mean(mod) / mobs 
     # std
-    a = np.std(mod) / np.std(obs)
+    a = np.std(mod) / sobs 
     # corr coeff
     r = np.corrcoef(mod, obs)[0, 1]  # corrcoef returns the correlation matrix...
     # the diagonals are 1, the off-diags are the 'r'
