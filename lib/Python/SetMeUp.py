@@ -126,7 +126,9 @@ class SetMeUp:
         self.calib_files_to_copy = ['hydro2dtbl.nc',
                                     'Route_Link.nc',
                                     'soil_properties.nc',
-                                    'GWBUCKPARM.nc']
+                                    'GWBUCKPARM.nc',
+                                    'Fulldom_hires.nc']
+        
         # Create catch id file name
         self.catchid = 'catch_{}'.format(self.usgs_code)
 
@@ -163,7 +165,51 @@ class SetMeUp:
 
         # Final Output File Name...
         self.chrtfmt = "{}{}{}{}00.CHRTOUT_DOMAIN2"
+        
 
+        # Construct the calibration table...
+        self.parameter_table = 'calib_params.tbl'
+
+        # Create a dataframe w/ the parameter values
+        # ------------------------------------------
+        df = pd.read_csv(self.parameter_table,
+                         delimiter=' *, *',
+                         engine='python')
+        df.set_index('parameter', inplace=True)
+
+        # Initialize the best value parameter
+        df["bestValue"] = df["initialValue"]
+        df["currentValue"] = df["initialValue"]
+        df["onOff"] = df["calib_flag"]
+        df["nextValue"] = None
+        df["file"] = None
+        df["maxValue"] = None
+        df["minValue"] = None
+
+        # read yaml
+        with open('calib_params.yaml') as y:
+            yamlfile = yaml.load(y, Loader=yaml.FullLoader)
+
+        keys = yamlfile['parameters'].keys()
+
+        # Group the files with the table ...
+        for param in df.index:
+            if param in keys:
+                df.at[param, 'file'] = yamlfile['parameters'][param]['file']
+                df.at[param, 'dims'] = yamlfile['parameters'][param]['dimensions']
+                df.at[param, 'maxValue'] = yamlfile['parameters'][param]['min_value']
+                df.at[param, 'minValue'] = yamlfile['parameters'][param]['max_value']
+
+            else:
+                print('did not find..', param)
+                # remove the parameter if it is not found in the yamlfile....
+                # since we don't know what to do with it...
+                df.drop(index=param, inplace=True)
+
+        # assign the df to itself, so we can hold onto it in later fx
+        self.df = df
+    
+    
     def GatherForcingsFast(self, start_date, end_date, **kwargs):
         """
         Args:
@@ -301,15 +347,28 @@ class SetMeUp:
                               endString,
                               datapath)
         logger.info(cmd)
-        try:
-            os.system(cmd)
-
-        except Exception as e:  # WHAT IS THE EXCEPTION!!!!
-            logger.error(e)
-            logger.error('Unable to execute command {}'.format(cmdEmpty))
-            sys.exit()
-
+        
+        # allow for three failures... 
+        failed_download_attempts = 0
+        while failed_download_attempts < 3:
+            try:
+                os.system(cmd)
+            
+            # !! This is bad code. unmangaed exception catch for no reason !!
+            except Exception as e:  # WHAT IS THE EXCEPTION!!!!
+                logger.error(e)
+                logger.error('Unable to execute command {}'.format(cmdEmpty))
+                sys.exit()
+            
+            # if the file gets found... then break the loop
+            if acc.checkFile(datapath):
+                break
+            else:
+                failed_download_attempts += 1 
+       
         # now we check the observations to make sure there are none missing...
+                
+
 
     def CreateRunDir(self, runpath, linkForcings, **kwargs):
         """

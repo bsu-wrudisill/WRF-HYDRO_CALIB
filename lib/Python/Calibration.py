@@ -54,46 +54,6 @@ class Calibration(SetMeUp):
         self.paramDir = self.clbdirc.joinpath('DOMAIN')
         self.database_name = 'Calibration.db'
         self.database = self.clbdirc.joinpath(self.database_name)
-        self.parameter_table = 'calib_params.tbl'
-
-        # Create a dataframe w/ the parameter values
-        # ------------------------------------------
-        df = pd.read_csv(self.parameter_table,
-                         delimiter=' *, *',
-                         engine='python')
-        df.set_index('parameter', inplace=True)
-
-        # Initialize the best value parameter
-        df["bestValue"] = df["initialValue"]
-        df["currentValue"] = df["initialValue"]
-        df["onOff"] = df["calib_flag"]
-        df["nextValue"] = None
-        df["file"] = None
-        df["maxValue"] = None
-        df["minValue"] = None
-
-        # read yaml
-        with open('calib_params.yaml') as y:
-            yamlfile = yaml.load(y, Loader=yaml.FullLoader)
-
-        keys = yamlfile['parameters'].keys()
-
-        # Group the files with the table ...
-        for param in df.index:
-            if param in keys:
-                df.at[param, 'file'] = yamlfile['parameters'][param]['file']
-                df.at[param, 'dims'] = yamlfile['parameters'][param]['dimensions']
-                df.at[param, 'maxValue'] = yamlfile['parameters'][param]['min_value']
-                df.at[param, 'minValue'] = yamlfile['parameters'][param]['max_value']
-
-            else:
-                print('did not find..', param)
-                # remove the parameter if it is not found in the yamlfile....
-                # since we don't know what to do with it...
-                df.drop(index=param, inplace=True)
-
-        # assign the df to itself, so we can hold onto it in later fx
-        self.df = df
 
         # Database file
         # Temporary variable... makes following lines shorter...
@@ -159,7 +119,7 @@ class Calibration(SetMeUp):
                 # determine the max value of the parameter file
                 real_param_max = readMe[param].values.max()
                 real_param_min = readMe[param].values.min()
-
+                print(param, real_param_max, real_param_min)
                 # get the min/max delta values from the table
                 delta_max = self.df.at[param, 'maxDelta']
                 delta_min = self.df.at[param, 'minDelta']
@@ -175,13 +135,19 @@ class Calibration(SetMeUp):
                 if self.df.at[param, 'factor'] == 'add':
                     new_delta_max = value_max - real_param_max
                     new_delta_min = value_min - real_param_min
+                
+                if new_delta_max in [np.inf, None, np.nan]:
+                    new_delta_max = 0
 
-                logger.info('{} --> {}'.format(new_delta_min, new_delta_max))
+                if new_delta_min in [np.inf, None, np.nan]:
+                    new_delta_min = 0
+                
+                logger.info('{} --> {}'.format(delta_max, new_delta_max))
                 logger.info('{} --> {}'.format(delta_min, new_delta_min))
                 
                 # now adjust the calib_params.tbl...
-                self.df.at[param, 'maxDelta'] = new_delta_max
-                self.df.at[param, 'minDelta'] = new_delta_min
+                self.df.at[param, 'maxDelta'] = float(new_delta_max)
+                self.df.at[param, 'minDelta'] = float(new_delta_min)
 
 
 
@@ -334,11 +300,19 @@ class Calibration(SetMeUp):
         for param in selectedParams:
             # get the parameter, and the static bounds (xmin-----xmax)
             J = self.df.loc[param]
-            xj_min = J.minValue  # Note --
-            xj_max = J.maxValue  # Note --
+            xj_min = J.minDelta  # Note --
+            xj_max = J.maxDelta  # Note --
             xj_best = J.bestValue
-            xj_init = J.ini
-
+            xj_init = J.initialValue
+           
+            logger.info('------------------')
+            logger.info(param)
+            logger.info('xj_min:'+str(xj_min))
+            logger.info('xj_max:'+ str(xj_max))
+            logger.info('xj_best'+ str(xj_best))
+            logger.info('xj_init:' + str(xj_init))
+            logger.info('------------------')
+            
             # Is this a multiplicative parameter or an additive one?
             factor = J.factor
 

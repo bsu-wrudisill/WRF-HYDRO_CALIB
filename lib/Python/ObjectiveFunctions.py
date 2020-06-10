@@ -41,12 +41,14 @@ def KGE(mod, obs):
         TYPE: Description
     """
     mobs = np.mean(obs)
-    if mobs == 0:
-        mobs = 1E-6
+    print(mobs) 
+    if mobs in [0.0, 0, np.nan, None]:
+        mobs = 1E-3
     
     sobs = np.std(obs)
-    if sobs == 0:
-        sobs == 1E-6
+    print(sobs)
+    if sobs in [0.0, 0, np.nan, None]:
+        sobs = 1E-3
 
     # mean ratio       
     b = np.mean(mod) / mobs 
