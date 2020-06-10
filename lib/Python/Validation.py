@@ -163,21 +163,31 @@ class Validation(SetMeUp):
         calib_params = self.clbdirc.joinpath(self.parameter_table)
         database = self.clbdirc.joinpath('Calibration.db')
 
+        
+        
         # Begin....
         param = self.getParameters(database)
-        print(param)
         param.Iteration = list(map(int, param.iteration))
         performance = self.getPerformance(database)
-        print(performance) 
         
         best_row = performance.loc[(performance['objective'] == performance['objective'].min()) & (
             performance['improvement']== 1)]
-        best_parameters = param.loc[param['iteration'] == int(best_row['iteration'])]
+        
+        # THis is mostly for testing purpose... if for some reason the dataframe is empty
+        if best_row.empty:
+            best_iteration = 1
+        else:
+            best_iteration = int(best_row['iteration'])
+
+        # Get the parameter set from the best parameters 
+        best_parameters = param.loc[param['iteration'] == best_iteration]
         best_parameters.set_index('parameter', inplace=True)
 
         # Read the calibration table
-        clb = pd.read_csv(calib_params, delimiter=' *, *', engine='python')
-        clb.set_index('parameter', inplace=True)
+        clb = self.df
+        print('clb')
+        print(clb)
+        #clb.set_index('parameter', inplace=True)
         grouped = clb.groupby('file')
         ncList = grouped.groups.keys()
 
