@@ -17,7 +17,7 @@ parameters:
 
     dksat:
         min_value : 1E-6 
-        max_value :  
+        max_value : 1E-5
         dimensions: 3
         file: soil_properties.nc
         description: "saturated hydraulic conductivity"
@@ -86,8 +86,8 @@ parameters:
         description: ""
 
     Zinit:
-        min_value : 20
-        max_value : 1
+        min_value : 1.
+        max_value : 20.
         dimensions: 1
         file: GWBUCKPARM.nc
         description: ""
@@ -107,8 +107,8 @@ parameters:
         description: ""
 
     LKSATFAC:
-        min_value :   
-        max_value :  
+        min_value : 10.0
+        max_value : 6000.0
         dimensions: 2
         file: Fulldom_hires.nc
         description: "Lateral saturated hydraulic conductivity multiplier"
