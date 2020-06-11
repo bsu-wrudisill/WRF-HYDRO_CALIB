@@ -466,17 +466,21 @@ class Calibration(SetMeUp):
         logger.info('Calling one loop..')
         os.chdir(self.clbdirc)
 
-        acc.test()
+        # the last file to look for..
+        final_file = self.clbdirc.joinpath(self.final_chrtfile)
+        
         # Run the model once
-        success = acc.ForwardModel(self.clbdirc,
+        success, message = acc.ForwardModel(self.clbdirc,
                                    self.userid,
                                    self.catchid,
-                                   self.final_chrtfile)
+                                   final_file)
         if not success:
-            logger.info('Model run fail. Returning...')
+            logger.error('Model run fail. Returning...')
+            logger.error('Did not find: {}'.format(final_file))
             self.failed_iterations += 1 
+            return 
         else:
-            logger.info('success')
+            logger.info('Sucess. Found: {}'.format(final_file))
         
         # Model Evaluation
         # -----------------

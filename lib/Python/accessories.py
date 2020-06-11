@@ -335,7 +335,7 @@ def test():
     logger.info('log')
     print('here i am')
 
-@passfail
+
 def ForwardModel(directory,
                  userid,
                  catchid,
@@ -373,10 +373,8 @@ def ForwardModel(directory,
 
     # Check success message ... 
     if success:
-        logger.info(
-            'Found last chrt file--assume the model finished successfully')
-        return True
+        message =  'Found last chrt file--assume the model finished successfully'
+        return True, message
     else:
-        logger.info('{} not found. assume model run \
-                     failed. exiting'.format(check_file))
-        return False
+        message = '{} not found. assume model run failed. exiting'.format(check_file)
+        return False, message
