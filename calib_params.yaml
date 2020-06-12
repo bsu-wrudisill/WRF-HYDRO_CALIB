@@ -62,7 +62,7 @@ parameters:
         max_value : 40.0
         dimensions: 3
         file: soil_properties.nc
-        description: ""
+        description: "top of vegetaion canopy..."
 
     mfsno:
         min_value : 0.1
