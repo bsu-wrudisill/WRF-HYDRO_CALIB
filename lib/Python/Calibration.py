@@ -474,11 +474,26 @@ class Calibration(SetMeUp):
                                    self.userid,
                                    self.catchid,
                                    final_file)
+        
+        # Check if the model produced the correct output
         if not success:
-            logger.error('Model run fail. Returning...')
-            logger.error('Did not find: {}'.format(final_file))
             self.failed_iterations += 1 
-            return 
+            # Since hte model failed... and presumably because the parameter set
+            # was bad... lets do the DDS iteration again and find better parameters
+            # generate new parameters
+            self.DDS()
+
+            # update the parameters
+            self.UpdateParamFiles()  # write the new parameters to files
+
+            # clean up the directory
+            acc.CleanUp(self.clbdirc)
+
+            # raise an an error that the final file was not found ...
+            raise FileNotFoundError(final_file)
+        
+        # Otherwise, assume that the model run was a succes. Compute the perfomance
+        # and do the DDS algorithm. 
         else:
             logger.info('Sucess. Found: {}'.format(final_file))
         
