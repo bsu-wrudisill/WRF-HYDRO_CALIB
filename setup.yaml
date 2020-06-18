@@ -13,7 +13,7 @@ name_ext: test
 
 # USGS gauge to calibrate to
 usgs_code: 13139510
-name_ext: "recalibrate"
+name_ext: "recalibrate_fewer_parameters_plus_some"
 
 # Specify directories
 executable_location: /home/wrudisill/scratch/NewHydroBuilt/WRF_HYDRO-R2/wrf_hydro_nwm_public/trunk/NDHMS/Run
@@ -29,7 +29,7 @@ hrldas_restart_file: None
 dds_iter: 100 
 
 # Job submit criteria. More to be added later  
-QUEUE: shortq    # name of the queue 
+QUEUE: leaf    # name of the queue 
 NODES: 2       # number of desired nodes
         
         

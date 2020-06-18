@@ -49,10 +49,11 @@ cwd = os.getcwd()
 calib = Calibration(setupfile)
 calib.PrepareCalibration()
 calib.AdjustCalibTable()
+
 #logger.info(calib.df)
 calib()
 
-logger.info(calib.failed_iterations)
+#logger.info(calib.failed_iterations)
 # make sure we are in the parent directory...
 os.chdir(cwd) 
 
