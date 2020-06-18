@@ -5,13 +5,18 @@ import sys
 import datetime 
 import logging
 import yaml 
+import pandas as pd 
+
 
 libPathList = ['./lib/Python', './util']
 for libPath in libPathList:
 	sys.path.insert(0,libPath)
-from adjustParameters import *
-from adjustForcings import adjustForcings
+from SetMeUp import SetMeUp
+from Calibration import Calibration
+from Validation import Validation
 from sanityPreCheck import RunPreCheck, RunCalibCheck, RunPreSubmitTest
+import accessories as acc
+
 
 
 # setup the log file --- this will get passed to all of the imported modules!!!
@@ -42,21 +47,18 @@ logger.info('Logging to file: {}/{}'.format(os.getcwd(), logfile))
 
 # create the setup instance 
 setup = SetMeUp(setupfile)
-#setup()   # gather forcing files, create directories, etc.
-#
-## check that setup() was successful 
-#if not RunPreSubmitTest(setupfile).run_all(): sys.exit()
-calib = CalibrationMaster(setupfile)
-#calib.ForwardModel() # run once, no updating parameters 
+
+calib = Calibration(setupfile)
+calib.AdjustCalibTable()                                                                                                                                            
 
 param_cmd = "SELECT * FROM PARAMETERS"
-param = pd.read_sql(sql = param_cmd, con="sqlite:///{}/CALIBRATION.db".format(setup.clbdirc))
-lastState = param.loc[param.Iteration == param.Iteration.iloc[-1]]
+param = pd.read_sql(sql = param_cmd, con="sqlite:///{}/Calibration.db".format(setup.clbdirc))
+lastState = param.loc[param.iteration == param.iteration.iloc[-1]]
 lastState.set_index('parameter', inplace=True)
 calib.df.update(lastState)
 calib.df.nextValue = calib.df.currentValue 
 # update the iteration 
-calib.iters = int(lastState.Iteration.iloc[0])+1
+calib.iters = int(lastState.iteration.iloc[0])+1
 
 # now run the calibration 
 calib()
