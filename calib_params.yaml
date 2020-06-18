@@ -1,7 +1,7 @@
 parameters:
     bexp:
         min_value : 0.01
-        max_value : 1
+        max_value : 10.0
         dimensions: 3
         file: soil_properties.nc
         description: "beta parameter (pore size distribution index). This exponent is used to calculate the
@@ -9,22 +9,22 @@ parameters:
                       the higher beta is, the smaller the unsat K value is, and the smalller the matric potential is)"
 
     smcmax:
-        min_value : 0.3
-        max_value : 0.8
+        min_value : 0.1
+        max_value : 1.0
         dimensions: 3
         file: soil_properties.nc
         description: "porosity"
 
     dksat:
-        min_value : 1E-6 
-        max_value : 1E-5
+        min_value : .000001      # how can this be zero...
+        max_value : .0001  #1E-4
         dimensions: 3
         file: soil_properties.nc
         description: "saturated hydraulic conductivity"
 
     refkdt:
         min_value : 0.1
-        max_value : 0.9
+        max_value : 5.0 
         dimensions: 3
         file: soil_properties.nc 
         description: "surface runoff parameterizzation"
@@ -37,14 +37,14 @@ parameters:
         description: "canopy wind parameter" 
 
     vcmx25:
-        min_value : 15.0
-        max_value : 50.0
+        min_value : 0.001 
+        max_value : 100.0
         dimensions: 3
         file: soil_properties.nc
         description: "Max rate of plant carboxylation"
 
     slope:
-        min_value : .10
+        min_value : .001
         max_value : .75
         dimensions: 3
         file: soil_properties.nc
@@ -52,13 +52,13 @@ parameters:
 
     mp:
         min_value : 2.0
-        max_value : 9.0
+        max_value : 20.0
         dimensions: 3
         file: soil_properties.nc
         description: "plant parameter of some kidn..."
 
     hvt:
-        min_value : 1.0
+        min_value : 0.001
         max_value : 40.0
         dimensions: 3
         file: soil_properties.nc
@@ -66,20 +66,20 @@ parameters:
 
     mfsno:
         min_value : 0.1
-        max_value : 5.5
+        max_value : 8.5
         dimensions: 3
         file: soil_properties.nc
         description: ""
 
     Expon:
-        min_value : 2.0 
-        max_value : 4.0
+        min_value : .5 
+        max_value : 15.0
         dimensions: 1
         file: GWBUCKPARM.nc
         description: ""
 
     Zmax:
-        min_value : 80.0
+        min_value : 5.0
         max_value : 250.0 
         dimensions: 1
         file: GWBUCKPARM.nc
@@ -93,36 +93,36 @@ parameters:
         description: ""
 
     Coeff:
-        min_value : 1
-        max_value : 1
+        min_value : 1.0
+        max_value : 20.0
         dimensions: 1
         file: GWBUCKPARM.nc
         description: ""
 
     OV_ROUGH2D:
-        min_value : 0.01
-        max_value : .5
+        min_value : 0.0001
+        max_value : .7
         dimensions: 1
         file: hydro2dtbl.nc
-        description: ""
+        description: "Surface roughness parameterization. Where does this fit in??"
 
     LKSATFAC:
         min_value : 10.0
         max_value : 6000.0
         dimensions: 2
         file: Fulldom_hires.nc
-        description: "Lateral saturated hydraulic conductivity multiplier"
+        description: "Lateral saturated hydraulic conductivity multiplier. This is basically how anisotropic the medium is "
     
     RETDEPRTFAC:
         min_value : 1.0
-        max_value : 300.0
+        max_value : 1300.0
         dimensions: 2
         file: Fulldom_hires.nc
         description: "Retention depth multiplier"
 
     Kchan:
         min_value : 0.01
-        max_value : 1
+        max_value : 1.0
         dimensions: 1
         file: Route_Link.nc
         description: "Channel Conductivity"
@@ -136,7 +136,7 @@ parameters:
 
     n:
         min_value : 0.01
-        max_value : 1
+        max_value : 1.0
         dimensions: 1
         file: Route_Link.nc
         description: "Manning's n"
