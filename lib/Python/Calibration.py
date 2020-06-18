@@ -106,42 +106,69 @@ class Calibration(SetMeUp):
         """
         grouped = self.df.groupby('file')
         ncList = grouped.groups.keys()
-
+        logger.info('------------ Adjust Calibration Table based on min/max values of parameters ----------')
         # Loop through files
+        logger.info(self.df)
         for ncSingle in ncList:
             ncfile = self.parmdirc.joinpath(ncSingle)
-            print("Opening... ", ncfile)
             readMe = xr.open_dataset(ncfile)
 
             # loop through individual parameters
             for param in grouped.groups[ncSingle]:
+                
+                logger.info("\n##################")
+                logger.info(param)
+                logger.info("##################")
+
 
                 # determine the max value of the parameter file
                 real_param_max = readMe[param].values.max()
                 real_param_min = readMe[param].values.min()
-                print(param, real_param_max, real_param_min)
+                
+                logger.info("Max value in orig param file: {}".format(real_param_max))
+                logger.info("Min value in orig param file: {}".format(real_param_min))
+                
                 # get the min/max delta values from the table
                 delta_max = self.df.at[param, 'maxDelta']
                 delta_min = self.df.at[param, 'minDelta']
 
                 # get the min/max ttoal values from df
-                value_min = self.df.at[param, 'minDelta']
-                value_max = self.df.at[param, 'minDelta']
-                print(param, real_param_min, real_param_max)
+                value_min = self.df.at[param, 'minValue']
+                value_max = self.df.at[param, 'maxValue']
+                
+                logger.info("Max value allowed in calib_params.yaml: {}".format(value_max))
+                logger.info("Min value allowed in calib_params.yaml: {}".format(value_min))
+                
+                # Adjust the 'delta factors'
+                # for the multiplicative case 
                 if self.df.at[param, 'factor'] == 'mult':
-                    new_delta_max = value_max/real_param_max
-                    new_delta_min = value_min/real_param_min
+                    if value_max < real_param_max:
+                        logger.error('the real max value is greater than the max allowed...')
+                    
+                    if value_min > real_param_min:
+                        logger.error('the real min value is less than the min allowed...')
+                    
+                    # set the values
+                    # max value 
+                    if real_param_max == 0:
+                         new_delta_max = value_max                       
+                    else: 
+                         new_delta_max = value_max/real_param_max
 
+                    # min value
+                    if real_param_min == 0:
+                        new_delta_min = value_min 
+                    else:
+                        new_delta_min = value_min/real_param_min
+
+
+                # for the addative case  
                 if self.df.at[param, 'factor'] == 'add':
                     new_delta_max = value_max - real_param_max
                     new_delta_min = value_min - real_param_min
                 
-                if new_delta_max in [np.inf, None, np.nan]:
-                    new_delta_max = 0
-
-                if new_delta_min in [np.inf, None, np.nan]:
-                    new_delta_min = 0
                 
+                logger.info("Adjusted 'delta' values...") 
                 logger.info('{} --> {}'.format(delta_max, new_delta_max))
                 logger.info('{} --> {}'.format(delta_min, new_delta_min))
                 
@@ -319,9 +346,13 @@ class Calibration(SetMeUp):
             # Multiplicative update factor
             # ----------------------------
             if factor == 'mult':
+                
+                # create the standard deviation 
                 sigj = r * (np.log10(xj_max) - np.log10(xj_min))
 
                 # Randomly chosen unit normal variable
+                # Recall that we are just 'scaling' the random normal variable by the given standard 
+                # deviation, "sigj" with a mean shift given by the log of xj_init...
                 x_update = sigj * np.random.randn(1) + np.log10(xj_init)
                 x_new = xj_best * 10**x_update
                 if x_new < xj_min:  # if it is less than min, reflect to middle
