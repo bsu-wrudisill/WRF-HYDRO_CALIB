@@ -197,8 +197,8 @@ class SetMeUp:
             if param in keys:
                 df.at[param, 'file'] = yamlfile['parameters'][param]['file']
                 df.at[param, 'dims'] = yamlfile['parameters'][param]['dimensions']
-                df.at[param, 'maxValue'] = yamlfile['parameters'][param]['min_value']
-                df.at[param, 'minValue'] = yamlfile['parameters'][param]['max_value']
+                df.at[param, 'maxValue'] = yamlfile['parameters'][param]['max_value']
+                df.at[param, 'minValue'] = yamlfile['parameters'][param]['min_value']
 
             else:
                 print('did not find..', param)
@@ -222,6 +222,7 @@ class SetMeUp:
 
         # Parse **kwargs
         # --------------
+
 
         # Begin
         # ------
