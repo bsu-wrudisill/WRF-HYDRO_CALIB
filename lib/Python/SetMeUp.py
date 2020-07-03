@@ -114,7 +114,7 @@ class SetMeUp:
         # -----------------------------
         # Assumes WRF Forcings .... change format if using different
         self.forcings_time_format = "%Y-%m-%d_%H:%M:%S"
-        self.forcings_format = "wrfout_d02_{}"
+        self.forcings_format = "wrfout_d01_{}"
         self.files_to_copy = ["wrf_hydro.exe",
                               "SOILPARM.TBL",
                               "CHANPARM.TBL",
@@ -540,6 +540,7 @@ class SetMeUp:
 
         # update dictionary...
         insert = {"DATABASE_NAME": database,
+                  "DIRECTORY_PATH": runpath,
                   "ITERATION_COUNT": iteration,
                   "PATH_TO_PYTHON": self.libdirc,
                   "ANALYSIS_TASKS": aTasks,
