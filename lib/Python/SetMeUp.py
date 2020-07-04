@@ -73,6 +73,9 @@ class SetMeUp:
             **kwargs:
                 None
         """
+        if type(setup) == pathlib.PosixPath:
+            with open(setup) as y:
+                yamlfile = yaml.load(y, Loader=yaml.FullLoader)
         if type(setup) == str:
             with open(setup) as y:
                 yamlfile = yaml.load(y, Loader=yaml.FullLoader)
@@ -164,7 +167,7 @@ class SetMeUp:
         self.benefit_file = yamlfile['benefit_file']
 
         # Final Output File Name...
-        self.chrtfmt = "{}{}{}{}00.CHRTOUT_DOMAIN2"
+        self.chrtfmt = "{}{}{}{}00.CHRTOUT_DOMAIN1"
         
 
         # Construct the calibration table...
