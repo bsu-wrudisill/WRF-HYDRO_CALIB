@@ -101,6 +101,6 @@ if success:
         # submit the analysis...
         os.chdir(directory)
         setup.CreateAnalScript(directory, 'Calibration.db', 1) 
-        jobid, err = acc.Submit('submit_analysis.sh', calib.catchid)
+        jobid, err = acc.Submit('submit_analysis.sh', setup.catchid)
 
 
