@@ -25,7 +25,7 @@ RESTART_FILE
 !!!! --------------------- MODEL SETUP OPTIONS -------------------- !!!!
 
 ! Specify the domain or nest number identifier...(integer)
-IGRID = 2
+IGRID = 1
 
 ! Specify the restart file write frequency...(minutes)
 ! A value of -99999 will output restarts on the first day of the month only.

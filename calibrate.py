@@ -48,18 +48,20 @@ cwd = os.getcwd()
 # Calibrate
 calib = Calibration(setupfile)
 calib.PrepareCalibration()
-calib.AdjustCalibTable()
+#calib.AdjustCalibTable()
 
 #logger.info(calib.df)
-calib()
+#calib()
+calib.OneLoop()
+
 
 #logger.info(calib.failed_iterations)
 # make sure we are in the parent directory...
-os.chdir(cwd) 
+#os.chdir(cwd) 
 
 # Validate
 #---------
-valid = Validation(setupfile)
-valid.PrepareValidation()
-valid.run_validation()
-valid.aggregate_results()
+#valid = Validation(setupfile)
+#valid.PrepareValidation()
+#valid.run_validation()
+#valid.aggregate_results()
