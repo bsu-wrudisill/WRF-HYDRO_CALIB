@@ -1,36 +1,37 @@
-# setup.yaml 
+# setup.yaml
 # purpose: set parameters for WRF-Hydro calibration, spinup, or run
 
-# setup.yaml 
+# setup.yaml
 # purpose: set parameters for WRF-Hydro calibration, spinup, or run
 
 JOBTYPE: forward   # either 'calib' or 'spinup'
 userid : wrudisill
 
-# USGS gauge station ID to calibrate to 
+# USGS gauge station ID to calibrate to
 usgs_code: 13185000
-name_ext: test 
+name_ext: test
 
 # Specify directories
 executable_location: /home/wrudisill/scratch/NewHydroBuilt/WRF_HYDRO-R2/wrf_hydro_nwm_public/trunk/NDHMS/Run
 parameter_location: /scratch/leaf/share/WRF_hydro_subsets_201909/13139510_bigWood/
-forcing_location: /home/wrudisill/leaf/WRF-Hydro_Forcing/13139510_bigWood 
+forcing_location: /home/wrudisill/leaf/WRF-Hydro_Forcing/13139510_bigWood
 calib_location: /home/wrudisill/scratch/IPC_BasinsPaper/13139510_bigWood/WRF-HYDRO_CALIB
 
 # Put None for a 'cold-start' run
-hydro_restart_file: None 
+hydro_restart_file: None
 hrldas_restart_file: None
 
-dds_iter: 250 
+dds_iter: 250
 
-# Job submit criteria. More to be added later  
-QUEUE: leaf    # name of the queue 
+# Job submit criteria. More to be added later
+QUEUE: leaf    # name of the queue
 NODES: 2       # number of desired nodes
-       
+runtime: "04:00:00"   # hours:minutes:seconds
 
-# domain ID --- integer 
+
+# domain ID --- integer
 dom: 2
-        
+
 # The 'calibration' time period. The eval date allows for some spinup of the model before
 # computing the objective function.
 calib_date:
@@ -52,4 +53,4 @@ val_eval_date:
 
 # WARNING:  PRECIPITATION ADJUSTMET BELOW HERE #
 adjust_forcings: False
-benefit_file: None 
+benefit_file: None

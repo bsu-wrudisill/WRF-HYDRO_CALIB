@@ -61,7 +61,8 @@ class Calibration(SetMeUp):
         self.final_chrtfile = Path(self.chrtfmt.format(ed.strftime("%Y"),
                                                        ed.strftime("%m"),
                                                        ed.strftime("%d"),
-                                                       ed.strftime("%H")))
+                                                       ed.strftime("%H"),
+                                                       self.dom))
         # 'failed iteration counter'
         self.failed_iterations = 0
 
@@ -115,7 +116,7 @@ class Calibration(SetMeUp):
 
             # loop through individual parameters
             for param in grouped.groups[ncSingle]:
-                
+
                 logger.info("\n##################")
                 logger.info(param)
                 logger.info("##################")
@@ -124,10 +125,10 @@ class Calibration(SetMeUp):
                 # determine the max value of the parameter file
                 real_param_max = readMe[param].values.max()
                 real_param_min = readMe[param].values.min()
-                
+
                 logger.info("Max value in orig param file: {}".format(real_param_max))
                 logger.info("Min value in orig param file: {}".format(real_param_min))
-                
+
                 # get the min/max delta values from the table
                 delta_max = self.df.at[param, 'maxDelta']
                 delta_min = self.df.at[param, 'minDelta']
@@ -135,43 +136,43 @@ class Calibration(SetMeUp):
                 # get the min/max ttoal values from df
                 value_min = self.df.at[param, 'minValue']
                 value_max = self.df.at[param, 'maxValue']
-                
+
                 logger.info("Max value allowed in calib_params.yaml: {}".format(value_max))
                 logger.info("Min value allowed in calib_params.yaml: {}".format(value_min))
-                
+
                 # Adjust the 'delta factors'
-                # for the multiplicative case 
+                # for the multiplicative case
                 if self.df.at[param, 'factor'] == 'mult':
                     if value_max < real_param_max:
                         logger.error('the real max value is greater than the max allowed...')
-                    
+
                     if value_min > real_param_min:
                         logger.error('the real min value is less than the min allowed...')
-                    
+
                     # set the values
-                    # max value 
+                    # max value
                     if real_param_max == 0:
-                         new_delta_max = value_max                       
-                    else: 
+                         new_delta_max = value_max
+                    else:
                          new_delta_max = value_max/real_param_max
 
                     # min value
                     if real_param_min == 0:
-                        new_delta_min = value_min 
+                        new_delta_min = value_min
                     else:
                         new_delta_min = value_min/real_param_min
 
 
-                # for the addative case  
+                # for the addative case
                 if self.df.at[param, 'factor'] == 'add':
                     new_delta_max = value_max - real_param_max
                     new_delta_min = value_min - real_param_min
-                
-                
-                logger.info("Adjusted 'delta' values...") 
+
+
+                logger.info("Adjusted 'delta' values...")
                 logger.info('{} --> {}'.format(delta_max, new_delta_max))
                 logger.info('{} --> {}'.format(delta_min, new_delta_min))
-                
+
                 # now adjust the calib_params.tbl...
                 self.df.at[param, 'maxDelta'] = float(new_delta_max)
                 self.df.at[param, 'minDelta'] = float(new_delta_min)
@@ -331,7 +332,7 @@ class Calibration(SetMeUp):
             xj_max = J.maxDelta  # Note --
             xj_best = J.bestValue
             xj_init = J.initialValue
-           
+
             logger.info('------------------')
             logger.info(param)
             logger.info('xj_min:'+str(xj_min))
@@ -339,19 +340,19 @@ class Calibration(SetMeUp):
             logger.info('xj_best'+ str(xj_best))
             logger.info('xj_init:' + str(xj_init))
             logger.info('------------------')
-            
+
             # Is this a multiplicative parameter or an additive one?
             factor = J.factor
 
             # Multiplicative update factor
             # ----------------------------
             if factor == 'mult':
-                
-                # create the standard deviation 
+
+                # create the standard deviation
                 sigj = r * (np.log10(xj_max) - np.log10(xj_min))
 
                 # Randomly chosen unit normal variable
-                # Recall that we are just 'scaling' the random normal variable by the given standard 
+                # Recall that we are just 'scaling' the random normal variable by the given standard
                 # deviation, "sigj" with a mean shift given by the log of xj_init...
                 x_update = sigj * np.random.randn(1) + np.log10(xj_init)
                 x_new = xj_best * 10**x_update
@@ -499,16 +500,16 @@ class Calibration(SetMeUp):
 
         # the last file to look for..
         final_file = self.clbdirc.joinpath(self.final_chrtfile)
-        
+
         # Run the model once
         success, message = acc.ForwardModel(self.clbdirc,
                                    self.userid,
                                    self.catchid,
                                    final_file)
-        
+
         # Check if the model produced the correct output
         if not success:
-            self.failed_iterations += 1 
+            self.failed_iterations += 1
             # Since hte model failed... and presumably because the parameter set
             # was bad... lets do the DDS iteration again and find better parameters
             # generate new parameters
@@ -522,12 +523,12 @@ class Calibration(SetMeUp):
 
             # raise an an error that the final file was not found ...
             raise FileNotFoundError(final_file)
-        
+
         # Otherwise, assume that the model run was a succes. Compute the perfomance
-        # and do the DDS algorithm. 
+        # and do the DDS algorithm.
         else:
             logger.info('Sucess. Found: {}'.format(final_file))
-        
+
         # Model Evaluation
         # -----------------
         # This step will log the model outputs to the database
