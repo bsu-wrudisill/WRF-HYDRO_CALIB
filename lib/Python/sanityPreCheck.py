@@ -44,7 +44,11 @@ class RunPreCheck(SetMeUp):
                 date period. Fatal."
 
         assert (self.calib_end_date > self.calib_start_date), msg2
-        assert (self.eval_end_date <= self.calib_end_date) & (self.eval_start_date >= self.calib_start_date), msg2
+        assert (self.ceval_end_date <= self.calib_end_date) & (
+            self.ceval_start_date >= self.calib_start_date), msg2
+
+        assert (self.val_end_date > self.val_start_date), msg2
+
 
     @passfail
     def test_filePaths(self):
@@ -63,7 +67,8 @@ class RunPreCheck(SetMeUp):
         assert self.queue in queuelist, '{} is not one of {}'.format(self.queue, " ".join(queuelist))
 
         if self.queue == 'leaf':
-            assert self.nodes <= 2, 'More nodes ({}) requested than the available 2 on leaf'.format(self.nodes)
+            assert self.nodes <= 2, 'More nodes ({}) requested than the available 2 on leaf'.format(
+                self.nodes)
 
     def run_all(self):
         # emulate behavior of the unittesting module
@@ -101,7 +106,8 @@ class RunCalibCheck(SetMeUp):
     def test_filenames(self):
         # check that the requested filenames correspond with a wrf-hydro file name
         for fname in self.calib.df['file'].unique():
-            assert fname in self.calib_files_to_copy, '{} is not a valid filename. check {}'.format(fname,self.parameter_table)
+            assert fname in self.calib_files_to_copy, '{} is not a valid filename. check {}'.format(
+                fname, self.parameter_table)
 
     @passfail
     def test_minmax_range(self):
