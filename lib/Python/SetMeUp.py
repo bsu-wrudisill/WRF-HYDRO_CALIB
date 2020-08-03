@@ -91,6 +91,8 @@ class SetMeUp:
         self.max_iteration = yamlfile['dds_iter']
         self.obsFileName = 'obsStrData.csv'  # this gets created
         name_ext = yamlfile['name_ext']
+        self.dom = yamlfile['dom']
+        self.model_run_time = yamlfile['runtime']
 
         # Restart files
         # --------------------------------
@@ -131,7 +133,7 @@ class SetMeUp:
                                     'soil_properties.nc',
                                     'GWBUCKPARM.nc',
                                     'Fulldom_hires.nc']
-        
+
         # Create catch id file name
         self.catchid = 'catch_{}'.format(self.usgs_code)
 
@@ -168,7 +170,6 @@ class SetMeUp:
 
         # Final Output File Name...
         self.chrtfmt = "{}{}{}{}00.CHRTOUT_DOMAIN{}"
-        
 
         # Construct the calibration table...
         self.parameter_table = 'calib_params.tbl'
@@ -211,8 +212,7 @@ class SetMeUp:
 
         # assign the df to itself, so we can hold onto it in later fx
         self.df = df
-    
-    
+
     def GatherForcingsFast(self, start_date, end_date, **kwargs):
         """
         Args:
@@ -226,7 +226,6 @@ class SetMeUp:
         # Parse **kwargs
         # --------------
 
-
         # Begin
         # ------
         logger.info('Searching for forcing data...')
@@ -235,7 +234,7 @@ class SetMeUp:
                                end_date,
                                freq='H')
         dRange = dRange.strftime("%Y-%m-%d_%H:%M:%S")
-        reqForcingList = [self.forcings_format.format(x) for x in dRange]
+        reqForcingList = [self.forcings_format.format(self.dom, x) for x in dRange]
 
         # Create list of files for linking to the directory
         linkForcingPath = []
@@ -351,28 +350,26 @@ class SetMeUp:
                               endString,
                               datapath)
         logger.info(cmd)
-        
-        # allow for three failures... 
+
+        # allow for three failures...
         failed_download_attempts = 0
         while failed_download_attempts < 3:
             try:
                 os.system(cmd)
-            
+
             # !! This is bad code. unmangaed exception catch for no reason !!
             except Exception as e:  # WHAT IS THE EXCEPTION!!!!
                 logger.error(e)
                 logger.error('Unable to execute command {}'.format(cmdEmpty))
                 sys.exit()
-            
+
             # if the file gets found... then break the loop
             if acc.checkFile(datapath):
                 break
             else:
-                failed_download_attempts += 1 
-       
-        # now we check the observations to make sure there are none missing...
-                
+                failed_download_attempts += 1
 
+        # now we check the observations to make sure there are none missing...
 
     def CreateRunDir(self, runpath, linkForcings, **kwargs):
         """
@@ -476,7 +473,9 @@ class SetMeUp:
                          runpath.joinpath('namelist.hrldas'))
 
         # Modify the hydro.namelist
-        hydDic = {"RESTART_FILE": hydrorestart}
+        hydDic = {"RESTART_FILE": hydrorestart,
+                  "DOM": self.dom}
+
         acc.GenericWrite('./namelists/hydro.namelist.TEMPLATE',
                          hydDic,
                          runpath.joinpath('hydro.namelist'))
@@ -492,7 +491,7 @@ class SetMeUp:
             runpath = pathlib.Path(runpath)
 
         taskX = 28
-        runTime = "06:00:00"
+        runTime = self.model_run_time
         slurmDic = {"QUEUE": self.queue,
                     "NODES": self.nodes,
                     "TASKS": int(self.nodes) * taskX,
@@ -537,7 +536,7 @@ class SetMeUp:
         namelist_replace = runpath.joinpath('submit_analysis.sh')
         # Determine submit parameters...
         taskX = 28
-        runTime = "06:00:00"  # make this dynamic...
+        runTime = self.model_run_time  # make this dynamic...
         aNodes = 2
         aTasks = aNodes * taskX
 
@@ -550,11 +549,10 @@ class SetMeUp:
                   "ANALYSIS_NODES": aNodes,
                   "ANALYSIS_QUEUE": self.queue,
                   "ANALYSIS_TIME": runTime,
-                  "TABLE_NAME":tableName
+                  "TABLE_NAME": tableName
                   }
 
         # Create/Update the job submit template into the directory
         acc.GenericWrite(namelist_template,
                          insert,
                          namelist_replace)
-
