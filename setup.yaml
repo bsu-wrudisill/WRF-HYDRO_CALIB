@@ -11,10 +11,6 @@ userid : wrudisill
 usgs_code: 13185000
 name_ext: test 
 
-# USGS gauge to calibrate to
-usgs_code: 13139510
-name_ext: "recalibrate_fewer_parameters_plus_some"
-
 # Specify directories
 executable_location: /home/wrudisill/scratch/NewHydroBuilt/WRF_HYDRO-R2/wrf_hydro_nwm_public/trunk/NDHMS/Run
 parameter_location: /scratch/leaf/share/WRF_hydro_subsets_201909/13139510_bigWood/
@@ -25,13 +21,15 @@ calib_location: /home/wrudisill/scratch/IPC_BasinsPaper/13139510_bigWood/WRF-HYD
 hydro_restart_file: None 
 hrldas_restart_file: None
 
-
-dds_iter: 100 
+dds_iter: 250 
 
 # Job submit criteria. More to be added later  
 QUEUE: leaf    # name of the queue 
 NODES: 2       # number of desired nodes
-        
+       
+
+# domain ID --- integer 
+dom: 2
         
 # The 'calibration' time period. The eval date allows for some spinup of the model before
 # computing the objective function.

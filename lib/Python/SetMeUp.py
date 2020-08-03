@@ -117,7 +117,7 @@ class SetMeUp:
         # -----------------------------
         # Assumes WRF Forcings .... change format if using different
         self.forcings_time_format = "%Y-%m-%d_%H:%M:%S"
-        self.forcings_format = "wrfout_d01_{}"
+        self.forcings_format = "wrfout_d0{}_{}"
         self.files_to_copy = ["wrf_hydro.exe",
                               "SOILPARM.TBL",
                               "CHANPARM.TBL",
@@ -167,7 +167,7 @@ class SetMeUp:
         self.benefit_file = yamlfile['benefit_file']
 
         # Final Output File Name...
-        self.chrtfmt = "{}{}{}{}00.CHRTOUT_DOMAIN1"
+        self.chrtfmt = "{}{}{}{}00.CHRTOUT_DOMAIN{}"
         
 
         # Construct the calibration table...
