@@ -21,6 +21,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--overwrite", action="store_true", help="Overwrite exixting directory")   
 
 
+
+# ---- PARSE INPUT ARGS----
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--overwrite", action="store_true", help="Overwrite exixting directory")   
+
+
 # ----- log -----
 suffix = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
 logfile = 'testing.log'
@@ -37,6 +45,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+
 # -----  main ------
 setupfile = 'setup.yaml'
 calibrationfile = 'calib_params.tbl'
@@ -47,6 +56,7 @@ setup = SetMeUp(setupfile)
 # ---- overwrite teh directory if it already exists ----
 
 args = parser.parse_args()
+
 if setup.parent_directory.exists():
     if args.overwrite == True:
         shutil.rmtree(setup.parent_directory, ignore_errors=True)
