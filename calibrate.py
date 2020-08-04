@@ -37,25 +37,26 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-
 # -----  main ------
 setupfile = 'setup.yaml'
 calibrationfile = 'calib_params.tbl'
 
-if not RunPreCheck(setupfile).run_all(): sys.exit()
-if not RunCalibCheck(setupfile).run_all(): sys.exit()
-
 # create the setup instance
 setup = SetMeUp(setupfile)
 
-# remove dir if it exists...
+# ---- overwrite teh directory if it already exists ----
 
+args = parser.parse_args()
 if setup.parent_directory.exists():
     if args.overwrite == True:
         shutil.rmtree(setup.parent_directory, ignore_errors=True)
     else: 
         logger.error("directory already exists. exiting. use overwrite flag to delete")
         sys.exit()
+
+# do checks ...
+if not RunPreCheck(setupfile).run_all(): sys.exit()
+if not RunCalibCheck(setupfile).run_all(): sys.exit()
     
 
 # get the current directory 

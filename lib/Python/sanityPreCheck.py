@@ -99,7 +99,7 @@ class RunCalibCheck(SetMeUp):
     def __init__(self, setup):
         # same as above ...
         super(self.__class__, self).__init__(setup)
-        self.calib = CalibrationMaster(setup)  # this is maybe a bad idea
+        self.calib = Calibration(setup)  # this is maybe a bad idea
         logger.info(self.calib.df)
 
     @passfail
@@ -123,7 +123,7 @@ class RunCalibCheck(SetMeUp):
         multlist = self.calib.df.groupby('factor').groups['mult']
         for param in multlist:
             # CHANGE ME (RENAME 'ini' IN THE FUTURE)
-            initval = self.calib.df.loc[param]['ini']
+            initval = self.calib.df.loc[param]['initialValue']
             assert initval == 1.0, 'the ini value must be >0 for multiplicative updates. \
                            Check {} in {}'.format(param, self.parameter_table)
 
@@ -137,7 +137,7 @@ class RunCalibCheck(SetMeUp):
 
     @passfail
     def test_calib_iters(self):
-        assert self.calib.max_iters > 1, 'max iters is less than or == to one'
+        assert self.calib.max_iteration > 1, 'max iters is less than or == to one'
 
     def run_all(self):
         # emulate behavior of the unittesting module
