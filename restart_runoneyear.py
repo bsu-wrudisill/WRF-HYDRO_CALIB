@@ -86,7 +86,8 @@ ed = setup.calib_end_date
 final_chrtfile = Path(setup.chrtfmt.format(ed.strftime("%Y"),
                                                ed.strftime("%m"),
                                                ed.strftime("%d"),
-                                               ed.strftime("%H")))
+                                               ed.strftime("%H"),
+                                               setup.dom))
 # run the restart  
 final_file = directory.joinpath(final_chrtfile)
 success, message = acc.ForwardModel(directory,
