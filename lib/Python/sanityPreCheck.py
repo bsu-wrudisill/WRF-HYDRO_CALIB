@@ -44,8 +44,6 @@ class RunPreCheck(SetMeUp):
                 date period. Fatal."
 
         assert (self.calib_end_date > self.calib_start_date), msg2
-        assert (self.ceval_end_date <= self.calib_end_date) & (
-            self.ceval_start_date >= self.calib_start_date), msg2
 
         assert (self.val_end_date > self.val_start_date), msg2
 

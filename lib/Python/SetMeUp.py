@@ -474,7 +474,7 @@ class SetMeUp:
 
         # Modify the hydro.namelist
         hydDic = {"RESTART_FILE": hydrorestart,
-                  "DOM": self.dom}
+                  "REPLACE_DOM_ID": self.dom}
 
         acc.GenericWrite('./namelists/hydro.namelist.TEMPLATE',
                          hydDic,

@@ -13,7 +13,7 @@ from sanityPreCheck import RunPreCheck, RunCalibCheck, RunPreSubmitTest
 from dblogger import readSqlDischarge
 import accessories as acc
 import matplotlib.pyplot as plt
-
+import argparse
 
 # ----- log -----
 suffix = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
@@ -35,22 +35,32 @@ logger.setLevel(logging.DEBUG)
 setupfile = 'setup.yaml'
 calibrationfile = 'calib_params.tbl'
 
-#if not RunPreCheck(setupfile).run_all(): sys.exit()
-#if not RunCalibCheck(setupfile).run_all(): sys.exit()
 
 # create the setup instance
 setup = SetMeUp(setupfile)
 
-# remove dir if it exists...
-#if setup.parent_directory.exists():
-#    shutil.rmtree(setup.parent_directory, ignore_errors=True)
+parser = argparse.ArgumentParser()
+parser.add_argument("--overwrite", action="store_true", help="Overwrite exixting directory")   
 
+
+args = parser.parse_args()
+
+if setup.parent_directory.exists():
+    if args.overwrite == True:
+        shutil.rmtree(setup.parent_directory, ignore_errors=True)
+    else: 
+        logger.error("directory already exists. exiting. use overwrite flag to delete")
+        sys.exit()
+
+# do checks ...
+if not RunPreCheck(setupfile).run_all(): sys.exit()
+    
 # get the current directory 
-#cwd = os.getcwd()
+cwd = os.getcwd()
 
 # Calibrate
 calib = Calibration(setupfile)
-#calib.PrepareCalibration()
+calib.PrepareCalibration()
 #calib.AdjustCalibTable()
 
 #calib.CreateAnalScript(calib.clbdirc, 'Calibration.db', 0) 
@@ -61,6 +71,11 @@ success, message = acc.ForwardModel(calib.clbdirc,
                            calib.userid,
                            calib.catchid,
                            final_file)
+
+if not success:
+    logger.error('model failure')
+    logger.info(message)
+    sys.exit()
 
 # submit the analysis...
 os.chdir(calib.clbdirc)
