@@ -81,9 +81,11 @@ if not success:
 os.chdir(calib.clbdirc)
 jobid, err = acc.Submit('submit_analysis.sh', calib.catchid)
 
+acc.WaitForJob(jobid,'wrudisill')
+
 # make some plots ...
 df = readSqlDischarge(calib.clbdirc.joinpath('Calibration.db'), 0)
-plt.plot(df.time, df.qMod, label=str(self.parent_directory.name))
+plt.plot(df.time, df.qMod, label=str(calib.parent_directory.name))
 plt.plot(df.time, df.qObs, label='qobs')
 plt.legend()
 plt.savefig(calib.clbdirc.joinpath('qplot'))
