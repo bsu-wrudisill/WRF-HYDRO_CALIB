@@ -105,7 +105,7 @@ def readChRtFiles(directory='./', use_xarray=True):
     # Option 1: Use Xarray
     # ---------------------
     if use_xarray:
-        modQfiles = xr.open_mfdataset(chrtFiles)
+        modQfiles = xr.open_mfdataset(chrtFiles, concat_dim="time")
         # Parse the xrarray data
         data_dict = {'qMod': modQfiles['streamflow'][:, gauge_loc].values,
                      'time': modQfiles['time'].values}
