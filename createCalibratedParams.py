@@ -11,6 +11,8 @@ from Calibration import Calibration
 import accessories as acc
 import os 
 import yaml 
+import argparse
+
 
 ####################################################################################
 """
@@ -25,7 +27,14 @@ called "calibrated_parameters" and place files there.
 #####################################################################################
 
 
-directory = Path(sys.argv[1]).resolve()
+# Parse Input args ...
+parser = argparse.ArgumentParser()
+parser.add_argument("directory", type=str, help="input directory")
+parser.add_argument("iteration", default=None, type=int, nargs='?', help="requested iteration")
+args = parser.parse_args()
+
+
+directory = Path(args.directory).resolve()
 setupfile = directory.joinpath('setup.yaml')
 
 # create the setup instance
@@ -67,7 +76,21 @@ def returnQmodOnly(dbcon, **kwargs):
 param = getParameters(calib.database)
 param.iteration = list(map(int, param.iteration))
 performance = getPerformance(calib.database) 
-best_row = performance.loc[(performance.objective == performance['objective'].min()) & (performance.improvement ==1)]
+
+if args.iteration == None:
+        print('finding parameter with minimum objective function') 
+        best_row = performance.loc[(performance.objective == performance['objective'].min()) & (performance.improvement ==1)]
+else: 
+        print('grabbing parameter ... %s'%args.iteration)
+        best_row = performance.loc[performance.iteration == str(args.iteration)]
+
+
+initial_run = performance.loc[performance.iteration == '0']
+print("========= Initial Run ========")
+print(initial_run)
+
+print("========== Selection =========")
+print(best_row)
 
 best_parameters = param.loc[param.iteration == int(best_row.iteration)]
 best_parameters.set_index('parameter', inplace=True)
