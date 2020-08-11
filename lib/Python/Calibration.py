@@ -66,7 +66,7 @@ class Calibration(SetMeUp):
         # 'failed iteration counter'
         self.failed_iterations = 0
 
-    def PrepareCalibration(self):
+    def PrepareCalibration(self, ignore_obs=False):
         """Summary
         Create run directory for the calibration run
         """
@@ -84,21 +84,27 @@ class Calibration(SetMeUp):
 
         # create submit script..
         self.CreateSubmitScript(self.clbdirc)
-
-        # Get the USGS gauge observations...
-        self.GatherObs(self.clbdirc,
-                       self.calib_start_date,
-                       self.calib_end_date)
+        
+        if not ignore_obs:
+                # Get the USGS gauge observations...
+                logger.info("download observations from internet...")
+                self.GatherObs(self.clbdirc,
+                               self.calib_start_date,
+                               self.calib_end_date)
+                
+                logger.info("log the observation files to the database")
+                obsQ, lat, lon = dbl.readObsFiles(self.clbdirc)
+                table_name = 'qObserved'
+                dbl.logDataframe(obsQ,
+                                 table_name,
+                                 self.database)
+        else:
+                logger.info("ignoring observations (maybe they don't exist)")
 
         self.CreateAnalScript(self.clbdirc, 'Calibration.db', self.iteration)
 
         logger.info(self.clbdirc)
         # Log the USGS observations to the database...
-        obsQ, lat, lon = dbl.readObsFiles(self.clbdirc)
-        table_name = 'qObserved'
-        dbl.logDataframe(obsQ,
-                         table_name,
-                         self.database)
 
     def AdjustCalibTable(self):
         """
