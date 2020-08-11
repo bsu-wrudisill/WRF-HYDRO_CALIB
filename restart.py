@@ -6,8 +6,7 @@ import datetime
 import logging
 import yaml 
 import pandas as pd 
-
-
+from pathlib import Path
 libPathList = ['./lib/Python', './util']
 for libPath in libPathList:
 	sys.path.insert(0,libPath)
@@ -18,23 +17,30 @@ from sanityPreCheck import RunPreCheck, RunCalibCheck, RunPreSubmitTest
 import accessories as acc
 
 
-
-# setup the log file --- this will get passed to all of the imported modules!!!
 suffix = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
-logfile= 'logfile_{}.log'.format(suffix)
+logfile = 'runoneyear_{}.log'.format(suffix)
 
 file_handler = logging.FileHandler(filename=logfile)
 stdout_handler = logging.StreamHandler(sys.stdout)
-logging.basicConfig(level=logging.INFO, 
-		    format='%(asctime)s %(name)15s %(levelname)-8s %(message)s',
-		    datefmt='%a, %d %b %Y %H:%M:%S',
-		    handlers=[file_handler, stdout_handler]
-		    )
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s %(name)15s %(levelname)-8s %(message)s',
+                    datefmt='%a, %d %b %Y %H:%M:%S',
+                    handlers=[file_handler, stdout_handler]
+                    )
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+# this is pretty neat --- we can provide a relative path as argument adn get the full path
+directory = Path(sys.argv[1]).resolve()
+setupfile = directory.joinpath('setup.yaml')
+
+# create the setup instance
+setup = SetMeUp(setupfile)
+
+
+
 # -----  main ------ 
-setupfile = 'setup.yaml'
 calibrationfile = 'calib_params.tbl' 
 
 # start the logging with some handy info
@@ -58,7 +64,7 @@ lastState.set_index('parameter', inplace=True)
 calib.df.update(lastState)
 calib.df.nextValue = calib.df.currentValue 
 # update the iteration 
-calib.iters = int(lastState.iteration.iloc[0])+1
+calib.iteration = int(lastState.iteration.iloc[0])+1
 
 # now run the calibration 
 calib()
