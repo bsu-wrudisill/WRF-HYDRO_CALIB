@@ -24,20 +24,20 @@ parameters:
 
     refkdt:
         min_value : 0.1
-        max_value : 5.0 
+        max_value : 5.0
         dimensions: 3
-        file: soil_properties.nc 
+        file: soil_properties.nc
         description: "surface runoff parameterizzation"
-    
+
     cwpvt:
         min_value : 0.1
         max_value : 0.9
         dimensions: 3
-        file: soil_properties.nc 
-        description: "canopy wind parameter" 
+        file: soil_properties.nc
+        description: "canopy wind parameter"
 
     vcmx25:
-        min_value : 0.001 
+        min_value : 0.001
         max_value : 100.0
         dimensions: 3
         file: soil_properties.nc
@@ -71,8 +71,15 @@ parameters:
         file: soil_properties.nc
         description: ""
 
+    rsurfexp:
+        min_value : 0.01
+        max_value : 1.0
+        dimensions: 1
+        file: soil_properties.nc
+        description: "Manning's n"
+
     Expon:
-        min_value : .5 
+        min_value : .5
         max_value : 15.0
         dimensions: 1
         file: GWBUCKPARM.nc
@@ -80,7 +87,7 @@ parameters:
 
     Zmax:
         min_value : 5.0
-        max_value : 250.0 
+        max_value : 250.0
         dimensions: 1
         file: GWBUCKPARM.nc
         description: ""
@@ -112,7 +119,7 @@ parameters:
         dimensions: 2
         file: Fulldom_hires.nc
         description: "Lateral saturated hydraulic conductivity multiplier. This is basically how anisotropic the medium is "
-    
+
     RETDEPRTFAC:
         min_value : 1.0
         max_value : 1300.0
@@ -141,7 +148,29 @@ parameters:
         file: Route_Link.nc
         description: "Manning's n"
 
+#### MPTABLE PARAMETERS #####
 
+    DIRT_SOOT:
+        min_value : 0.01
+        max_value : 1.0
+        dimensions: 1
+        file: MPTABLE.TBL
+        description: "dirt and soot term for snow.."
+
+
+    BATS_NIR_AGE:
+        min_value : 0.01
+        max_value : 1.0
+        dimensions: 1
+        file: MPTABLE.TBL
+        description: "age factor for snow longwave albedo"
+
+    BATS_VIS_AGE:
+        min_value : 0.01
+        max_value : 1.0
+        dimensions: 1
+        file: MPTABLE.TBL
+        description: "age factor for snow shortwave albedo"
 
 
 

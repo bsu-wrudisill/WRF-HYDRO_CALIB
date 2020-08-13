@@ -18,3 +18,4 @@ LKSATFAC,    1,        0.01,     100.0,    1.0,          mult
 RETDEPRTFAC, 0,        0.01,     100.0,    1.0,          mult
 ChSlp,       0,        0.01,     100.0,    1.0,          mult
 n,           0,        0.01,     100.0,    1.0,          mult
+rsurfexp,    0,        0.01,     100.0,    1.0,          mult
