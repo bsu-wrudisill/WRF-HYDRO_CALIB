@@ -84,14 +84,14 @@ class Calibration(SetMeUp):
 
         # create submit script..
         self.CreateSubmitScript(self.clbdirc)
-        
+
         if not ignore_obs:
                 # Get the USGS gauge observations...
                 logger.info("download observations from internet...")
                 self.GatherObs(self.clbdirc,
                                self.calib_start_date,
                                self.calib_end_date)
-                
+
                 logger.info("log the observation files to the database")
                 obsQ, lat, lon = dbl.readObsFiles(self.clbdirc)
                 table_name = 'qObserved'
@@ -443,6 +443,10 @@ class Calibration(SetMeUp):
                 if dims == 3:
                     UpdateMe[param][:, :, :] = updateFun(UpdateMe[param][:, :, :],
                                                          updateVal)
+                if dims == 4:
+                    UpdateMe[param][:, :, :, :] = updateFun(UpdateMe[param][:, :, :, :],
+                                                         updateVal)
+
                 # log info
                 message = 'updated--{} in file \
                           {}--with value {}'.format(param, ncSingle, updateVal)
