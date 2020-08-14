@@ -1,24 +1,32 @@
 parameters:
+
+    rsurfexp:
+        min_value : 0.01
+        max_value : 10.0
+        dimensions: 1
+        file: soil_properties.nc
+        description: "snow something or other"
+
     bexp:
         min_value : 0.01
         max_value : 10.0
-        dimensions: 3
+        dimensions: 4
         file: soil_properties.nc
         description: "beta parameter (pore size distribution index). This exponent is used to calculate the
                       unsaturated Ksat and matric potential values based on their equiavelent saturated value.
-                      the higher beta is, the smaller the unsat K value is, and the smalller the matric potential is)"
+                     the higher beta is, the smaller the unsat K value is, and the smalller the matric potential is)"
 
     smcmax:
         min_value : 0.1
         max_value : 1.0
-        dimensions: 3
+        dimensions: 4
         file: soil_properties.nc
         description: "porosity"
 
     dksat:
         min_value : .000001      # how can this be zero...
         max_value : .0001  #1E-4
-        dimensions: 3
+        dimensions: 4
         file: soil_properties.nc
         description: "saturated hydraulic conductivity"
 
