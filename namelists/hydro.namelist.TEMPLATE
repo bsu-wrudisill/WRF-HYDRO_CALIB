@@ -45,7 +45,7 @@ rst_bi_out = 0      !0: use netcdf output restart file (default)
 RSTRT_SWC = 0
 
 ! Specify baseflow/bucket model initialization...(0=cold start from table, 1=restart file)
-GW_RESTART = 1
+GW_RESTART = 0
 
 !!!! -------------------- MODEL OUTPUT CONTROL -------------------- !!!!
 
